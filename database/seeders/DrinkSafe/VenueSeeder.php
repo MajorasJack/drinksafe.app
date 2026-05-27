@@ -48,11 +48,16 @@ final class VenueSeeder extends Seeder
 
         $now = now();
         $insertData = [];
+        $usedSlugs = [];
 
         foreach ($venues as $venue) {
+            $slug = $this->generateUniqueSlug($venue['name'], $usedSlugs);
+            $usedSlugs[] = $slug;
+
             $insertData[] = [
                 'uuid' => Str::uuid()->toString(),
                 'name' => $venue['name'],
+                'slug' => $slug,
                 'city' => $venue['city'],
                 'address' => $venue['address'],
                 'latitude' => $venue['latitude'],
@@ -72,6 +77,25 @@ final class VenueSeeder extends Seeder
             count($insertData),
             $data['fetched_at'] ?? 'unknown'
         ));
+    }
+
+    /**
+     * Generate a unique slug from the venue name.
+     *
+     * @param  list<string>  $usedSlugs  Already used slugs in this seeding run
+     */
+    private function generateUniqueSlug(string $name, array $usedSlugs): string
+    {
+        $baseSlug = Str::slug($name);
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (in_array($slug, $usedSlugs, true)) {
+            $slug = sprintf('%s-%d', $baseSlug, $counter);
+            $counter++;
+        }
+
+        return $slug;
     }
 
     /**
@@ -129,6 +153,7 @@ final class VenueSeeder extends Seeder
         ];
 
         $venues = [];
+        $usedSlugs = [];
 
         foreach ($cities as $cityName => $coords) {
             $numVenuesInCity = fake()->numberBetween(3, 7);
@@ -140,6 +165,9 @@ final class VenueSeeder extends Seeder
                     fake()->randomElement($venueTypes)
                 );
 
+                $slug = $this->generateUniqueSlug($venueName, $usedSlugs);
+                $usedSlugs[] = $slug;
+
                 // Add slight variation to coordinates (within ~5km radius)
                 $latVariation = fake()->randomFloat(4, -0.045, 0.045);
                 $lngVariation = fake()->randomFloat(4, -0.045, 0.045);
@@ -147,6 +175,7 @@ final class VenueSeeder extends Seeder
                 $venues[] = [
                     'uuid' => Str::uuid()->toString(),
                     'name' => $venueName,
+                    'slug' => $slug,
                     'city' => $cityName,
                     'address' => sprintf(
                         '%d %s, %s',
