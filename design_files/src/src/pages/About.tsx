@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import {
   ShieldAlertIcon,
@@ -6,6 +5,7 @@ import {
   InfoIcon,
   ExternalLinkIcon } from
 'lucide-react';
+import React from 'react';
 export const About: React.FC = () => {
   return (
     <motion.div

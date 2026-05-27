@@ -1,5 +1,5 @@
-import { Venue, Report } from '../types';
 import { subDays, subMonths } from 'date-fns';
+import type { Venue, Report } from '../types';
 
 export const mockVenues: Venue[] = [
 {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
+import { formatDistanceToNow } from 'date-fns';
 import {
     Search,
     MapPin,
@@ -8,12 +8,11 @@ import {
     Clock,
     ArrowRight,
 } from 'lucide-vue-next';
+import { ref } from 'vue';
 import AppLayout from '@/components/layout/AppLayout.vue';
-import DisclaimerBanner from '@/components/ui/DisclaimerBanner.vue';
 import Button from '@/components/ui/button/Button.vue';
-import type { Venue } from '@/types/venue';
+import DisclaimerBanner from '@/components/ui/DisclaimerBanner.vue';
 import type { PopulatedReport } from '@/types/report';
-import { formatDistanceToNow } from 'date-fns';
 
 interface Props {
     stats: {
@@ -23,12 +22,13 @@ interface Props {
     recent_reports: PopulatedReport[];
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
 
 const searchQuery = ref('');
 
 const handleSearch = (e: Event): void => {
     e.preventDefault();
+
     if (searchQuery.value.trim()) {
         router.visit('/map', {
             data: { search: searchQuery.value },

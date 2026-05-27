@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
 import { PhoneIcon, XIcon, ShieldAlertIcon } from 'lucide-react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 export const PoliceStrip: React.FC = () => {
   const [isVisible, setIsVisible] = useState(true);
-  if (!isVisible) return null;
+
+  if (!isVisible) {
+return null;
+}
+
   return (
     <div className="bg-brand-amber-light/10 border-b border-brand-amber/20 text-brand-amber-dark px-4 py-2.5 text-sm relative z-40">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 pr-8 text-center sm:text-left">

@@ -1,5 +1,3 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ShieldAlertIcon,
@@ -9,9 +7,11 @@ import {
   CheckIcon,
   XIcon } from
 'lucide-react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useReports } from '../context/ReportContext';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
+import { useReports } from '../context/ReportContext';
 export const SubmitReport: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -37,7 +37,11 @@ export const SubmitReport: React.FC = () => {
   // Derived: filtered venues for the typeahead
   const filteredVenues = useMemo(() => {
     const q = venueQuery.trim().toLowerCase();
-    if (!q) return venues.slice(0, 8);
+
+    if (!q) {
+return venues.slice(0, 8);
+}
+
     return venues.
     filter(
       (v) =>
@@ -57,12 +61,12 @@ export const SubmitReport: React.FC = () => {
     const handler = (e: MouseEvent) => {
       if (
       venueWrapperRef.current &&
-      !venueWrapperRef.current.contains(e.target as Node))
-      {
+      !venueWrapperRef.current.contains(e.target as Node)) {
         setIsVenueDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
+
     return () => document.removeEventListener('mousedown', handler);
   }, []);
   const selectExistingVenue = (id: string, name: string) => {
@@ -113,6 +117,7 @@ export const SubmitReport: React.FC = () => {
           venueId
         });
       }
+
       setIsSubmitting(false);
       setStep(3); // Success step
       toast.success('Report submitted anonymously');
@@ -123,6 +128,7 @@ export const SubmitReport: React.FC = () => {
   !!date && (
   venueId && !isCreatingNew ||
   isCreatingNew && venueQuery.trim() && newVenueCity.trim());
+
   if (step === 3) {
     return (
       <motion.div
@@ -163,6 +169,7 @@ export const SubmitReport: React.FC = () => {
       </motion.div>);
 
   }
+
   return (
     <motion.div
       initial={{
@@ -270,6 +277,7 @@ export const SubmitReport: React.FC = () => {
                     <ul className="max-h-64 overflow-y-auto py-1">
                             {filteredVenues.map((v) => {
                         const isSelected = v.id === venueId;
+
                         return (
                           <li key={v.id}>
                                   <button

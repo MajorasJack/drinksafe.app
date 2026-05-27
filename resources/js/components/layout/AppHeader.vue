@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { Menu, X } from 'lucide-vue-next';
+import { ref } from 'vue';
 
 const mobileMenuOpen = ref(false);
 

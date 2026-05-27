@@ -1,6 +1,6 @@
 import React, { useMemo, useState, createContext, useContext } from 'react';
-import { Venue, Report, PopulatedReport } from '../types';
 import { mockVenues, mockReports } from '../data/mockData';
+import type { Venue, Report, PopulatedReport } from '../types';
 interface ReportContextType {
   venues: Venue[];
   reports: Report[];
@@ -29,9 +29,9 @@ export const ReportProvider: React.FC<{
   }, [reports, venues]);
   const addReport = (
   reportData: Omit<Report, 'id' | 'createdAt'>,
-  newVenueData?: Omit<Venue, 'id'>) =>
-  {
+  newVenueData?: Omit<Venue, 'id'>) => {
     let venueId = reportData.venueId;
+
     if (newVenueData) {
       const newVenue: Venue = {
         ...newVenueData,
@@ -40,6 +40,7 @@ export const ReportProvider: React.FC<{
       setVenues((prev) => [...prev, newVenue]);
       venueId = newVenue.id;
     }
+
     const newReport: Report = {
       ...reportData,
       venueId,
@@ -48,6 +49,7 @@ export const ReportProvider: React.FC<{
     };
     setReports((prev) => [newReport, ...prev]);
   };
+
   return (
     <ReportContext.Provider
       value={{
@@ -65,8 +67,10 @@ export const ReportProvider: React.FC<{
 };
 export const useReports = () => {
   const context = useContext(ReportContext);
+
   if (context === undefined) {
     throw new Error('useReports must be used within a ReportProvider');
   }
+
   return context;
 };

@@ -22,6 +22,6 @@ export interface SharedProps {
     sidebarOpen: boolean;
 }
 
-export interface PageProps<T = Record<string, unknown>> extends SharedProps {
+export interface PageProps extends SharedProps {
     [key: string]: unknown;
 }

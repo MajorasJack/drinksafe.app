@@ -1,5 +1,4 @@
-import React from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import {
   MapPinIcon,
@@ -9,9 +8,10 @@ import {
   ClockIcon,
   InfoIcon } from
 'lucide-react';
-import { useReports } from '../context/ReportContext';
-import { format } from 'date-fns';
+import React from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
+import { useReports } from '../context/ReportContext';
 export const VenueDetail: React.FC = () => {
   const { id } = useParams<{
     id: string;
@@ -22,6 +22,7 @@ export const VenueDetail: React.FC = () => {
   const venueReports = reports.
   filter((r) => r.venueId === id).
   sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
   if (!venue) {
     return (
       <div className="flex-grow flex flex-col items-center justify-center p-8 text-center">
@@ -40,6 +41,7 @@ export const VenueDetail: React.FC = () => {
       </div>);
 
   }
+
   return (
     <motion.div
       initial={{

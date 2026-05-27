@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watchEffect } from 'vue';
 import { router } from '@inertiajs/vue3';
-import { Filter, X } from 'lucide-vue-next';
+import { Filter } from 'lucide-vue-next';
+import { ref, computed, onMounted, watchEffect } from 'vue';
 import AppLayout from '@/components/layout/AppLayout.vue';
-import VenueSearchInput from '@/components/venue/VenueSearchInput.vue';
-import VenueMap from '@/components/venue/VenueMap.vue';
-import DateFilter from '@/components/ui/DateFilter.vue';
 import Button from '@/components/ui/button/Button.vue';
+import DateFilter from '@/components/ui/DateFilter.vue';
+import VenueMap from '@/components/venue/VenueMap.vue';
+import VenueSearchInput from '@/components/venue/VenueSearchInput.vue';
 import { useVenues } from '@/composables/useVenues';
 import type { Venue } from '@/types/venue';
 
@@ -35,6 +35,7 @@ const filteredVenues = computed(() => {
     if (storeVenues.value && storeVenues.value.length > 0) {
         return storeVenues.value;
     }
+
     return props.venues;
 });
 

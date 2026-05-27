@@ -1,5 +1,4 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
 import {
   SearchIcon,
@@ -8,9 +7,10 @@ import {
   ClockIcon,
   ArrowRightIcon } from
 'lucide-react';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { DisclaimerBanner } from '../components/DisclaimerBanner';
 import { useReports } from '../context/ReportContext';
-import { formatDistanceToNow } from 'date-fns';
 export const Home: React.FC = () => {
   const navigate = useNavigate();
   const { populatedReports, setSearchQuery } = useReports();
@@ -19,11 +19,13 @@ export const Home: React.FC = () => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const query = formData.get('search') as string;
+
     if (query.trim()) {
       setSearchQuery(query);
       navigate('/map');
     }
   };
+
   return (
     <motion.div
       initial={{
