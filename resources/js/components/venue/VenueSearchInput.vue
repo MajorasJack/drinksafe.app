@@ -48,20 +48,22 @@ const handleBlur = (): void => {
 <template>
     <div class="relative w-full">
         <div class="relative">
-            <Search class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Search
+                class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400"
+            />
             <Input
                 ref="inputRef"
                 v-model="query"
                 type="text"
                 placeholder="Search by city, town, or venue name..."
-                class="w-full pl-9 pr-9 text-white"
+                class="w-full pr-9 pl-9 text-white"
                 @focus="showDropdown = !!query.trim()"
                 @blur="handleBlur"
             />
             <button
                 v-if="query"
                 type="button"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300"
+                class="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300"
                 @click="handleClear"
             >
                 <X class="size-4" />
@@ -80,7 +82,10 @@ const handleBlur = (): void => {
                 Searching...
             </div>
 
-            <div v-else-if="results.length === 0" class="px-4 py-3 text-sm text-slate-500 dark:text-gray-400">
+            <div
+                v-else-if="results.length === 0"
+                class="px-4 py-3 text-sm text-slate-500 dark:text-gray-400"
+            >
                 No venues found
             </div>
 
@@ -95,7 +100,9 @@ const handleBlur = (): void => {
                     <div class="font-medium text-slate-900 dark:text-white">
                         {{ venue.name }}
                     </div>
-                    <div class="mt-0.5 text-sm text-slate-500 dark:text-gray-400">
+                    <div
+                        class="mt-0.5 text-sm text-slate-500 dark:text-gray-400"
+                    >
                         {{ venue.city }}
                     </div>
                 </button>

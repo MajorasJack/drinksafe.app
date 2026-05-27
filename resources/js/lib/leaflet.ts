@@ -8,7 +8,7 @@ import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 // Remove the default _getIconUrl method
- 
+
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 
 // Set the correct icon URLs

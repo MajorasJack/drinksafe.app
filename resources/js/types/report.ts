@@ -55,6 +55,7 @@ export interface ReportSubmitData {
     incident_date: string;
     time_of_day: TimeOfDay;
     description: string;
+    'cf-turnstile-response': string;
 }
 
 /**

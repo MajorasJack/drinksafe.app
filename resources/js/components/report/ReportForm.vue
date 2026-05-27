@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { AlertTriangle } from 'lucide-vue-next';
-import { ref, computed } from 'vue';
+import { usePage } from '@inertiajs/vue3';
+import { AlertTriangle, ShieldCheck } from 'lucide-vue-next';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,26 @@ import {
 } from '@/components/ui/select';
 import { TimeOfDay } from '@/types/report';
 import type { Venue } from '@/types/venue';
+
+declare global {
+    interface Window {
+        turnstile: {
+            render: (
+                container: string | HTMLElement,
+                options: {
+                    sitekey: string;
+                    callback?: (token: string) => void;
+                    'expired-callback'?: () => void;
+                    'error-callback'?: () => void;
+                    theme?: 'light' | 'dark' | 'auto';
+                },
+            ) => string;
+            reset: (widgetId: string) => void;
+            remove: (widgetId: string) => void;
+        };
+        onTurnstileLoad?: () => void;
+    }
+}
 
 interface Props {
     initialVenue?: Venue;
@@ -35,9 +56,16 @@ interface Emits {
             incident_date: string;
             time_of_day: TimeOfDay;
             description: string;
+            'cf-turnstile-response': string;
         },
     ): void;
 }
+
+// Get Turnstile site key from shared data
+const page = usePage();
+const turnstileSiteKey = computed(
+    () => (page.props.turnstile as { siteKey: string })?.siteKey ?? '',
+);
 
 const emit = defineEmits<Emits>();
 
@@ -57,6 +85,85 @@ const newVenueAddress = ref('');
 const incidentDate = ref('');
 const timeOfDay = ref<TimeOfDay>(TimeOfDay.Unknown);
 const description = ref('');
+
+// Turnstile CAPTCHA
+const turnstileToken = ref('');
+const turnstileWidgetId = ref<string | null>(null);
+const turnstileContainerId = 'turnstile-container';
+
+const loadTurnstileScript = (): Promise<void> => {
+    return new Promise((resolve) => {
+        if (window.turnstile) {
+            resolve();
+            return;
+        }
+
+        const existingScript = document.querySelector(
+            'script[src*="challenges.cloudflare.com/turnstile"]',
+        );
+        if (existingScript) {
+            window.onTurnstileLoad = () => resolve();
+            return;
+        }
+
+        window.onTurnstileLoad = () => resolve();
+
+        const script = document.createElement('script');
+        script.src =
+            'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit';
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+    });
+};
+
+const renderTurnstileWidget = (): void => {
+    if (!window.turnstile || !turnstileSiteKey.value) return;
+
+    const container = document.getElementById(turnstileContainerId);
+    if (!container) return;
+
+    // Remove existing widget if present
+    if (turnstileWidgetId.value) {
+        window.turnstile.remove(turnstileWidgetId.value);
+    }
+
+    turnstileWidgetId.value = window.turnstile.render(container, {
+        sitekey: turnstileSiteKey.value,
+        callback: (token: string) => {
+            turnstileToken.value = token;
+        },
+        'expired-callback': () => {
+            turnstileToken.value = '';
+        },
+        'error-callback': () => {
+            turnstileToken.value = '';
+        },
+        theme: 'auto',
+    });
+};
+
+// Load Turnstile script on mount
+onMounted(() => {
+    loadTurnstileScript();
+});
+
+// Render widget when step 3 becomes active
+watch(
+    () => currentStep.value,
+    async (step) => {
+        if (step === 3) {
+            await nextTick();
+            renderTurnstileWidget();
+        }
+    },
+);
+
+onUnmounted(() => {
+    if (turnstileWidgetId.value && window.turnstile) {
+        window.turnstile.remove(turnstileWidgetId.value);
+    }
+});
 
 // Validation
 const step1Valid = computed((): boolean => {
@@ -94,6 +201,18 @@ const piiDetected = computed((): boolean => {
     );
 });
 
+// Check if turnstile is verified
+const turnstileVerified = computed((): boolean => turnstileToken.value !== '');
+
+// Can submit when all validations pass
+const canSubmit = computed(
+    (): boolean =>
+        step1Valid.value &&
+        step2Valid.value &&
+        !piiDetected.value &&
+        turnstileVerified.value,
+);
+
 const timeOfDayOptions = [
     { value: TimeOfDay.Morning, label: 'Morning (6am - 12pm)' },
     { value: TimeOfDay.Afternoon, label: 'Afternoon (12pm - 6pm)' },
@@ -104,12 +223,12 @@ const timeOfDayOptions = [
 
 const nextStep = (): void => {
     if (currentStep.value === 1 && !step1Valid.value) {
-return;
-}
+        return;
+    }
 
     if (currentStep.value === 2 && !step2Valid.value) {
-return;
-}
+        return;
+    }
 
     if (currentStep.value < totalSteps) {
         currentStep.value++;
@@ -123,9 +242,9 @@ const previousStep = (): void => {
 };
 
 const handleSubmit = (): void => {
-    if (!step1Valid.value || !step2Valid.value || piiDetected.value) {
-return;
-}
+    if (!canSubmit.value) {
+        return;
+    }
 
     const data: {
         venue_uuid?: string;
@@ -137,10 +256,12 @@ return;
         incident_date: string;
         time_of_day: TimeOfDay;
         description: string;
+        'cf-turnstile-response': string;
     } = {
         incident_date: incidentDate.value,
         time_of_day: timeOfDay.value,
         description: description.value,
+        'cf-turnstile-response': turnstileToken.value,
     };
 
     if (isCreatingNewVenue.value) {
@@ -198,7 +319,9 @@ const maxDate = computed((): string => {
 
         <div class="space-y-6">
             <div v-if="currentStep === 1" class="space-y-6">
-                <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
+                <h3
+                    class="text-xl font-semibold text-slate-900 dark:text-white"
+                >
                     Select Venue
                 </h3>
 
@@ -260,7 +383,9 @@ const maxDate = computed((): string => {
             </div>
 
             <div v-else-if="currentStep === 2" class="space-y-6">
-                <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
+                <h3
+                    class="text-xl font-semibold text-slate-900 dark:text-white"
+                >
                     Incident Details
                 </h3>
 
@@ -300,7 +425,7 @@ const maxDate = computed((): string => {
                         id="description"
                         v-model="description"
                         rows="6"
-                        class="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+                        class="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
                         placeholder="Describe what happened (minimum 10 characters)..."
                     ></textarea>
                     <p class="text-xs text-slate-500 dark:text-gray-400">
@@ -328,13 +453,21 @@ const maxDate = computed((): string => {
             </div>
 
             <div v-else-if="currentStep === 3" class="space-y-6">
-                <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
+                <h3
+                    class="text-xl font-semibold text-slate-900 dark:text-white"
+                >
                     Review & Submit
                 </h3>
 
-                <div class="space-y-4 rounded-lg border p-6 dark:border-gray-700">
+                <div
+                    class="space-y-4 rounded-lg border p-6 dark:border-gray-700"
+                >
                     <div>
-                        <h4 class="font-medium text-slate-900 mb-1 dark:text-white">Venue</h4>
+                        <h4
+                            class="mb-1 font-medium text-slate-900 dark:text-white"
+                        >
+                            Venue
+                        </h4>
                         <p class="text-slate-600 dark:text-gray-300">
                             <span v-if="isCreatingNewVenue">
                                 {{ newVenueName }} - {{ newVenueCity }}
@@ -350,22 +483,36 @@ const maxDate = computed((): string => {
                     </div>
 
                     <div>
-                        <h4 class="font-medium text-slate-900 mb-1 dark:text-white">Date</h4>
-                        <p class="text-slate-600 dark:text-gray-300">{{ incidentDate }}</p>
+                        <h4
+                            class="mb-1 font-medium text-slate-900 dark:text-white"
+                        >
+                            Date
+                        </h4>
+                        <p class="text-slate-600 dark:text-gray-300">
+                            {{ incidentDate }}
+                        </p>
                     </div>
 
                     <div>
-                        <h4 class="font-medium text-slate-900 mb-1 dark:text-white">
+                        <h4
+                            class="mb-1 font-medium text-slate-900 dark:text-white"
+                        >
                             Time of Day
                         </h4>
-                        <p class="text-slate-600 dark:text-gray-300">{{ timeOfDay }}</p>
+                        <p class="text-slate-600 dark:text-gray-300">
+                            {{ timeOfDay }}
+                        </p>
                     </div>
 
                     <div>
-                        <h4 class="font-medium text-slate-900 mb-1 dark:text-white">
+                        <h4
+                            class="mb-1 font-medium text-slate-900 dark:text-white"
+                        >
                             Description
                         </h4>
-                        <p class="text-slate-600 whitespace-pre-wrap dark:text-gray-300">
+                        <p
+                            class="whitespace-pre-wrap text-slate-600 dark:text-gray-300"
+                        >
                             {{ description }}
                         </p>
                     </div>
@@ -379,10 +526,27 @@ const maxDate = computed((): string => {
                         any emails, phone numbers, or URLs.
                     </AlertDescription>
                 </Alert>
+
+                <!-- Turnstile CAPTCHA -->
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2">
+                        <ShieldCheck class="size-5 text-slate-600 dark:text-gray-400" />
+                        <span class="text-sm font-medium text-slate-700 dark:text-gray-300">
+                            Security Verification
+                        </span>
+                    </div>
+                    <div :id="turnstileContainerId" class="flex justify-center" />
+                    <Alert v-if="!turnstileVerified" variant="default" class="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950">
+                        <AlertTriangle class="size-4 text-amber-600 dark:text-amber-400" />
+                        <AlertDescription class="text-amber-700 dark:text-amber-300">
+                            Please complete the security verification above to submit your report.
+                        </AlertDescription>
+                    </Alert>
+                </div>
             </div>
         </div>
 
-        <div class="flex justify-between pt-4 border-t">
+        <div class="flex justify-between border-t pt-4">
             <Button
                 type="button"
                 variant="outline"
@@ -407,7 +571,7 @@ const maxDate = computed((): string => {
             <Button
                 v-else
                 type="button"
-                :disabled="!step1Valid || !step2Valid || piiDetected"
+                :disabled="!canSubmit"
                 @click="handleSubmit"
             >
                 Submit Report

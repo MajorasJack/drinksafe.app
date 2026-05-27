@@ -14,7 +14,9 @@ const navigationLinks = [
 </script>
 
 <template>
-    <header class="border-b border-slate-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+    <header
+        class="border-b border-slate-200 bg-white dark:border-gray-700 dark:bg-gray-800"
+    >
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="flex h-16 items-center justify-between">
                 <!-- Logo -->
@@ -40,7 +42,10 @@ const navigationLinks = [
                     class="md:hidden"
                     @click="mobileMenuOpen = !mobileMenuOpen"
                 >
-                    <Menu v-if="!mobileMenuOpen" class="size-6 text-slate-900 dark:text-white" />
+                    <Menu
+                        v-if="!mobileMenuOpen"
+                        class="size-6 text-slate-900 dark:text-white"
+                    />
                     <X v-else class="size-6 text-slate-900 dark:text-white" />
                 </button>
             </div>

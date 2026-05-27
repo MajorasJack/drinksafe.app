@@ -38,7 +38,7 @@ const hasReports = computed((): boolean => {
 
 <template>
     <AppLayout>
-        <div class="container mx-auto px-4 pt-4 pb-8 max-w-7xl">
+        <div class="container mx-auto max-w-7xl px-4 pt-4 pb-8">
             <Breadcrumb class="mb-4">
                 <BreadcrumbList>
                     <BreadcrumbItem>
@@ -66,7 +66,9 @@ const hasReports = computed((): boolean => {
             <div class="grid gap-8 lg:grid-cols-2">
                 <div class="space-y-6">
                     <div class="space-y-2">
-                        <h1 class="text-4xl font-bold text-slate-900 dark:text-white">
+                        <h1
+                            class="text-4xl font-bold text-slate-900 dark:text-white"
+                        >
                             {{ venue.name }}
                         </h1>
                         <div
@@ -75,24 +77,38 @@ const hasReports = computed((): boolean => {
                             <MapPin class="size-5" />
                             <span class="text-lg">{{ venue.city }}</span>
                         </div>
-                        <p v-if="venue.address" class="text-slate-600 dark:text-gray-100">
+                        <p
+                            v-if="venue.address"
+                            class="text-slate-600 dark:text-gray-100"
+                        >
                             {{ venue.address }}
                         </p>
                     </div>
 
-                    <Card v-if="hasReports" class="border-amber-200 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/30">
+                    <Card
+                        v-if="hasReports"
+                        class="border-amber-200 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/30"
+                    >
                         <CardContent class="py-1">
                             <div class="flex items-start gap-3">
                                 <AlertTriangle
                                     class="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400"
                                 />
                                 <div>
-                                    <p class="font-semibold text-amber-900 dark:text-white">
+                                    <p
+                                        class="font-semibold text-amber-900 dark:text-white"
+                                    >
                                         {{ venue.reports_count }}
-                                        {{ venue.reports_count === 1 ? 'report' : 'reports' }}
+                                        {{
+                                            venue.reports_count === 1
+                                                ? 'report'
+                                                : 'reports'
+                                        }}
                                         at this venue
                                     </p>
-                                    <p class="text-sm text-amber-800 dark:text-amber-50">
+                                    <p
+                                        class="text-sm text-amber-800 dark:text-amber-50"
+                                    >
                                         Review the reports below for more
                                         information about incidents at this
                                         location.
@@ -107,14 +123,16 @@ const hasReports = computed((): boolean => {
                             <CardTitle>Location</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div class="rounded-lg overflow-hidden h-64">
+                            <div class="h-64 overflow-hidden rounded-lg">
                                 <LeafletMap
                                     :center="mapCenter"
                                     :zoom="15"
                                     :venues="[venue]"
                                 />
                             </div>
-                            <div class="mt-4 space-y-1 text-sm text-slate-600 dark:text-gray-100">
+                            <div
+                                class="mt-4 space-y-1 text-sm text-slate-600 dark:text-gray-100"
+                            >
                                 <p>
                                     <strong>Coordinates:</strong>
                                     {{ venue.latitude.toFixed(6) }},
@@ -128,7 +146,7 @@ const hasReports = computed((): boolean => {
                         <CardContent class="py-1">
                             <div class="space-y-3">
                                 <div>
-                                    <h3 class="text-lg font-semibold mb-1.5">
+                                    <h3 class="mb-1.5 text-lg font-semibold">
                                         Experienced something here?
                                     </h3>
                                     <p class="text-teal-50">

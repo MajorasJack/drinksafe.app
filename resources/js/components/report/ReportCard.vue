@@ -36,10 +36,14 @@ const toggleExpanded = (): void => {
 </script>
 
 <template>
-    <Card class="transition-all hover:shadow-lg hover:border-brand-teal/20 dark:hover:border-brand-teal/30">
+    <Card
+        class="transition-all hover:border-brand-teal/20 hover:shadow-lg dark:hover:border-brand-teal/30"
+    >
         <CardHeader>
             <div class="flex items-start justify-between gap-4">
-                <div class="flex items-center gap-4 text-sm text-slate-600 dark:text-gray-100">
+                <div
+                    class="flex items-center gap-4 text-sm text-slate-600 dark:text-gray-100"
+                >
                     <div class="flex items-center gap-1.5">
                         <Calendar class="size-4" />
                         <span>{{ formattedDate }}</span>
@@ -52,13 +56,13 @@ const toggleExpanded = (): void => {
             </div>
         </CardHeader>
         <CardContent>
-            <p class="text-slate-700 dark:text-gray-50 leading-relaxed">
+            <p class="leading-relaxed text-slate-700 dark:text-gray-50">
                 {{ displayDescription }}
             </p>
             <Button
                 v-if="isDescriptionLong"
                 variant="link"
-                class="mt-2 px-0 h-auto text-brand-teal hover:text-brand-teal/80"
+                class="mt-2 h-auto px-0 text-brand-teal hover:text-brand-teal/80"
                 @click="toggleExpanded"
             >
                 {{ isExpanded ? 'Show Less' : 'Read More' }}

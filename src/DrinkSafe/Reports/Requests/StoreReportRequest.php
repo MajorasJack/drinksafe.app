@@ -6,6 +6,7 @@ namespace DrinkSafe\Reports\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use RyanChandler\LaravelCloudflareTurnstile\Rules\Turnstile;
 
 /**
  * StoreReportRequest
@@ -86,6 +87,12 @@ final class StoreReportRequest extends FormRequest
                 'min:20',
                 'max:1000',
             ],
+
+            // Turnstile CAPTCHA
+            'cf-turnstile-response' => [
+                'required',
+                new Turnstile,
+            ],
         ];
     }
 
@@ -109,6 +116,7 @@ final class StoreReportRequest extends FormRequest
             'description.max' => 'Description must not exceed 1000 characters.',
             'latitude.between' => 'Latitude must be between -90 and 90 degrees.',
             'longitude.between' => 'Longitude must be between -180 and 180 degrees.',
+            'cf-turnstile-response.required' => 'Please complete the security verification.',
         ];
     }
 

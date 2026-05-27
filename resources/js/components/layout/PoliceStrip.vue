@@ -10,7 +10,7 @@ const dismiss = (): void => {
 </script>
 
 <template>
-    <div v-if="!isDismissed" class="bg-blue-600 text-white py-2">
+    <div v-if="!isDismissed" class="bg-blue-600 py-2 text-white">
         <div
             class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4"
         >
@@ -20,7 +20,7 @@ const dismiss = (): void => {
             </p>
             <button
                 type="button"
-                class="text-white hover:text-blue-100 transition-colors"
+                class="text-white transition-colors hover:text-blue-100"
                 @click="dismiss"
             >
                 <X class="size-4" />

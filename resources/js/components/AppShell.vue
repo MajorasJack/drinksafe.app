@@ -16,7 +16,10 @@ const isOpen = usePage().props.sidebarOpen;
 
 <template>
     <SidebarProvider :default-open="isOpen">
-        <div v-if="variant === 'header'" class="flex min-h-screen w-full flex-col">
+        <div
+            v-if="variant === 'header'"
+            class="flex min-h-screen w-full flex-col"
+        >
             <slot />
         </div>
         <template v-else>

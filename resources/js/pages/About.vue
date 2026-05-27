@@ -6,13 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 <template>
     <AppLayout>
-        <div class="container mx-auto px-4 py-12 max-w-4xl">
+        <div class="container mx-auto max-w-4xl px-4 py-12">
             <div class="space-y-12">
-                <div class="text-center space-y-4">
-                    <h1 class="text-4xl font-bold text-slate-900 dark:text-white">
+                <div class="space-y-4 text-center">
+                    <h1
+                        class="text-4xl font-bold text-slate-900 dark:text-white"
+                    >
                         About Drink Safe
                     </h1>
-                    <p class="text-xl text-slate-600 max-w-2xl mx-auto dark:text-gray-300">
+                    <p
+                        class="mx-auto max-w-2xl text-xl text-slate-600 dark:text-gray-300"
+                    >
                         Empowering communities to stay informed and make safer
                         decisions about nightlife venues.
                     </p>
@@ -25,11 +29,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                             <CardTitle>Our Mission</CardTitle>
                         </div>
                     </CardHeader>
-                    <CardContent class="space-y-4 text-slate-700 dark:text-gray-300">
+                    <CardContent
+                        class="space-y-4 text-slate-700 dark:text-gray-300"
+                    >
                         <p>
-                            Drink Safe was created to address the serious issue of
-                            drink spiking in nightlife venues. We believe that
-                            by sharing information anonymously, we can help
+                            Drink Safe was created to address the serious issue
+                            of drink spiking in nightlife venues. We believe
+                            that by sharing information anonymously, we can help
                             people make more informed decisions about where they
                             choose to spend their time.
                         </p>
@@ -43,22 +49,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                 </Card>
 
                 <div class="space-y-6">
-                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white">
+                    <h2
+                        class="text-2xl font-bold text-slate-900 dark:text-white"
+                    >
                         How to Use Drink Safe
                     </h2>
 
                     <div class="grid gap-6 md:grid-cols-3">
                         <Card>
-                            <CardContent class="pt-6 space-y-3">
+                            <CardContent class="space-y-3 pt-6">
                                 <div
                                     class="flex size-12 items-center justify-center rounded-full bg-brand-teal/10"
                                 >
                                     <Search class="size-6 text-brand-teal" />
                                 </div>
-                                <h3 class="font-semibold text-slate-900 dark:text-white">
+                                <h3
+                                    class="font-semibold text-slate-900 dark:text-white"
+                                >
                                     Search Venues
                                 </h3>
-                                <p class="text-sm text-slate-600 dark:text-gray-300">
+                                <p
+                                    class="text-sm text-slate-600 dark:text-gray-300"
+                                >
                                     Use our search tool to find venues and see
                                     if any incidents have been reported.
                                 </p>
@@ -66,16 +78,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                         </Card>
 
                         <Card>
-                            <CardContent class="pt-6 space-y-3">
+                            <CardContent class="space-y-3 pt-6">
                                 <div
                                     class="flex size-12 items-center justify-center rounded-full bg-brand-teal/10"
                                 >
                                     <MapPin class="size-6 text-brand-teal" />
                                 </div>
-                                <h3 class="font-semibold text-slate-900 dark:text-white">
+                                <h3
+                                    class="font-semibold text-slate-900 dark:text-white"
+                                >
                                     View on Map
                                 </h3>
-                                <p class="text-sm text-slate-600 dark:text-gray-300">
+                                <p
+                                    class="text-sm text-slate-600 dark:text-gray-300"
+                                >
                                     Browse venues on an interactive map to see
                                     reported incidents in your area.
                                 </p>
@@ -83,7 +99,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                         </Card>
 
                         <Card>
-                            <CardContent class="pt-6 space-y-3">
+                            <CardContent class="space-y-3 pt-6">
                                 <div
                                     class="flex size-12 items-center justify-center rounded-full bg-brand-teal/10"
                                 >
@@ -91,10 +107,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                                         class="size-6 text-brand-teal"
                                     />
                                 </div>
-                                <h3 class="font-semibold text-slate-900 dark:text-white">
+                                <h3
+                                    class="font-semibold text-slate-900 dark:text-white"
+                                >
                                     Report Incidents
                                 </h3>
-                                <p class="text-sm text-slate-600 dark:text-gray-300">
+                                <p
+                                    class="text-sm text-slate-600 dark:text-gray-300"
+                                >
                                     Submit anonymous reports about incidents
                                     you've experienced or witnessed.
                                 </p>
@@ -103,16 +123,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                     </div>
                 </div>
 
-                <Card class="border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-900/20">
+                <Card
+                    class="border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-900/20"
+                >
                     <CardHeader>
                         <div class="flex items-center gap-3">
-                            <AlertTriangle class="size-6 text-amber-600 dark:text-amber-400" />
-                            <CardTitle class="text-amber-900 dark:text-amber-200">
+                            <AlertTriangle
+                                class="size-6 text-amber-600 dark:text-amber-400"
+                            />
+                            <CardTitle
+                                class="text-amber-900 dark:text-amber-200"
+                            >
                                 Important Safety Information
                             </CardTitle>
                         </div>
                     </CardHeader>
-                    <CardContent class="space-y-4 text-amber-900 dark:text-amber-300">
+                    <CardContent
+                        class="space-y-4 text-amber-900 dark:text-amber-300"
+                    >
                         <p>
                             Drink Safe is an
                             <strong>informational platform only</strong>. It is
@@ -126,7 +154,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                         </p>
                         <div class="space-y-2">
                             <p class="font-semibold">Emergency Services:</p>
-                            <ul class="list-disc list-inside space-y-1">
+                            <ul class="list-inside list-disc space-y-1">
                                 <li>UK Emergency: 999</li>
                                 <li>UK Non-Emergency: 101</li>
                                 <li>Crimestoppers (Anonymous): 0800 555 111</li>
@@ -136,12 +164,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                 </Card>
 
                 <div class="space-y-6">
-                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white">
+                    <h2
+                        class="text-2xl font-bold text-slate-900 dark:text-white"
+                    >
                         Staying Safe
                     </h2>
 
                     <Card>
-                        <CardContent class="pt-6 space-y-4 text-slate-700 dark:text-gray-300">
+                        <CardContent
+                            class="space-y-4 pt-6 text-slate-700 dark:text-gray-300"
+                        >
                             <ul class="space-y-3">
                                 <li class="flex gap-3">
                                     <span
@@ -205,14 +237,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                 </div>
 
                 <div class="space-y-6">
-                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white">
+                    <h2
+                        class="text-2xl font-bold text-slate-900 dark:text-white"
+                    >
                         Resources & Support
                     </h2>
 
                     <Card>
-                        <CardContent class="pt-6 space-y-4 text-slate-700 dark:text-gray-300">
+                        <CardContent
+                            class="space-y-4 pt-6 text-slate-700 dark:text-gray-300"
+                        >
                             <div>
-                                <h3 class="font-semibold mb-2 dark:text-white">
+                                <h3 class="mb-2 font-semibold dark:text-white">
                                     Drink Spiking Support
                                 </h3>
                                 <ul class="space-y-2 text-sm">
@@ -222,7 +258,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                                             href="https://www.stampoutspiking.org"
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            class="text-brand-teal hover:underline ml-1 dark:text-blue-400 dark:hover:text-blue-300"
+                                            class="ml-1 text-brand-teal hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                                         >
                                             stampoutspiking.org
                                         </a>
@@ -237,7 +273,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                             </div>
 
                             <div>
-                                <h3 class="font-semibold mb-2 dark:text-white">
+                                <h3 class="mb-2 font-semibold dark:text-white">
                                     Sexual Assault Support
                                 </h3>
                                 <ul class="space-y-2 text-sm">
@@ -257,7 +293,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                             </div>
 
                             <div>
-                                <h3 class="font-semibold mb-2 dark:text-white">
+                                <h3 class="mb-2 font-semibold dark:text-white">
                                     Mental Health Support
                                 </h3>
                                 <ul class="space-y-2 text-sm">
@@ -278,13 +314,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                 </div>
 
                 <Card class="bg-slate-50 dark:bg-gray-800">
-                    <CardContent class="pt-6 text-center space-y-4">
+                    <CardContent class="space-y-4 pt-6 text-center">
                         <p class="text-slate-700 dark:text-gray-300">
                             Have questions or feedback about Drink Safe?
                         </p>
                         <p class="text-sm text-slate-600 dark:text-gray-400">
-                            Drink Safe is a community-driven platform dedicated to
-                            keeping people informed and safe.
+                            Drink Safe is a community-driven platform dedicated
+                            to keeping people informed and safe.
                         </p>
                     </CardContent>
                 </Card>

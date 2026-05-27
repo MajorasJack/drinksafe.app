@@ -7,7 +7,12 @@
 import axios from 'axios';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import type { Report, ReportFilters, ReportSubmitData, TimeOfDay } from '@/types';
+import type {
+    Report,
+    ReportFilters,
+    ReportSubmitData,
+    TimeOfDay,
+} from '@/types';
 
 export const useReportStore = defineStore('report', () => {
     // State
