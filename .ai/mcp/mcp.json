@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "laravel-boost": {
+      "command": "php",
+      "args": [
+        "/path/to/drinksafe.app/artisan",
+        "boost:mcp"
+      ]
+    }
+  }
+}
