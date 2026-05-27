@@ -4,6 +4,8 @@
  * These types match the backend ReportResource and TimeOfDay enum.
  */
 
+import type { Venue } from './venue';
+
 /**
  * Time of day enum matching backend DrinkSafe\Reports\Enums\TimeOfDay
  */
@@ -25,7 +27,7 @@ export interface Report {
     time_of_day: TimeOfDay;
     description: string;
     formatted_date: string;
-    venue?: import('./venue').Venue;
+    venue?: Venue;
     created_at: string;
 }
 

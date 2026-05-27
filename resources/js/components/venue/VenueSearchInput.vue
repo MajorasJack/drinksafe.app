@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
 import { Search, X } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
 import Input from '@/components/ui/input/Input.vue';
 import { useSearch } from '@/composables/useSearch';
 import type { Venue } from '@/types/venue';

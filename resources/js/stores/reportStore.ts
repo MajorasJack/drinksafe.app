@@ -4,10 +4,9 @@
  * Manages report state and provides actions for fetching and submitting reports.
  */
 
-import { computed, ref } from 'vue';
-import type { Ref } from 'vue';
-import { defineStore } from 'pinia';
 import axios from 'axios';
+import { defineStore } from 'pinia';
+import { computed, ref } from 'vue';
 import type { Report, ReportFilters, ReportSubmitData, TimeOfDay } from '@/types';
 
 export const useReportStore = defineStore('report', () => {
@@ -105,6 +104,7 @@ export const useReportStore = defineStore('report', () => {
             error.value =
                 err instanceof Error ? err.message : 'Failed to submit report';
             console.error('Failed to submit report:', err);
+
             throw err;
         } finally {
             loading.value = false;

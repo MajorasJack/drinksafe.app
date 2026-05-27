@@ -4,9 +4,8 @@
  * Provides Leaflet map functionality for displaying venues.
  */
 
-import { ref } from 'vue';
-import type { Ref } from 'vue';
 import L from 'leaflet';
+import { ref } from 'vue';
 import type { Venue } from '@/types';
 
 export function useMap() {
@@ -68,6 +67,7 @@ export function useMap() {
                 (map.value as L.Map).removeLayer(marker as unknown as L.Layer);
             });
         }
+
         markers.value = [];
     }
 

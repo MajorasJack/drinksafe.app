@@ -5,9 +5,8 @@
  */
 
 import { computed, ref } from 'vue';
-import type { Ref } from 'vue';
-import type { ReportFilters } from '@/types';
 import { useReportStore } from '@/stores/reportStore';
+import type { ReportFilters } from '@/types';
 
 export function useFilters() {
     const store = useReportStore();

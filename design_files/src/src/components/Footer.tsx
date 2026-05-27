@@ -1,6 +1,6 @@
+import { ShieldIcon } from 'lucide-react';
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldIcon } from 'lucide-react';
 export const Footer: React.FC = () => {
   return (
     <footer className="bg-slate-900 text-slate-300 py-12 mt-auto">

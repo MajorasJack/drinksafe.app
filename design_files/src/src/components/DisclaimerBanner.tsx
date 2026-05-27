@@ -1,5 +1,5 @@
-import React from 'react';
 import { InfoIcon } from 'lucide-react';
+import React from 'react';
 interface DisclaimerBannerProps {
   className?: string;
 }

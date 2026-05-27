@@ -4,9 +4,8 @@
  * Provides debounced search functionality for venues.
  */
 
-import { ref } from 'vue';
-import type { Ref } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
+import { ref } from 'vue';
 import { useVenueStore } from '@/stores/venueStore';
 
 export function useSearch() {
@@ -19,6 +18,7 @@ export function useSearch() {
     const performSearch = async (searchQuery: string): Promise<void> => {
         if (!searchQuery.trim()) {
             results.value = [];
+
             return;
         }
 

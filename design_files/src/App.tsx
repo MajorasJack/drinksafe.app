@@ -1,13 +1,13 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { ReportProvider } from './src/context/ReportContext';
 import { Layout } from './src/components/Layout';
+import { ReportProvider } from './src/context/ReportContext';
+import { About } from './src/pages/About';
 import { Home } from './src/pages/Home';
 import { MapPage } from './src/pages/MapPage';
-import { VenueDetail } from './src/pages/VenueDetail';
 import { SubmitReport } from './src/pages/SubmitReport';
-import { About } from './src/pages/About';
+import { VenueDetail } from './src/pages/VenueDetail';
 export function App() {
   return (
     <ReportProvider>

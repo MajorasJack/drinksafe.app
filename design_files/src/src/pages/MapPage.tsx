@@ -1,8 +1,6 @@
-import React, { useEffect, useMemo, useState, Component } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import { Link } from 'react-router-dom';
+import { formatDistanceToNow, isAfter, subDays, subMonths } from 'date-fns';
 import { motion } from 'framer-motion';
+import L from 'leaflet';
 import {
   SearchIcon,
   FilterIcon,
@@ -10,8 +8,10 @@ import {
   ClockIcon,
   ChevronRightIcon } from
 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { Link } from 'react-router-dom';
 import { useReports } from '../context/ReportContext';
-import { formatDistanceToNow, isAfter, subDays, subMonths } from 'date-fns';
 // Custom Map Marker Icon
 const customIcon = L.divIcon({
   className: 'custom-marker',
@@ -30,6 +30,7 @@ const MapUpdater: React.FC<{
   useEffect(() => {
     map.setView(center, map.getZoom());
   }, [center, map]);
+
   return null;
 };
 export const MapPage: React.FC = () => {
@@ -38,6 +39,7 @@ export const MapPage: React.FC = () => {
   const [isMobileListOpen, setIsMobileListOpen] = useState(false);
   const filteredReports = useMemo(() => {
     let filtered = populatedReports;
+
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -47,8 +49,10 @@ export const MapPage: React.FC = () => {
         r.venue.city.toLowerCase().includes(query)
       );
     }
+
     // Date filter
     const now = new Date();
+
     if (dateFilter === '7days') {
       filtered = filtered.filter((r) =>
       isAfter(new Date(r.date), subDays(now, 7))
@@ -62,11 +66,13 @@ export const MapPage: React.FC = () => {
       isAfter(new Date(r.date), subMonths(now, 6))
       );
     }
+
     return filtered;
   }, [populatedReports, searchQuery, dateFilter]);
   // Get unique venues from filtered reports to show on map
   const activeVenues = useMemo(() => {
     const venueIds = new Set(filteredReports.map((r) => r.venueId));
+
     return venues.filter((v) => venueIds.has(v.id));
   }, [filteredReports, venues]);
   // Default center (UK)
@@ -74,6 +80,7 @@ export const MapPage: React.FC = () => {
   activeVenues.length > 0 ?
   [activeVenues[0].lat, activeVenues[0].lng] :
   [53.4808, -2.2426]; // Manchester default
+
   return (
     <motion.div
       initial={{
@@ -199,6 +206,7 @@ export const MapPage: React.FC = () => {
             const venueReports = filteredReports.filter(
               (r) => r.venueId === venue.id
             );
+
             return (
               <Marker
                 key={venue.id}

@@ -4,10 +4,9 @@
  * Manages venue state and provides actions for fetching and searching venues.
  */
 
-import { computed, ref } from 'vue';
-import type { Ref } from 'vue';
-import { defineStore } from 'pinia';
 import axios from 'axios';
+import { defineStore } from 'pinia';
+import { computed, ref } from 'vue';
 import type { Venue, VenueFilters } from '@/types';
 
 export const useVenueStore = defineStore('venue', () => {

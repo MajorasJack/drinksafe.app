@@ -1,6 +1,6 @@
+import { ShieldIcon, MenuIcon, XIcon } from 'lucide-react';
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShieldIcon, MenuIcon, XIcon } from 'lucide-react';
 export const Header: React.FC = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -23,9 +23,13 @@ export const Header: React.FC = () => {
   }];
 
   const isActive = (path: string) => {
-    if (path === '/' && location.pathname !== '/') return false;
+    if (path === '/' && location.pathname !== '/') {
+return false;
+}
+
     return location.pathname.startsWith(path);
   };
+
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

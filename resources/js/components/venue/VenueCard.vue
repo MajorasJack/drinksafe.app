@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { MapPin } from 'lucide-vue-next';
+import { computed } from 'vue';
 import Card from '@/components/ui/card/Card.vue';
 import type { Venue } from '@/types/venue';
 
@@ -13,6 +13,7 @@ const props = defineProps<Props>();
 
 const reportsText = computed(() => {
     const count = props.venue.reports_count ?? 0;
+
     return count === 1 ? '1 report' : `${count} reports`;
 });
 </script>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import PoliceStrip from './PoliceStrip.vue';
-import AppHeader from './AppHeader.vue';
 import AppFooter from './AppFooter.vue';
+import AppHeader from './AppHeader.vue';
+import PoliceStrip from './PoliceStrip.vue';
 </script>
 
 <template>
