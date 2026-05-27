@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use RyanChandler\LaravelCloudflareTurnstile\Facades\Turnstile;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -52,12 +53,14 @@ describe('SubmitReportController', function (): void {
 
     describe('store', function (): void {
         it('submits report and redirects to venue detail', function (): void {
+            Turnstile::fake();
             $venue = Venue::factory()->create();
             $data = [
                 'venue_uuid' => $venue->uuid,
                 'incident_date' => now()->subDays(2)->toDateString(),
                 'time_of_day' => 'Evening',
                 'description' => fake()->paragraph(),
+                'cf-turnstile-response' => 'test-token',
             ];
 
             $response = $this->post(route('reports.store'), $data);
@@ -78,11 +81,13 @@ describe('SubmitReportController', function (): void {
         });
 
         it('redirects back with error when venue not found', function (): void {
+            Turnstile::fake();
             $data = [
                 'venue_uuid' => 'non-existent-uuid',
                 'incident_date' => now()->toDateString(),
                 'time_of_day' => 'Morning',
                 'description' => fake()->paragraph(),
+                'cf-turnstile-response' => 'test-token',
             ];
 
             $response = $this->post(route('reports.store'), $data);
@@ -91,6 +96,7 @@ describe('SubmitReportController', function (): void {
         });
 
         it('stores report with valid incident date', function (): void {
+            Turnstile::fake();
             $venue = Venue::factory()->create();
             $incidentDate = now()->subDays(5);
             $data = [
@@ -98,6 +104,7 @@ describe('SubmitReportController', function (): void {
                 'incident_date' => $incidentDate->toDateString(),
                 'time_of_day' => 'Night',
                 'description' => fake()->paragraph(),
+                'cf-turnstile-response' => 'test-token',
             ];
 
             $response = $this->post(route('reports.store'), $data);
@@ -113,12 +120,14 @@ describe('SubmitReportController', function (): void {
         });
 
         it('validates time of day is valid enum value', function (): void {
+            Turnstile::fake();
             $venue = Venue::factory()->create();
             $data = [
                 'venue_uuid' => $venue->uuid,
                 'incident_date' => now()->toDateString(),
                 'time_of_day' => 'InvalidTime',
                 'description' => fake()->paragraph(),
+                'cf-turnstile-response' => 'test-token',
             ];
 
             $response = $this->post(route('reports.store'), $data);
@@ -127,11 +136,13 @@ describe('SubmitReportController', function (): void {
         });
 
         it('requires description field', function (): void {
+            Turnstile::fake();
             $venue = Venue::factory()->create();
             $data = [
                 'venue_uuid' => $venue->uuid,
                 'incident_date' => now()->toDateString(),
                 'time_of_day' => 'Afternoon',
+                'cf-turnstile-response' => 'test-token',
             ];
 
             $response = $this->post(route('reports.store'), $data);

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
+use DrinkSafe\Venues\Commands\FetchVenuesCommand;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -25,6 +26,19 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->loadDrinkSafeMigrations();
+        $this->registerCommands();
+    }
+
+    /**
+     * Register DrinkSafe module commands.
+     */
+    protected function registerCommands(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                FetchVenuesCommand::class,
+            ]);
+        }
     }
 
     /**

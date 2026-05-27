@@ -5,6 +5,7 @@ declare(strict_types=1);
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use RyanChandler\LaravelCloudflareTurnstile\Facades\Turnstile;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -198,12 +199,14 @@ describe('ReportController show', function (): void {
 describe('ReportController store', function (): void {
     it('creates report with existing venue', function (): void {
         // Arrange
+        Turnstile::fake();
         $venue = Venue::factory()->create();
         $data = [
             'venue_uuid' => $venue->uuid,
             'incident_date' => now()->subDays(1)->toDateString(),
             'time_of_day' => 'Night',
             'description' => 'Felt dizzy and disoriented after finishing my drink. Had to leave early.',
+            'cf-turnstile-response' => 'test-token',
         ];
 
         // Act
@@ -238,6 +241,7 @@ describe('ReportController store', function (): void {
 
     it('creates report and new venue when venue name and city provided', function (): void {
         // Arrange
+        Turnstile::fake();
         $data = [
             'venue_name' => 'The Testing Venue',
             'venue_city' => 'London',
@@ -247,6 +251,7 @@ describe('ReportController store', function (): void {
             'incident_date' => now()->subDays(2)->toDateString(),
             'time_of_day' => 'Evening',
             'description' => 'My friend became suddenly very unwell after one drink. We had to call for help.',
+            'cf-turnstile-response' => 'test-token',
         ];
 
         // Act
@@ -267,6 +272,7 @@ describe('ReportController store', function (): void {
 
     it('uses existing venue when name and city match', function (): void {
         // Arrange
+        Turnstile::fake();
         $existingVenue = Venue::factory()->create([
             'name' => 'The Duplicate Venue',
             'city' => 'Manchester',
@@ -278,6 +284,7 @@ describe('ReportController store', function (): void {
             'incident_date' => now()->subDays(1)->toDateString(),
             'time_of_day' => 'Night',
             'description' => 'Noticed my drink tasted strange and felt effects that were unusual for the amount consumed.',
+            'cf-turnstile-response' => 'test-token',
         ];
 
         // Act
