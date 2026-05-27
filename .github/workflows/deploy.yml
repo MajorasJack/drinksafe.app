@@ -40,7 +40,8 @@ jobs:
           REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
           REMOTE_USER: ${{ secrets.DEPLOY_USER }}
           TARGET: ${{ secrets.DEPLOY_PATH }}
-          EXCLUDE: ".git, .github, node_modules, .env, storage/logs/*, storage/framework/cache/*, tests"
+          ARGS: "--no-group --no-owner"
+          EXCLUDE: ".git, .github, node_modules, .env, storage/logs/*, storage/framework/cache/*, storage/framework/sessions/*, storage/framework/views/*, bootstrap/cache/*, tests"
 
       - name: Run post-deploy commands
         uses: appleboy/ssh-action@v1
