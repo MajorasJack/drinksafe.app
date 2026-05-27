@@ -64,7 +64,10 @@ const hasFilteredReports = computed((): boolean => {
 
 <template>
     <div class="space-y-6">
-        <div v-if="hasReports || loading" class="flex items-center justify-between">
+        <div
+            v-if="hasReports || loading"
+            class="flex items-center justify-between"
+        >
             <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
                 Reports
                 <span class="text-slate-500 dark:text-gray-400">
@@ -102,9 +105,13 @@ const hasFilteredReports = computed((): boolean => {
             </div>
         </div>
 
-        <div v-else-if="!hasReports" class="text-center py-12">
-            <AlertCircle class="size-12 mx-auto text-slate-400 dark:text-gray-500 mb-4" />
-            <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+        <div v-else-if="!hasReports" class="py-12 text-center">
+            <AlertCircle
+                class="mx-auto mb-4 size-12 text-slate-400 dark:text-gray-500"
+            />
+            <h3
+                class="mb-2 text-lg font-semibold text-slate-900 dark:text-white"
+            >
                 No Reports Yet
             </h3>
             <p class="text-slate-600 dark:text-gray-300">
@@ -112,12 +119,13 @@ const hasFilteredReports = computed((): boolean => {
             </p>
         </div>
 
-        <div
-            v-else-if="!hasFilteredReports"
-            class="text-center py-12"
-        >
-            <AlertCircle class="size-12 mx-auto text-slate-400 dark:text-gray-500 mb-4" />
-            <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+        <div v-else-if="!hasFilteredReports" class="py-12 text-center">
+            <AlertCircle
+                class="mx-auto mb-4 size-12 text-slate-400 dark:text-gray-500"
+            />
+            <h3
+                class="mb-2 text-lg font-semibold text-slate-900 dark:text-white"
+            >
                 No Reports Found
             </h3>
             <p class="text-slate-600 dark:text-gray-300">
