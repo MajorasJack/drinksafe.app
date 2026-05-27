@@ -6,11 +6,78 @@ namespace Database\Seeders\DrinkSafe;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 final class VenueSeeder extends Seeder
 {
+    /**
+     * Path to the cached venues JSON file.
+     */
+    private const string VENUES_JSON_PATH = 'seeders/data/venues.json';
+
     public function run(): void
+    {
+        $jsonPath = database_path(self::VENUES_JSON_PATH);
+
+        if (File::exists($jsonPath)) {
+            $this->seedFromJson($jsonPath);
+
+            return;
+        }
+
+        $this->command->warn('No cached venue data found. Run "php artisan venues:fetch" first for real data.');
+        $this->command->info('Falling back to generated venue data...');
+
+        $this->seedGenerated();
+    }
+
+    /**
+     * Seed venues from the cached JSON file.
+     */
+    private function seedFromJson(string $jsonPath): void
+    {
+        $data = json_decode(File::get($jsonPath), true);
+        $venues = $data['venues'] ?? [];
+
+        if ($venues === []) {
+            $this->command->error('Venues JSON file is empty or malformed.');
+
+            return;
+        }
+
+        $now = now();
+        $insertData = [];
+
+        foreach ($venues as $venue) {
+            $insertData[] = [
+                'uuid' => Str::uuid()->toString(),
+                'name' => $venue['name'],
+                'city' => $venue['city'],
+                'address' => $venue['address'],
+                'latitude' => $venue['latitude'],
+                'longitude' => $venue['longitude'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        // Insert in chunks to avoid memory issues
+        foreach (array_chunk($insertData, 100) as $chunk) {
+            DB::table('venues')->insert($chunk);
+        }
+
+        $this->command->info(sprintf(
+            'Seeded %d real venues from OpenStreetMap (fetched: %s)',
+            count($insertData),
+            $data['fetched_at'] ?? 'unknown'
+        ));
+    }
+
+    /**
+     * Seed venues with generated data (fallback).
+     */
+    private function seedGenerated(): void
     {
         $cities = [
             'London' => ['lat' => 51.5074, 'lng' => -0.1278],
@@ -97,6 +164,6 @@ final class VenueSeeder extends Seeder
 
         DB::table('venues')->insert($venues);
 
-        $this->command->info(sprintf('Seeded %d venues across %d cities', count($venues), count($cities)));
+        $this->command->info(sprintf('Seeded %d generated venues across %d cities', count($venues), count($cities)));
     }
 }
