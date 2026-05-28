@@ -3,9 +3,12 @@
 use DrinkSafe\Reports\Controllers\SubmitReportController;
 use DrinkSafe\Shared\Controllers\AboutController;
 use DrinkSafe\Shared\Controllers\AnalyticsController;
+use DrinkSafe\Shared\Controllers\ContactController;
 use DrinkSafe\Shared\Controllers\HomeController;
 use DrinkSafe\Shared\Controllers\MapController;
+use DrinkSafe\Shared\Controllers\PrivacyController;
 use DrinkSafe\Shared\Controllers\SupportController;
+use DrinkSafe\Shared\Controllers\TermsController;
 use DrinkSafe\Venues\Controllers\VenueDetailController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -26,6 +29,9 @@ Route::get('/venues/{venue}', VenueDetailController::class)->name('venues.show')
 Route::get('/about', AboutController::class)->name('about');
 Route::get('/support', SupportController::class)->name('support');
 Route::get('/analytics', AnalyticsController::class)->name('analytics');
+Route::get('/privacy', PrivacyController::class)->name('privacy');
+Route::get('/terms', TermsController::class)->name('terms');
+Route::get('/contact', ContactController::class)->name('contact');
 
 Route::get('/submit-report', [SubmitReportController::class, 'create'])->name('reports.create');
 Route::post('/submit-report', [SubmitReportController::class, 'store'])->name('reports.store');
