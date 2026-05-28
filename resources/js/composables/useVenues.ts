@@ -24,6 +24,7 @@ export function useVenues() {
         // Actions
         fetchVenues: store.fetchVenues,
         fetchVenueById: store.fetchVenueById,
+        fetchVenuesByBounds: store.fetchVenuesByBounds,
         searchVenues: store.searchVenues,
         clearError: store.clearError,
     };

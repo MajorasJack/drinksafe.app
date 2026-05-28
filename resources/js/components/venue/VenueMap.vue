@@ -12,6 +12,7 @@ interface Props {
 
 interface Emits {
     (e: 'venue-click', venue: Venue): void;
+    (e: 'bounds-change', bounds: string): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -38,6 +39,10 @@ const handleMarkerClick = (venue: Venue): void => {
     emit('venue-click', venue);
 };
 
+const handleBoundsChange = (bounds: string): void => {
+    emit('bounds-change', bounds);
+};
+
 // Debug venues
 watchEffect(() => {
     console.log('VenueMap - Venues prop:', props.venues);
@@ -52,6 +57,7 @@ watchEffect(() => {
             :zoom="zoom"
             :venues="venues"
             @marker-click="handleMarkerClick"
+            @bounds-change="handleBoundsChange"
         />
     </div>
 </template>

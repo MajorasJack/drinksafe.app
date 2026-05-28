@@ -35,6 +35,7 @@ use Illuminate\Support\Carbon;
  * @method static VenueFactory factory($count = null, $state = [])
  * @method static Builder|Venue nearby(float $latitude, float $longitude, int $radiusKm)
  * @method static Builder|Venue inCity(string $city)
+ * @method static Builder|Venue inBounds(float $swLat, float $swLng, float $neLat, float $neLng)
  * @method static Builder|Venue search(string $term)
  */
 final class Venue extends Model
@@ -97,7 +98,12 @@ final class Venue extends Model
     /**
      * Scope a query to find venues within a specific radius of coordinates.
      *
-     * Uses Haversine formula to calculate distance in kilometres.
+     * Uses bounding box pre-filtering to enable index usage, followed by
+     * Haversine formula for precise distance calculation.
+     *
+     * The bounding box approach reduces the candidate set before applying
+     * expensive trigonometric calculations, enabling the idx_venues_location
+     * index to filter candidates first.
      *
      * @param  Builder<Venue>  $query
      * @param  float  $latitude  Centre point latitude
@@ -107,14 +113,34 @@ final class Venue extends Model
      */
     public function scopeNearby(Builder $query, float $latitude, float $longitude, int $radiusKm): Builder
     {
-        // Haversine formula to calculate distance
+        // Calculate bounding box deltas for pre-filtering
+        // 1 degree latitude = approximately 111 km
+        $latDelta = $radiusKm / 111.0;
+
+        // 1 degree longitude varies by latitude (smaller near poles)
+        // At the equator: 111 km, at latitude θ: 111 * cos(θ) km
+        $lngDelta = $radiusKm / (111.0 * cos(deg2rad($latitude)));
+
+        // Calculate bounding box boundaries
+        $minLat = $latitude - $latDelta;
+        $maxLat = $latitude + $latDelta;
+        $minLng = $longitude - $lngDelta;
+        $maxLng = $longitude + $lngDelta;
+
+        // Apply bounding box filter first (uses idx_venues_location index)
+        // Then apply precise Haversine formula on reduced candidate set
         // Earth radius = 6371 km
-        // Using whereRaw instead of havingRaw for SQLite compatibility
-        return $query->selectRaw(
-            '*, ( 6371 * acos( cos( radians(?) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( latitude ) ) ) ) AS distance',
-            [$latitude, $longitude, $latitude]
-        )
-            ->whereRaw('( 6371 * acos( cos( radians(?) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( latitude ) ) ) ) <= ?', [$latitude, $longitude, $latitude, $radiusKm])
+        return $query
+            ->whereBetween('latitude', [$minLat, $maxLat])
+            ->whereBetween('longitude', [$minLng, $maxLng])
+            ->selectRaw(
+                '*, ( 6371 * acos( cos( radians(?) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( latitude ) ) ) ) AS distance',
+                [$latitude, $longitude, $latitude]
+            )
+            ->whereRaw(
+                '( 6371 * acos( cos( radians(?) ) * cos( radians( latitude ) ) * cos( radians( longitude ) - radians(?) ) + sin( radians(?) ) * sin( radians( latitude ) ) ) ) <= ?',
+                [$latitude, $longitude, $latitude, $radiusKm]
+            )
             ->orderBy('distance');
     }
 
@@ -128,6 +154,26 @@ final class Venue extends Model
     public function scopeInCity(Builder $query, string $city): Builder
     {
         return $query->where('city', '=', $city);
+    }
+
+    /**
+     * Scope a query to filter venues within geographic bounds.
+     *
+     * Uses whereBetween for efficient index usage (idx_venues_location).
+     * Bounds are defined by southwest and northeast corner coordinates.
+     *
+     * @param  Builder<Venue>  $query
+     * @param  float  $swLat  Southwest corner latitude
+     * @param  float  $swLng  Southwest corner longitude
+     * @param  float  $neLat  Northeast corner latitude
+     * @param  float  $neLng  Northeast corner longitude
+     * @return Builder<Venue>
+     */
+    public function scopeInBounds(Builder $query, float $swLat, float $swLng, float $neLat, float $neLng): Builder
+    {
+        return $query
+            ->whereBetween('latitude', [$swLat, $neLat])
+            ->whereBetween('longitude', [$swLng, $neLng]);
     }
 
     /**

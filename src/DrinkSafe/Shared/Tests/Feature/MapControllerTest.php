@@ -24,7 +24,7 @@ describe('MapController', function (): void {
         );
     });
 
-    it('renders map page with venues', function (): void {
+    it('renders map page with empty venues for viewport loading', function (): void {
         Venue::factory()->count(5)->create();
 
         $response = $this->get(route('map'));
@@ -32,7 +32,26 @@ describe('MapController', function (): void {
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
             ->component('Map')
-            ->has('venues', 5)
+            ->has('venues', 0)
+        );
+    });
+
+    it('renders map page with venues when bounds provided', function (): void {
+        Venue::factory()->count(3)->create([
+            'latitude' => 51.5,
+            'longitude' => -0.1,
+        ]);
+        Venue::factory()->count(2)->create([
+            'latitude' => 55.0,
+            'longitude' => 2.0,
+        ]);
+
+        $response = $this->get(route('map', ['bounds' => '51.0,-0.5,52.0,0.5']));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Map')
+            ->has('venues', 3)
             ->has('venues.0.uuid')
             ->has('venues.0.name')
             ->has('venues.0.latitude')
@@ -66,7 +85,7 @@ describe('MapController', function (): void {
         );
     });
 
-    it('shows all venues when city filter not provided', function (): void {
+    it('returns empty venues for viewport loading when no filters provided', function (): void {
         Venue::factory()->count(3)->create(['city' => 'London']);
         Venue::factory()->count(2)->create(['city' => 'Manchester']);
 
@@ -75,7 +94,7 @@ describe('MapController', function (): void {
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
             ->component('Map')
-            ->has('venues', 5)
+            ->has('venues', 0)
         );
     });
 });

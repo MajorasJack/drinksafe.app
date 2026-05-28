@@ -31,6 +31,28 @@ describe('VenueService', function (): void {
             expect($venues)->toHaveCount(1)
                 ->and($venues->first()->reports_count)->toBe(3);
         });
+
+        it('respects optional limit parameter', function (): void {
+            // Arrange
+            VenueFactory::new()->count(10)->create();
+
+            // Act
+            $venues = $this->service->getAllVenues(5);
+
+            // Assert
+            expect($venues)->toHaveCount(5);
+        });
+
+        it('returns all venues when limit is null', function (): void {
+            // Arrange
+            VenueFactory::new()->count(10)->create();
+
+            // Act
+            $venues = $this->service->getAllVenues(null);
+
+            // Assert
+            expect($venues)->toHaveCount(10);
+        });
     });
 
     describe('getVenueById', function (): void {

@@ -31,9 +31,10 @@ final class VenueSearchService
      * Performs case-insensitive partial match on name and city fields.
      *
      * @param  string  $query  Search query
+     * @param  int  $limit  Maximum number of results (default: 50)
      * @return Collection<int, Venue>
      */
-    public function search(string $query): Collection
+    public function search(string $query, int $limit = 50): Collection
     {
         $queryBuilder = Venue::search($query);
 
@@ -41,16 +42,17 @@ final class VenueSearchService
             $queryBuilder->withCount('reports');
         }
 
-        return $queryBuilder->get();
+        return $queryBuilder->limit($limit)->get();
     }
 
     /**
      * Filter venues by city.
      *
      * @param  string  $city  City name
+     * @param  int  $limit  Maximum number of results (default: 50)
      * @return Collection<int, Venue>
      */
-    public function filterByCity(string $city): Collection
+    public function filterByCity(string $city, int $limit = 50): Collection
     {
         $queryBuilder = Venue::inCity($city);
 
@@ -58,7 +60,7 @@ final class VenueSearchService
             $queryBuilder->withCount('reports');
         }
 
-        return $queryBuilder->get();
+        return $queryBuilder->limit($limit)->get();
     }
 
     /**

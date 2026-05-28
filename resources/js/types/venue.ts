@@ -31,6 +31,8 @@ export interface VenueFilters {
     latitude?: number;
     longitude?: number;
     radius?: number;
+    bounds?: string;
+    limit?: number;
 }
 
 /**

@@ -118,6 +118,104 @@ describe('Venue Model', function (): void {
             ->and($results->pluck('name')->contains('Far Venue'))->toBeFalse();
     });
 
+    it('scopeNearby applies bounding box pre-filter before Haversine calculation', function (): void {
+        $centralLat = 51.5074;
+        $centralLng = -0.1278;
+        $radiusKm = 10;
+
+        Venue::factory()->create([
+            'name' => 'Inside Bounding Box',
+            'latitude' => $centralLat + 0.05,
+            'longitude' => $centralLng + 0.05,
+        ]);
+
+        Venue::factory()->create([
+            'name' => 'Outside Bounding Box',
+            'latitude' => $centralLat + 1.0,
+            'longitude' => $centralLng,
+        ]);
+
+        $query = Venue::nearby($centralLat, $centralLng, $radiusKm);
+        $sql = $query->toRawSql();
+
+        expect($sql)->toContain('latitude')
+            ->and($sql)->toContain('between')
+            ->and($sql)->toContain('longitude');
+    });
+
+    it('scopeNearby bounding box correctly calculates latitude delta', function (): void {
+        $centralLat = 51.5074;
+        $centralLng = -0.1278;
+        $radiusKm = 10;
+
+        $expectedLatDelta = $radiusKm / 111.0;
+        $minLat = $centralLat - $expectedLatDelta;
+        $maxLat = $centralLat + $expectedLatDelta;
+
+        Venue::factory()->create([
+            'name' => 'At Max Latitude',
+            'latitude' => $maxLat - 0.001,
+            'longitude' => $centralLng,
+        ]);
+
+        Venue::factory()->create([
+            'name' => 'Beyond Max Latitude',
+            'latitude' => $maxLat + 0.1,
+            'longitude' => $centralLng,
+        ]);
+
+        $results = Venue::nearby($centralLat, $centralLng, $radiusKm)->get();
+
+        expect($results->pluck('name')->contains('At Max Latitude'))->toBeTrue()
+            ->and($results->pluck('name')->contains('Beyond Max Latitude'))->toBeFalse();
+    });
+
+    it('scopeNearby bounding box correctly calculates longitude delta accounting for latitude', function (): void {
+        $centralLat = 51.5074;
+        $centralLng = -0.1278;
+        $radiusKm = 10;
+
+        $expectedLngDelta = $radiusKm / (111.0 * cos(deg2rad($centralLat)));
+        $minLng = $centralLng - $expectedLngDelta;
+        $maxLng = $centralLng + $expectedLngDelta;
+
+        Venue::factory()->create([
+            'name' => 'At Max Longitude',
+            'latitude' => $centralLat,
+            'longitude' => $maxLng - 0.001,
+        ]);
+
+        Venue::factory()->create([
+            'name' => 'Beyond Max Longitude',
+            'latitude' => $centralLat,
+            'longitude' => $maxLng + 0.1,
+        ]);
+
+        $results = Venue::nearby($centralLat, $centralLng, $radiusKm)->get();
+
+        expect($results->pluck('name')->contains('At Max Longitude'))->toBeTrue()
+            ->and($results->pluck('name')->contains('Beyond Max Longitude'))->toBeFalse();
+    });
+
+    it('scopeNearby excludes venues in bounding box corners but outside actual radius', function (): void {
+        $centralLat = 51.5074;
+        $centralLng = -0.1278;
+        $radiusKm = 10;
+
+        $latDelta = $radiusKm / 111.0;
+        $lngDelta = $radiusKm / (111.0 * cos(deg2rad($centralLat)));
+
+        Venue::factory()->create([
+            'name' => 'In Corner Of Bounding Box',
+            'latitude' => $centralLat + ($latDelta * 0.9),
+            'longitude' => $centralLng + ($lngDelta * 0.9),
+        ]);
+
+        $results = Venue::nearby($centralLat, $centralLng, $radiusKm)->get();
+
+        expect($results->pluck('name')->contains('In Corner Of Bounding Box'))->toBeFalse();
+    });
+
     it('factory creates valid venue with all required fields', function (): void {
         $venue = Venue::factory()->create();
 
