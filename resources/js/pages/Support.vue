@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Heart, Server, Shield, Coffee } from 'lucide-vue-next';
 import AppLayout from '@/components/layout/AppLayout.vue';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Button from '@/components/ui/button/Button.vue';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const kofiUsername = 'parasyte';
 const kofiUrl = `https://ko-fi.com/${kofiUsername}`;

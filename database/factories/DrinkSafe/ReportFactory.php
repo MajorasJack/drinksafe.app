@@ -121,4 +121,38 @@ final class ReportFactory extends Factory
             'time_of_day' => TimeOfDay::Evening,
         ]);
     }
+
+    /**
+     * Factory state for a report exactly N days ago.
+     *
+     * Useful for testing time-decay algorithms in safety scores.
+     *
+     * @param  int  $days  Number of days ago the incident occurred
+     */
+    public function daysAgo(int $days): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'incident_date' => now()->subDays($days)->toDateString(),
+        ]);
+    }
+
+    /**
+     * Factory state for reports within the last 30 days (for safety score testing).
+     */
+    public function within30Days(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'incident_date' => fake()->dateTimeBetween('-30 days', 'now'),
+        ]);
+    }
+
+    /**
+     * Factory state for reports between 90-180 days ago.
+     */
+    public function aged(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'incident_date' => fake()->dateTimeBetween('-180 days', '-90 days'),
+        ]);
+    }
 }

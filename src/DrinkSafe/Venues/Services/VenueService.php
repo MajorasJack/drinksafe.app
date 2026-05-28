@@ -45,6 +45,7 @@ final class VenueService
      *
      * Uses the idx_venues_location index for efficient querying.
      * Results are limited to prevent performance issues with large viewports.
+     * Only returns venues that have at least one report to avoid misleading users.
      *
      * @param  float  $swLat  Southwest corner latitude
      * @param  float  $swLng  Southwest corner longitude
@@ -61,6 +62,7 @@ final class VenueService
         int $limit = self::DEFAULT_BOUNDS_LIMIT
     ): Collection {
         return Venue::inBounds($swLat, $swLng, $neLat, $neLng)
+            ->has('reports') // Only show venues with at least one report
             ->withCount('reports')
             ->limit($limit)
             ->get();

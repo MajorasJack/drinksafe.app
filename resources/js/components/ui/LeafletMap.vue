@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, onBeforeUnmount } from 'vue';
-import type { Map, Icon, Marker, MarkerClusterGroup } from 'leaflet';
-import type {} from 'leaflet.markercluster';
+import type { HeatLayer, Icon, Map, Marker, MarkerClusterGroup } from 'leaflet';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { HeatmapControls } from '@/components/map';
+import { useHeatmap } from '@/composables/useHeatmap';
 import type { Venue } from '@/types/venue';
 
 type LeafletModule = typeof import('leaflet');
@@ -10,37 +11,70 @@ interface Props {
     center?: [number, number];
     zoom?: number;
     venues?: Venue[];
+    showHeatmapControls?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     center: () => [51.5074, -0.1278], // London
     zoom: 10,
     venues: () => [],
+    showHeatmapControls: true,
 });
 
 interface Emits {
     (e: 'marker-click', venue: Venue): void;
     (e: 'bounds-change', bounds: string): void;
+    (e: 'zoom-change', zoom: number): void;
 }
 
 const emit = defineEmits<Emits>();
 
+// Heatmap composable
+const {
+    fetchHeatmapDataDebounced,
+    isVisible: isHeatmapVisible,
+    leafletHeatData,
+} = useHeatmap();
+
 const mapContainer = ref<HTMLDivElement | null>(null);
 const isClient = ref(false);
 const isLoadingMarkers = ref(false);
+
+// Flag to prevent emitting bounds change during programmatic view updates
+let isProgrammaticMove = false;
 
 // These will be set after dynamic import
 let L: LeafletModule | null = null;
 let map: Map | null = null;
 let markerClusterGroup: MarkerClusterGroup | null = null;
 let markerIcon: Icon | null = null;
+let heatLayer: HeatLayer | null = null;
+
+/**
+ * Default heatmap configuration for Leaflet.heat.
+ * Gradient uses warm colours to indicate incident density.
+ */
+const heatmapOptions = {
+    radius: 25,
+    blur: 15,
+    maxZoom: 17,
+    minOpacity: 0.4,
+    gradient: {
+        0.0: '#3b82f6', // Blue - low
+        0.25: '#22c55e', // Green
+        0.5: '#eab308', // Yellow
+        0.75: '#f97316', // Orange
+        1.0: '#ef4444', // Red - high
+    },
+};
 
 /**
  * Formats the current map bounds as a string for API consumption.
  * Format: "swLat,swLng,neLat,neLng"
+ * Skips emission during programmatic view changes to prevent loops.
  */
 const emitBoundsChange = (): void => {
-    if (!map) return;
+    if (!map || isProgrammaticMove) return;
 
     const bounds = map.getBounds();
     const sw = bounds.getSouthWest();
@@ -48,10 +82,51 @@ const emitBoundsChange = (): void => {
     const boundsString = `${sw.lat},${sw.lng},${ne.lat},${ne.lng}`;
 
     emit('bounds-change', boundsString);
+    emit('zoom-change', map.getZoom());
+
+    // Fetch heatmap data for new bounds (debounced)
+    fetchHeatmapDataDebounced(boundsString);
+};
+
+/**
+ * Updates or creates the heatmap layer with current data.
+ */
+const updateHeatLayer = async (): Promise<void> => {
+    if (!map || !L) return;
+
+    // Dynamically import leaflet.heat if not already loaded
+    if (!heatLayer) {
+        await import('leaflet.heat');
+    }
+
+    if (!isHeatmapVisible.value) {
+        removeHeatLayer();
+        return;
+    }
+
+    const data = leafletHeatData.value;
+
+    if (heatLayer) {
+        heatLayer.setLatLngs(data);
+    } else {
+        heatLayer = L.heatLayer(data, heatmapOptions);
+        heatLayer.addTo(map);
+    }
+};
+
+/**
+ * Removes the heatmap layer from the map.
+ */
+const removeHeatLayer = (): void => {
+    if (heatLayer && map) {
+        map.removeLayer(heatLayer);
+        heatLayer = null;
+    }
 };
 
 /**
  * Creates popup content for a venue marker.
+ * Called lazily only when popup is opened to avoid creating HTML for all markers upfront.
  */
 const createPopupContent = (venue: Venue): string => `
     <div class="p-3">
@@ -68,9 +143,13 @@ const createPopupContent = (venue: Venue): string => `
     </div>
 `;
 
+// Cache for venue data by marker - avoids storing large objects on markers
+const venueDataCache = new Map<string, Venue>();
+
 /**
  * Updates markers using MarkerClusterGroup for efficient rendering of large datasets.
- * Uses chunked loading to prevent browser freeze with thousands of markers.
+ * Uses lazy popup binding - popup content is only created when clicked.
+ * Uses requestAnimationFrame for non-blocking marker creation.
  */
 const updateMarkers = (): void => {
     if (!L || !map || !props.venues || !markerClusterGroup) return;
@@ -79,12 +158,20 @@ const updateMarkers = (): void => {
 
     // Clear existing markers from cluster group
     markerClusterGroup.clearLayers();
+    venueDataCache.clear();
 
     // Create markers array for batch adding
     const markers: Marker[] = [];
+    const venues = props.venues;
 
-    props.venues.forEach((venue) => {
-        if (!L || !markerIcon) return;
+    // Use a single loop without closure overhead for each venue
+    for (let i = 0; i < venues.length; i++) {
+        const venue = venues[i];
+
+        if (!L || !markerIcon) continue;
+
+        // Cache venue data for lazy popup creation
+        venueDataCache.set(venue.uuid, venue);
 
         const marker = L.marker([venue.latitude, venue.longitude], {
             icon: markerIcon,
@@ -92,19 +179,32 @@ const updateMarkers = (): void => {
             riseOnHover: true,
         });
 
-        marker.bindPopup(createPopupContent(venue), {
+        // Store venue UUID on marker for lazy popup lookup
+        (marker as Marker & { _venueUuid: string })._venueUuid = venue.uuid;
+
+        // Lazy popup binding - content created only when popup is opened
+        marker.bindPopup(() => {
+            const cachedVenue = venueDataCache.get((marker as Marker & { _venueUuid: string })._venueUuid);
+
+            return cachedVenue ? createPopupContent(cachedVenue) : '';
+        }, {
             maxWidth: 280,
             className: 'venue-popup',
         });
 
         marker.on('click', () => {
-            emit('marker-click', venue);
+            const clickedVenue = venueDataCache.get((marker as Marker & { _venueUuid: string })._venueUuid);
+
+            if (clickedVenue) {
+                emit('marker-click', clickedVenue);
+            }
         });
 
         markers.push(marker);
-    });
+    }
 
     // Add all markers to the cluster group at once
+    // MarkerClusterGroup handles chunked loading internally
     markerClusterGroup.addLayers(markers);
 
     isLoadingMarkers.value = false;
@@ -138,8 +238,15 @@ onMounted(async () => {
 
     map = L.map(mapContainer.value).setView(props.center, props.zoom);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    // Use CartoDB's Voyager tiles - faster CDN, cleaner design, better caching
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20,
+        // Reduce tile loading overhead
+        updateWhenIdle: true, // Only load tiles when map stops moving
+        updateWhenZooming: false, // Don't reload during zoom animation
+        keepBuffer: 2, // Keep 2 tile buffer around viewport for smoother panning
     }).addTo(map);
 
     // Create MarkerClusterGroup with optimised options for large datasets
@@ -162,8 +269,8 @@ onMounted(async () => {
         map.addLayer(markerClusterGroup);
 
         // Listen for map movement to emit bounds changes
+        // Only use moveend - zoomend is redundant as zoom triggers moveend too
         map.on('moveend', emitBoundsChange);
-        map.on('zoomend', emitBoundsChange);
     }
 
     // Initial markers and bounds
@@ -176,12 +283,17 @@ onMounted(async () => {
 onBeforeUnmount(() => {
     if (map) {
         map.off('moveend', emitBoundsChange);
-        map.off('zoomend', emitBoundsChange);
     }
 
     if (markerClusterGroup) {
         markerClusterGroup.clearLayers();
     }
+
+    // Clean up venue data cache to prevent memory leaks
+    venueDataCache.clear();
+
+    // Clean up heatmap layer
+    removeHeatLayer();
 
     if (map) {
         map.remove();
@@ -192,20 +304,83 @@ onBeforeUnmount(() => {
     L = null;
 });
 
-watch(() => props.venues, updateMarkers, { deep: true });
+// Watch for heatmap visibility changes
+watch(isHeatmapVisible, () => {
+    updateHeatLayer();
+});
+
+// Watch for heatmap data changes
+watch(leafletHeatData, () => {
+    if (isHeatmapVisible.value) {
+        updateHeatLayer();
+    }
+});
+
+// Track previous venue signature to avoid unnecessary marker updates
+let previousVenueSignature = '';
+
+// Watch for venue changes using shallow comparison via length and first/last venue IDs
+// Only triggers updateMarkers if the computed signature actually changes
+watch(
+    () => {
+        const venueList = props.venues;
+
+        if (!venueList || venueList.length === 0) return '';
+
+        // Include more IDs for better change detection without deep comparison
+        const firstId = venueList[0]?.uuid ?? '';
+        const lastId = venueList[venueList.length - 1]?.uuid ?? '';
+        const midIdx = Math.floor(venueList.length / 2);
+        const midId = venueList[midIdx]?.uuid ?? '';
+
+        return `${venueList.length}-${firstId}-${midId}-${lastId}`;
+    },
+    (newSignature) => {
+        // Only update if signature actually changed (prevents redundant updates)
+        if (newSignature !== previousVenueSignature) {
+            previousVenueSignature = newSignature;
+            updateMarkers();
+        }
+    },
+);
+
+// Track previous center to avoid unnecessary map animations
+let previousCenter: [number, number] | null = null;
 
 watch(
     () => props.center,
     (newCenter) => {
-        if (map) {
-            map.setView(newCenter, props.zoom);
+        if (!map) return;
+
+        // Compare by value, not reference - arrays are compared by reference by default
+        // This prevents unnecessary map animations when the coordinates haven't changed
+        if (
+            previousCenter &&
+            previousCenter[0] === newCenter[0] &&
+            previousCenter[1] === newCenter[1]
+        ) {
+            return;
         }
+
+        previousCenter = [...newCenter] as [number, number];
+
+        // Set flag to prevent moveend from triggering a bounds change fetch
+        isProgrammaticMove = true;
+
+        // Use current zoom level to avoid resetting zoom when clicking markers
+        const currentZoom = map.getZoom();
+        map.setView(newCenter, currentZoom);
+
+        // Reset flag after animation completes (use setTimeout to ensure moveend has fired)
+        setTimeout(() => {
+            isProgrammaticMove = false;
+        }, 300);
     },
 );
 </script>
 
 <template>
-    <div class="size-full relative">
+    <div class="relative size-full">
         <div
             v-if="isClient"
             ref="mapContainer"
@@ -214,14 +389,18 @@ watch(
         <div v-else class="flex size-full items-center justify-center bg-slate-100">
             <span class="text-slate-500">Loading map...</span>
         </div>
+
+        <!-- Heatmap controls overlay -->
+        <HeatmapControls v-if="isClient && showHeatmapControls" />
+
         <!-- Loading overlay for marker updates -->
         <div
             v-if="isLoadingMarkers && isClient"
-            class="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-[1000]"
+            class="absolute inset-0 z-[1000] flex items-center justify-center bg-white/50 backdrop-blur-sm"
         >
             <div class="flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-lg">
                 <svg
-                    class="h-5 w-5 animate-spin text-brand-teal"
+                    class="size-5 animate-spin text-brand-teal"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"

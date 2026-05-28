@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use DrinkSafe\Analytics\Controllers\TemporalAnalyticsController;
+use DrinkSafe\Heatmap\Controllers\HeatmapController;
 use DrinkSafe\Reports\Controllers\ReportController;
 use DrinkSafe\Venues\Controllers\VenueController;
+use DrinkSafe\Venues\Controllers\VenueSafetyScoreController;
 use DrinkSafe\Venues\Controllers\VenueSearchController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +34,10 @@ Route::prefix('api/venues')->group(function (): void {
         ->middleware('throttle:60,1')
         ->name('api.venues.show');
 
+    Route::get('/{uuid}/safety-score', VenueSafetyScoreController::class)
+        ->middleware('throttle:60,1')
+        ->name('api.venues.safety-score');
+
     Route::post('/', [VenueController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('api.venues.store');
@@ -49,4 +56,18 @@ Route::prefix('api/reports')->group(function (): void {
     Route::post('/', [ReportController::class, 'store'])
         ->middleware('throttle:5,1')
         ->name('api.reports.store');
+});
+
+// Analytics Module Routes
+Route::prefix('api/analytics')->group(function (): void {
+    Route::get('/temporal', TemporalAnalyticsController::class)
+        ->middleware('throttle:60,1')
+        ->name('api.analytics.temporal');
+});
+
+// Heatmap Module Routes
+Route::prefix('api')->group(function (): void {
+    Route::get('/heatmap', HeatmapController::class)
+        ->middleware('throttle:60,1')
+        ->name('api.heatmap');
 });

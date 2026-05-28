@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders\DrinkSafe;
 
+use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
@@ -46,36 +46,31 @@ final class VenueSeeder extends Seeder
             return;
         }
 
-        $now = now();
-        $insertData = [];
-        $usedSlugs = [];
+        $created = 0;
+        $updated = 0;
 
         foreach ($venues as $venue) {
-            $slug = $this->generateUniqueSlug($venue['name'], $usedSlugs);
-            $usedSlugs[] = $slug;
+            $slug = Str::slug($venue['name']);
 
-            $insertData[] = [
-                'uuid' => Str::uuid()->toString(),
-                'name' => $venue['name'],
-                'slug' => $slug,
-                'city' => $venue['city'],
-                'address' => $venue['address'],
-                'latitude' => $venue['latitude'],
-                'longitude' => $venue['longitude'],
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
-        }
+            $result = Venue::updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'name' => $venue['name'],
+                    'city' => $venue['city'],
+                    'address' => $venue['address'],
+                    'latitude' => $venue['latitude'],
+                    'longitude' => $venue['longitude'],
+                ]
+            );
 
-        // Insert in chunks to avoid memory issues
-        foreach (array_chunk($insertData, 100) as $chunk) {
-            DB::table('venues')->insert($chunk);
+            $result->wasRecentlyCreated ? $created++ : $updated++;
         }
 
         $this->command->info(sprintf(
-            'Seeded %d real venues from OpenStreetMap (fetched: %s)',
-            count($insertData),
-            $data['fetched_at'] ?? 'unknown'
+            'Seeded venues from OpenStreetMap (fetched: %s): %d created, %d updated',
+            $data['fetched_at'] ?? 'unknown',
+            $created,
+            $updated
         ));
     }
 
@@ -152,7 +147,8 @@ final class VenueSeeder extends Seeder
             'Revolution',
         ];
 
-        $venues = [];
+        $created = 0;
+        $updated = 0;
         $usedSlugs = [];
 
         foreach ($cities as $cityName => $coords) {
@@ -172,27 +168,31 @@ final class VenueSeeder extends Seeder
                 $latVariation = fake()->randomFloat(4, -0.045, 0.045);
                 $lngVariation = fake()->randomFloat(4, -0.045, 0.045);
 
-                $venues[] = [
-                    'uuid' => Str::uuid()->toString(),
-                    'name' => $venueName,
-                    'slug' => $slug,
-                    'city' => $cityName,
-                    'address' => sprintf(
-                        '%d %s, %s',
-                        fake()->buildingNumber(),
-                        fake()->streetName(),
-                        $cityName
-                    ),
-                    'latitude' => $coords['lat'] + $latVariation,
-                    'longitude' => $coords['lng'] + $lngVariation,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
+                $result = Venue::updateOrCreate(
+                    ['slug' => $slug],
+                    [
+                        'name' => $venueName,
+                        'city' => $cityName,
+                        'address' => sprintf(
+                            '%d %s, %s',
+                            fake()->buildingNumber(),
+                            fake()->streetName(),
+                            $cityName
+                        ),
+                        'latitude' => $coords['lat'] + $latVariation,
+                        'longitude' => $coords['lng'] + $lngVariation,
+                    ]
+                );
+
+                $result->wasRecentlyCreated ? $created++ : $updated++;
             }
         }
 
-        DB::table('venues')->insert($venues);
-
-        $this->command->info(sprintf('Seeded %d generated venues across %d cities', count($venues), count($cities)));
+        $this->command->info(sprintf(
+            'Seeded generated venues across %d cities: %d created, %d updated',
+            count($cities),
+            $created,
+            $updated
+        ));
     }
 }
