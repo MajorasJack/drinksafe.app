@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
+use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Venues\Models\Venue;
 use Inertia\Testing\AssertableInertia as Assert;
 
 describe('MapController bounds filtering', function (): void {
     describe('initial page load', function (): void {
         it('returns empty venues when no filters provided', function (): void {
-            Venue::factory()->count(10)->create();
+            Venue::factory()->count(10)->create()
+                ->each(fn (Venue $venue) => Report::factory()->for($venue, 'venue')->create());
 
             $response = $this->get('/map');
 
@@ -39,12 +41,14 @@ describe('MapController bounds filtering', function (): void {
                 'latitude' => 51.5,
                 'longitude' => -0.1,
             ]);
+            Report::factory()->for($venueInBounds, 'venue')->create();
 
-            Venue::factory()->create([
+            $venueOutOfBounds = Venue::factory()->create([
                 'name' => 'Out of Bounds Venue',
                 'latitude' => 53.5,
                 'longitude' => -2.2,
             ]);
+            Report::factory()->for($venueOutOfBounds, 'venue')->create();
 
             $response = $this->get('/map?bounds=51.0,-0.5,52.0,0.5');
 

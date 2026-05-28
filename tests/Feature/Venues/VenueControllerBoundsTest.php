@@ -2,20 +2,23 @@
 
 declare(strict_types=1);
 
+use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Venues\Models\Venue;
 
 describe('VenueController bounds filtering', function (): void {
     describe('index with bounds', function (): void {
         it('returns venues within specified bounds', function (): void {
-            Venue::factory()->create([
+            $venueInBounds = Venue::factory()->create([
                 'latitude' => 51.5,
                 'longitude' => -0.1,
             ]);
+            Report::factory()->for($venueInBounds, 'venue')->create();
 
-            Venue::factory()->create([
+            $venueOutOfBounds = Venue::factory()->create([
                 'latitude' => 53.5,
                 'longitude' => -2.2,
             ]);
+            Report::factory()->for($venueOutOfBounds, 'venue')->create();
 
             $response = $this->getJson('/api/venues?bounds=51.0,-0.5,52.0,0.5');
 
@@ -24,10 +27,11 @@ describe('VenueController bounds filtering', function (): void {
         });
 
         it('returns empty when no venues exist within bounds', function (): void {
-            Venue::factory()->create([
+            $venue = Venue::factory()->create([
                 'latitude' => 53.5,
                 'longitude' => -2.2,
             ]);
+            Report::factory()->for($venue, 'venue')->create();
 
             $response = $this->getJson('/api/venues?bounds=51.0,-0.5,52.0,0.5');
 
@@ -39,12 +43,12 @@ describe('VenueController bounds filtering', function (): void {
             Venue::factory()->count(5)->create([
                 'latitude' => 51.5,
                 'longitude' => -0.1,
-            ]);
+            ])->each(fn (Venue $venue) => Report::factory()->for($venue, 'venue')->create());
 
             Venue::factory()->count(3)->create([
                 'latitude' => 53.5,
                 'longitude' => -2.2,
-            ]);
+            ])->each(fn (Venue $venue) => Report::factory()->for($venue, 'venue')->create());
 
             $response = $this->getJson('/api/venues?bounds=51.0,-0.5,52.0,0.5');
 
@@ -56,7 +60,7 @@ describe('VenueController bounds filtering', function (): void {
             Venue::factory()->count(10)->create([
                 'latitude' => 51.5,
                 'longitude' => -0.1,
-            ]);
+            ])->each(fn (Venue $venue) => Report::factory()->for($venue, 'venue')->create());
 
             $response = $this->getJson('/api/venues?bounds=51.0,-0.5,52.0,0.5&limit=3');
 
@@ -64,7 +68,13 @@ describe('VenueController bounds filtering', function (): void {
             $response->assertJsonCount(3, 'data');
         });
 
-        it('includes report counts in response', function (): void {
+        it('only returns venues with at least one report', function (): void {
+            $venueWithReport = Venue::factory()->create([
+                'latitude' => 51.5,
+                'longitude' => -0.1,
+            ]);
+            Report::factory()->for($venueWithReport, 'venue')->create();
+
             Venue::factory()->create([
                 'latitude' => 51.5,
                 'longitude' => -0.1,
@@ -73,7 +83,8 @@ describe('VenueController bounds filtering', function (): void {
             $response = $this->getJson('/api/venues?bounds=51.0,-0.5,52.0,0.5');
 
             $response->assertOk();
-            $response->assertJsonPath('data.0.reports_count', 0);
+            $response->assertJsonCount(1, 'data');
+            $response->assertJsonPath('data.0.reports_count', 1);
         });
     });
 

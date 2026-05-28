@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -25,7 +26,8 @@ describe('MapController', function (): void {
     });
 
     it('renders map page with empty venues for viewport loading', function (): void {
-        Venue::factory()->count(5)->create();
+        Venue::factory()->count(5)->create()
+            ->each(fn (Venue $venue) => Report::factory()->for($venue, 'venue')->create());
 
         $response = $this->get(route('map'));
 
@@ -40,11 +42,12 @@ describe('MapController', function (): void {
         Venue::factory()->count(3)->create([
             'latitude' => 51.5,
             'longitude' => -0.1,
-        ]);
+        ])->each(fn (Venue $venue) => Report::factory()->for($venue, 'venue')->create());
+
         Venue::factory()->count(2)->create([
             'latitude' => 55.0,
             'longitude' => 2.0,
-        ]);
+        ])->each(fn (Venue $venue) => Report::factory()->for($venue, 'venue')->create());
 
         $response = $this->get(route('map', ['bounds' => '51.0,-0.5,52.0,0.5']));
 
