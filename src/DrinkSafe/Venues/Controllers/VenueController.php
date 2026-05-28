@@ -7,12 +7,13 @@ namespace DrinkSafe\Venues\Controllers;
 use App\Http\Controllers\Controller;
 use DrinkSafe\Venues\Exceptions\VenueDuplicateException;
 use DrinkSafe\Venues\Exceptions\VenueNotFoundException;
+use DrinkSafe\Venues\Models\Venue;
+use DrinkSafe\Venues\Requests\IndexVenueRequest;
 use DrinkSafe\Venues\Requests\StoreVenueRequest;
 use DrinkSafe\Venues\Resources\VenueCollection;
 use DrinkSafe\Venues\Resources\VenueResource;
 use DrinkSafe\Venues\Services\VenueService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 
@@ -31,15 +32,32 @@ final class VenueController extends Controller
     /**
      * Display a listing of venues.
      *
-     * Optionally filters by city if provided in query parameters.
+     * Supports filtering by:
+     * - bounds: Geographic bounds in format "swLat,swLng,neLat,neLng"
+     * - city: Exact city match
+     * - limit: Maximum number of venues to return (default 300, max 500)
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexVenueRequest $request): JsonResponse
     {
-        $venues = $this->venueService->getAllVenues();
+        $bounds = $request->getBounds();
+        $city = $request->validated()['city'] ?? null;
+        $limit = (int) ($request->validated()['limit'] ?? 300);
 
-        $city = $request->query('city');
-        if ($city !== null) {
-            $venues = $venues->filter(fn ($venue) => $venue->city === $city);
+        if ($bounds !== null) {
+            $venues = $this->venueService->getVenuesInBounds(
+                $bounds['swLat'],
+                $bounds['swLng'],
+                $bounds['neLat'],
+                $bounds['neLng'],
+                $limit
+            );
+        } elseif ($city !== null && $city !== '') {
+            $venues = Venue::inCity($city)
+                ->withCount('reports')
+                ->limit($limit)
+                ->get();
+        } else {
+            $venues = $this->venueService->getAllVenues($limit);
         }
 
         return response()->json(

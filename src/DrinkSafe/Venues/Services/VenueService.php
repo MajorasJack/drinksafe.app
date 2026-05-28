@@ -19,13 +19,51 @@ use Illuminate\Support\Collection;
 final class VenueService
 {
     /**
+     * Default maximum number of venues to return in bounds queries.
+     */
+    private const DEFAULT_BOUNDS_LIMIT = 300;
+
+    /**
      * Retrieve all venues with report counts.
      *
+     * @param  int|null  $limit  Maximum number of venues to return (null for no limit)
      * @return Collection<int, Venue>
      */
-    public function getAllVenues(): Collection
+    public function getAllVenues(?int $limit = null): Collection
     {
-        return Venue::withCount('reports')->get();
+        $query = Venue::withCount('reports');
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Retrieve venues within geographic bounds with report counts.
+     *
+     * Uses the idx_venues_location index for efficient querying.
+     * Results are limited to prevent performance issues with large viewports.
+     *
+     * @param  float  $swLat  Southwest corner latitude
+     * @param  float  $swLng  Southwest corner longitude
+     * @param  float  $neLat  Northeast corner latitude
+     * @param  float  $neLng  Northeast corner longitude
+     * @param  int  $limit  Maximum number of venues to return (default 300)
+     * @return Collection<int, Venue>
+     */
+    public function getVenuesInBounds(
+        float $swLat,
+        float $swLng,
+        float $neLat,
+        float $neLng,
+        int $limit = self::DEFAULT_BOUNDS_LIMIT
+    ): Collection {
+        return Venue::inBounds($swLat, $swLng, $neLat, $neLng)
+            ->withCount('reports')
+            ->limit($limit)
+            ->get();
     }
 
     /**

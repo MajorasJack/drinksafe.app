@@ -23,12 +23,13 @@ const props = withDefaults(defineProps<Props>(), {
     filters: () => ({}),
 });
 
-const { venues: storeVenues, loading, fetchVenues } = useVenues();
+const { venues: storeVenues, loading, fetchVenues, fetchVenuesByBounds } = useVenues();
 const selectedVenue = ref<Venue | null>(null);
 const startDate = ref<string>('');
 const endDate = ref<string>('');
 const isMobileListOpen = ref(false);
 const searchInputQuery = ref(props.filters?.search ?? '');
+const currentBounds = ref<string | null>(null);
 
 const filteredVenues = computed(() => {
     // Use store venues if fetched, otherwise use server-provided venues
@@ -81,14 +82,21 @@ const clearFilters = (): void => {
     startDate.value = '';
     endDate.value = '';
     selectedVenue.value = null;
-    fetchVenues();
+    if (currentBounds.value) {
+        fetchVenuesByBounds(currentBounds.value);
+    } else {
+        fetchVenues();
+    }
+};
+
+const handleBoundsChange = (bounds: string): void => {
+    currentBounds.value = bounds;
+    fetchVenuesByBounds(bounds);
 };
 
 onMounted(() => {
-    // Only fetch if no venues provided by server
-    if (props.venues.length === 0) {
-        fetchVenues();
-    }
+    // Venues will be loaded via bounds-change event from the map
+    // No need to fetch all venues on mount - this is now viewport-based
 });
 </script>
 
@@ -219,6 +227,7 @@ onMounted(() => {
                     :venues="filteredVenues"
                     :selected-venue="selectedVenue"
                     @venue-click="handleVenueClick"
+                    @bounds-change="handleBoundsChange"
                 />
             </div>
         </div>

@@ -54,6 +54,28 @@ describe('VenueSearchService', function (): void {
             // Assert
             expect($results)->toBeEmpty();
         });
+
+        it('respects the limit parameter', function (): void {
+            // Arrange
+            VenueFactory::new()->count(10)->create(['city' => 'London']);
+
+            // Act
+            $results = $this->service->search('London', 5);
+
+            // Assert
+            expect($results)->toHaveCount(5);
+        });
+
+        it('uses default limit of 50 when not specified', function (): void {
+            // Arrange
+            VenueFactory::new()->count(60)->create(['city' => 'London']);
+
+            // Act
+            $results = $this->service->search('London');
+
+            // Assert
+            expect($results)->toHaveCount(50);
+        });
     });
 
     describe('filterByCity', function (): void {
@@ -68,6 +90,28 @@ describe('VenueSearchService', function (): void {
             // Assert
             expect($results)->toHaveCount(2)
                 ->and($results->every(fn ($venue): bool => $venue->city === 'London'))->toBeTrue();
+        });
+
+        it('respects the limit parameter', function (): void {
+            // Arrange
+            VenueFactory::new()->count(10)->create(['city' => 'London']);
+
+            // Act
+            $results = $this->service->filterByCity('London', 3);
+
+            // Assert
+            expect($results)->toHaveCount(3);
+        });
+
+        it('uses default limit of 50 when not specified', function (): void {
+            // Arrange
+            VenueFactory::new()->count(60)->create(['city' => 'London']);
+
+            // Act
+            $results = $this->service->filterByCity('London');
+
+            // Assert
+            expect($results)->toHaveCount(50);
         });
     });
 

@@ -50,6 +50,14 @@ export const useVenueStore = defineStore('venue', () => {
                 params.append('radius', filters.radius.toString());
             }
 
+            if (filters?.bounds) {
+                params.append('bounds', filters.bounds);
+            }
+
+            if (filters?.limit) {
+                params.append('limit', filters.limit.toString());
+            }
+
             const url = `/api/venues${params.toString() ? `?${params.toString()}` : ''}`;
             const response = await axios.get(url);
 
@@ -61,6 +69,10 @@ export const useVenueStore = defineStore('venue', () => {
         } finally {
             loading.value = false;
         }
+    }
+
+    async function fetchVenuesByBounds(bounds: string): Promise<void> {
+        await fetchVenues({ bounds, limit: 300 });
     }
 
     async function fetchVenueById(uuid: string): Promise<void> {
@@ -104,6 +116,7 @@ export const useVenueStore = defineStore('venue', () => {
         // Actions
         fetchVenues,
         fetchVenueById,
+        fetchVenuesByBounds,
         searchVenues,
         clearError,
     };
