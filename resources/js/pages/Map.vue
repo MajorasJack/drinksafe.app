@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { Filter } from 'lucide-vue-next';
-import { ref, computed, onMounted, watchEffect } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import Button from '@/components/ui/button/Button.vue';
 import DateFilter from '@/components/ui/DateFilter.vue';
 import VenueMap from '@/components/venue/VenueMap.vue';
 import VenueSearchInput from '@/components/venue/VenueSearchInput.vue';
 import { useVenues } from '@/composables/useVenues';
+import { useSearch } from '@/composables/useSearch';
 import type { Venue } from '@/types/venue';
 
 interface Props {
@@ -23,33 +24,36 @@ const props = withDefaults(defineProps<Props>(), {
     filters: () => ({}),
 });
 
-const { venues: storeVenues, loading, fetchVenues, fetchVenuesByBounds } = useVenues();
+const { venues: storeVenues, loading, fetchVenues, fetchVenuesByBoundsDebounced } = useVenues();
+const { query: searchQuery, results: searchResults, isSearching, clearResults: clearSearchResults } = useSearch();
 const selectedVenue = ref<Venue | null>(null);
 const startDate = ref<string>('');
 const endDate = ref<string>('');
 const isMobileListOpen = ref(false);
-const searchInputQuery = ref(props.filters?.search ?? '');
 const currentBounds = ref<string | null>(null);
+const currentZoom = ref(10); // Default zoom level
+
+// Minimum zoom level to show venue list (individual markers visible around zoom 12+)
+const MIN_ZOOM_FOR_LIST = 12;
+const isZoomedInEnough = computed(() => currentZoom.value >= MIN_ZOOM_FOR_LIST);
+
+// Only show venues when searching OR zoomed in enough
+const shouldShowVenueList = computed(() => searchQuery.value.trim() || isZoomedInEnough.value);
 
 const filteredVenues = computed(() => {
-    // Use store venues if fetched, otherwise use server-provided venues
-    if (storeVenues.value && storeVenues.value.length > 0) {
-        return storeVenues.value;
+    // When searching, show search results in sidebar
+    if (searchQuery.value.trim() && searchResults.value.length > 0) {
+        return searchResults.value;
     }
 
-    return props.venues;
+    // Otherwise show bounds-based venues
+    const venuesFromStore = storeVenues.value;
+
+    return venuesFromStore.length > 0 ? venuesFromStore : props.venues;
 });
 
-// Debug venues
-watchEffect(() => {
-    console.log('Map.vue - venues from store:', storeVenues.value);
-    console.log('Map.vue - venues from props:', props.venues);
-    console.log('Map.vue - filteredVenues:', filteredVenues.value);
-    console.log(
-        'Map.vue - filteredVenues count:',
-        filteredVenues.value?.length,
-    );
-});
+// Combined loading state for search and bounds fetching
+const isLoading = computed(() => loading.value || isSearching.value);
 
 const handleVenueSelect = (venue: Venue): void => {
     // Navigate to venue detail page to view reports
@@ -78,12 +82,13 @@ const handleDateFilterClear = (): void => {
 };
 
 const clearFilters = (): void => {
-    searchInputQuery.value = '';
+    clearSearchResults();
     startDate.value = '';
     endDate.value = '';
     selectedVenue.value = null;
+
     if (currentBounds.value) {
-        fetchVenuesByBounds(currentBounds.value);
+        fetchVenuesByBoundsDebounced(currentBounds.value);
     } else {
         fetchVenues();
     }
@@ -91,7 +96,11 @@ const clearFilters = (): void => {
 
 const handleBoundsChange = (bounds: string): void => {
     currentBounds.value = bounds;
-    fetchVenuesByBounds(bounds);
+    fetchVenuesByBoundsDebounced(bounds);
+};
+
+const handleZoomChange = (zoom: number): void => {
+    currentZoom.value = zoom;
 };
 
 onMounted(() => {
@@ -149,11 +158,20 @@ onMounted(() => {
                 <div
                     class="flex-grow overflow-y-auto bg-slate-50 p-4 dark:bg-gray-900"
                 >
+                    <!-- Zoom in prompt when not searching and zoomed out -->
                     <div
-                        v-if="loading"
+                        v-if="!shouldShowVenueList"
                         class="py-10 text-center text-slate-500 dark:text-gray-400"
                     >
-                        Loading venues...
+                        <p class="mb-2">Zoom in to see venues in this area</p>
+                        <p class="text-sm">Or use the search above to find a specific venue</p>
+                    </div>
+
+                    <div
+                        v-else-if="isLoading"
+                        class="py-10 text-center text-slate-500 dark:text-gray-400"
+                    >
+                        {{ isSearching ? 'Searching...' : 'Loading venues...' }}
                     </div>
 
                     <div
@@ -228,6 +246,7 @@ onMounted(() => {
                     :selected-venue="selectedVenue"
                     @venue-click="handleVenueClick"
                     @bounds-change="handleBoundsChange"
+                    @zoom-change="handleZoomChange"
                 />
             </div>
         </div>

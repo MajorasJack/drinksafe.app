@@ -95,14 +95,17 @@ const loadTurnstileScript = (): Promise<void> => {
     return new Promise((resolve) => {
         if (window.turnstile) {
             resolve();
+
             return;
         }
 
         const existingScript = document.querySelector(
             'script[src*="challenges.cloudflare.com/turnstile"]',
         );
+
         if (existingScript) {
             window.onTurnstileLoad = () => resolve();
+
             return;
         }
 
@@ -118,10 +121,15 @@ const loadTurnstileScript = (): Promise<void> => {
 };
 
 const renderTurnstileWidget = (): void => {
-    if (!window.turnstile || !turnstileSiteKey.value) return;
+    if (!window.turnstile || !turnstileSiteKey.value) {
+return;
+}
 
     const container = document.getElementById(turnstileContainerId);
-    if (!container) return;
+
+    if (!container) {
+return;
+}
 
     // Remove existing widget if present
     if (turnstileWidgetId.value) {

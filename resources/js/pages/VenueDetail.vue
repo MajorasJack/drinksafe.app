@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { MapPin, AlertTriangle, ChevronRight } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import ReportList from '@/components/report/ReportList.vue';
 import {
@@ -15,6 +15,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import LeafletMap from '@/components/ui/LeafletMap.vue';
+import SafetyBadge from '@/components/venue/SafetyBadge.vue';
+import { useSafetyScore } from '@/composables/useSafetyScore';
 import type { Venue } from '@/types/venue';
 
 interface Props {
@@ -22,6 +24,8 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+const { score, loading: safetyLoading, fetchScore } = useSafetyScore();
 
 const mapCenter = computed((): [number, number] => {
     return [props.venue.latitude, props.venue.longitude];
@@ -33,6 +37,10 @@ const venueReports = computed(() => {
 
 const hasReports = computed((): boolean => {
     return venueReports.value.length > 0;
+});
+
+onMounted(() => {
+    fetchScore(props.venue.uuid);
 });
 </script>
 
@@ -66,11 +74,18 @@ const hasReports = computed((): boolean => {
             <div class="grid gap-8 lg:grid-cols-2">
                 <div class="space-y-6">
                     <div class="space-y-2">
-                        <h1
-                            class="text-4xl font-bold text-slate-900 dark:text-white"
-                        >
-                            {{ venue.name }}
-                        </h1>
+                        <div class="flex flex-wrap items-start justify-between gap-4">
+                            <h1
+                                class="text-4xl font-bold text-slate-900 dark:text-white"
+                            >
+                                {{ venue.name }}
+                            </h1>
+                            <SafetyBadge
+                                :score="score"
+                                :loading="safetyLoading"
+                                size="lg"
+                            />
+                        </div>
                         <div
                             class="flex items-center gap-2 text-slate-600 dark:text-gray-100"
                         >

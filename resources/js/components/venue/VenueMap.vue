@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue';
+import { computed } from 'vue';
 import LeafletMap from '@/components/ui/LeafletMap.vue';
 import type { Venue } from '@/types/venue';
 
@@ -13,6 +13,7 @@ interface Props {
 interface Emits {
     (e: 'venue-click', venue: Venue): void;
     (e: 'bounds-change', bounds: string): void;
+    (e: 'zoom-change', zoom: number): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -23,15 +24,14 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
+// Only recenter map when a venue is explicitly selected
+// Do NOT recenter based on venues array changes - this causes infinite loops
 const mapCenter = computed<[number, number]>(() => {
     if (props.selectedVenue) {
         return [props.selectedVenue.latitude, props.selectedVenue.longitude];
     }
 
-    if (props.venues.length > 0) {
-        return [props.venues[0].latitude, props.venues[0].longitude];
-    }
-
+    // Use the provided center prop, don't auto-center on first venue
     return props.center;
 });
 
@@ -43,11 +43,9 @@ const handleBoundsChange = (bounds: string): void => {
     emit('bounds-change', bounds);
 };
 
-// Debug venues
-watchEffect(() => {
-    console.log('VenueMap - Venues prop:', props.venues);
-    console.log('VenueMap - Venues count:', props.venues?.length);
-});
+const handleZoomChange = (zoom: number): void => {
+    emit('zoom-change', zoom);
+};
 </script>
 
 <template>
@@ -58,6 +56,7 @@ watchEffect(() => {
             :venues="venues"
             @marker-click="handleMarkerClick"
             @bounds-change="handleBoundsChange"
+            @zoom-change="handleZoomChange"
         />
     </div>
 </template>
