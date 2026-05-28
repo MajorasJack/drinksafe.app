@@ -6,9 +6,9 @@
  * Positioned as a floating overlay on the map.
  */
 
+import { useHeatmap } from '@/composables/useHeatmap';
 import HeatmapPeriodSelector from './HeatmapPeriodSelector.vue';
 import HeatmapToggle from './HeatmapToggle.vue';
-import { useHeatmap } from '@/composables/useHeatmap';
 
 const { isVisible, totalReports, hasData } = useHeatmap();
 </script>

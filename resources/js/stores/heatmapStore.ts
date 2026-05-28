@@ -6,7 +6,8 @@
  * and localStorage persistence.
  */
 
-import axios, { type CancelTokenSource } from 'axios';
+import axios from 'axios';
+import type {CancelTokenSource} from 'axios';
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 import type {
@@ -162,6 +163,7 @@ export const useHeatmapStore = defineStore('heatmap', () => {
 
         if (!parsedBounds) {
             console.error('Invalid bounds string:', boundsString);
+
             return;
         }
 

@@ -7,8 +7,8 @@ import Button from '@/components/ui/button/Button.vue';
 import DateFilter from '@/components/ui/DateFilter.vue';
 import VenueMap from '@/components/venue/VenueMap.vue';
 import VenueSearchInput from '@/components/venue/VenueSearchInput.vue';
-import { useVenues } from '@/composables/useVenues';
 import { useSearch } from '@/composables/useSearch';
+import { useVenues } from '@/composables/useVenues';
 import type { Venue } from '@/types/venue';
 
 interface Props {

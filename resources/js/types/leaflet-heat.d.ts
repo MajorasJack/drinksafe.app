@@ -4,8 +4,6 @@
  * Provides TypeScript support for Leaflet heatmap layer functionality.
  */
 
-import * as L from 'leaflet';
-
 declare module 'leaflet' {
     /**
      * Configuration options for heatmap layer
