@@ -5,7 +5,8 @@
  * Includes debounced fetching for map movement events and request cancellation.
  */
 
-import axios, { type CancelTokenSource } from 'axios';
+import axios from 'axios';
+import type {CancelTokenSource} from 'axios';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { Venue, VenueFilters } from '@/types';

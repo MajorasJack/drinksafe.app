@@ -7,6 +7,7 @@
  */
 
 import type { HeatLayer, Map as LeafletMap } from 'leaflet';
+import type * as LeafletNamespace from 'leaflet';
 import { onBeforeUnmount, watch } from 'vue';
 import { useHeatmap } from '@/composables/useHeatmap';
 
@@ -19,7 +20,7 @@ const props = defineProps<Props>();
 const { leafletHeatData, isVisible, loading } = useHeatmap();
 
 let heatLayer: HeatLayer | null = null;
-let L: typeof import('leaflet') | null = null;
+let L: typeof LeafletNamespace | null = null;
 
 /**
  * Default heatmap configuration for Leaflet.heat.
@@ -55,6 +56,7 @@ const updateHeatLayer = async (): Promise<void> => {
 
     if (!isVisible.value) {
         removeHeatLayer();
+
         return;
     }
 
