@@ -51,8 +51,17 @@ jobs:
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
-            sudo chown -R www-data:www-data storage bootstrap/cache
-            sudo chmod -R 775 storage bootstrap/cache
+
+            # Writable dirs use the two-user pattern: the deploy user OWNS them
+            # (so composer/artisan can write cache & logs during deploy), while
+            # www-data is the GROUP with group-write + the setgid bit (so the web
+            # server can also write at runtime and new files inherit the group).
+            # Re-running the chown each deploy self-heals any files the web server
+            # created at runtime. Must run BEFORE the artisan commands below.
+            sudo chown -R ${{ secrets.DEPLOY_USER }}:www-data storage bootstrap/cache
+            sudo find storage bootstrap/cache -type d -exec chmod 2775 {} \;
+            sudo find storage bootstrap/cache -type f -exec chmod 0664 {} \;
+
             composer install --no-dev --optimize-autoloader --no-interaction
             php artisan migrate --force
             php artisan optimize
