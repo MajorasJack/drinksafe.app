@@ -1,21 +1,57 @@
 <script setup lang="ts">
-import { Shield, Search, MapPin, AlertTriangle } from 'lucide-vue-next';
+import { AlertTriangle, MapPin, Search, Shield } from 'lucide-vue-next';
+import type { Component } from 'vue';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+interface HowToUseStep {
+    icon: Component;
+    title: string;
+    description: string;
+}
+
+const howToUseSteps: HowToUseStep[] = [
+    {
+        icon: Search,
+        title: 'Search Venues',
+        description:
+            'Use our search tool to find venues and see if any incidents have been reported.',
+    },
+    {
+        icon: MapPin,
+        title: 'View on Map',
+        description:
+            'Browse venues on an interactive map to see reported incidents in your area.',
+    },
+    {
+        icon: AlertTriangle,
+        title: 'Report Incidents',
+        description:
+            "Submit anonymous reports about incidents you've experienced or witnessed.",
+    },
+];
+
+const safetyTips = [
+    'Never leave your drink unattended, even for a moment.',
+    'Watch your drink being prepared and carried to you.',
+    "If your drink tastes or smells unusual, don't drink it.",
+    'Stay with trusted friends and look out for each other.',
+    "If you feel unwell or suspect you've been spiked, tell someone immediately and seek help.",
+];
 </script>
 
 <template>
     <AppLayout>
-        <div class="container mx-auto max-w-4xl px-4 py-12">
-            <div class="space-y-12">
-                <div class="space-y-4 text-center">
+        <div class="container mx-auto max-w-4xl px-4 py-10 sm:py-12">
+            <div class="space-y-8 md:space-y-12">
+                <div class="space-y-3 text-center">
                     <h1
-                        class="text-4xl font-bold text-slate-900 dark:text-white"
+                        class="text-3xl font-bold text-slate-900 sm:text-4xl dark:text-white"
                     >
                         About Drink Safe
                     </h1>
                     <p
-                        class="mx-auto max-w-2xl text-xl text-slate-600 dark:text-gray-300"
+                        class="mx-auto max-w-2xl text-lg text-slate-600 sm:text-xl dark:text-gray-300"
                     >
                         Empowering communities to stay informed and make safer
                         decisions about nightlife venues.
@@ -25,7 +61,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                 <Card>
                     <CardHeader>
                         <div class="flex items-center gap-3">
-                            <Shield class="size-6 text-brand-teal" />
+                            <Shield class="size-6 shrink-0 text-brand-teal" />
                             <CardTitle>Our Mission</CardTitle>
                         </div>
                     </CardHeader>
@@ -48,76 +84,38 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                     </CardContent>
                 </Card>
 
-                <div class="space-y-6">
+                <div class="space-y-4">
                     <h2
                         class="text-2xl font-bold text-slate-900 dark:text-white"
                     >
                         How to Use Drink Safe
                     </h2>
 
-                    <div class="grid gap-6 md:grid-cols-3">
-                        <Card>
-                            <CardContent class="space-y-3 pt-6">
+                    <div class="grid gap-4 sm:grid-cols-3 sm:gap-6">
+                        <Card v-for="step in howToUseSteps" :key="step.title">
+                            <CardContent
+                                class="flex items-start gap-4 p-4 sm:block sm:space-y-3 sm:p-6"
+                            >
                                 <div
-                                    class="flex size-12 items-center justify-center rounded-full bg-brand-teal/10"
+                                    class="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-teal/10"
                                 >
-                                    <Search class="size-6 text-brand-teal" />
-                                </div>
-                                <h3
-                                    class="font-semibold text-slate-900 dark:text-white"
-                                >
-                                    Search Venues
-                                </h3>
-                                <p
-                                    class="text-sm text-slate-600 dark:text-gray-300"
-                                >
-                                    Use our search tool to find venues and see
-                                    if any incidents have been reported.
-                                </p>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardContent class="space-y-3 pt-6">
-                                <div
-                                    class="flex size-12 items-center justify-center rounded-full bg-brand-teal/10"
-                                >
-                                    <MapPin class="size-6 text-brand-teal" />
-                                </div>
-                                <h3
-                                    class="font-semibold text-slate-900 dark:text-white"
-                                >
-                                    View on Map
-                                </h3>
-                                <p
-                                    class="text-sm text-slate-600 dark:text-gray-300"
-                                >
-                                    Browse venues on an interactive map to see
-                                    reported incidents in your area.
-                                </p>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardContent class="space-y-3 pt-6">
-                                <div
-                                    class="flex size-12 items-center justify-center rounded-full bg-brand-teal/10"
-                                >
-                                    <AlertTriangle
+                                    <component
+                                        :is="step.icon"
                                         class="size-6 text-brand-teal"
                                     />
                                 </div>
-                                <h3
-                                    class="font-semibold text-slate-900 dark:text-white"
-                                >
-                                    Report Incidents
-                                </h3>
-                                <p
-                                    class="text-sm text-slate-600 dark:text-gray-300"
-                                >
-                                    Submit anonymous reports about incidents
-                                    you've experienced or witnessed.
-                                </p>
+                                <div class="space-y-1 sm:space-y-2">
+                                    <h3
+                                        class="font-semibold text-slate-900 dark:text-white"
+                                    >
+                                        {{ step.title }}
+                                    </h3>
+                                    <p
+                                        class="text-sm text-slate-600 dark:text-gray-300"
+                                    >
+                                        {{ step.description }}
+                                    </p>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
@@ -129,7 +127,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                     <CardHeader>
                         <div class="flex items-center gap-3">
                             <AlertTriangle
-                                class="size-6 text-amber-600 dark:text-amber-400"
+                                class="size-6 shrink-0 text-amber-600 dark:text-amber-400"
                             />
                             <CardTitle
                                 class="text-amber-900 dark:text-amber-200"
@@ -163,7 +161,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                     </CardContent>
                 </Card>
 
-                <div class="space-y-6">
+                <div class="space-y-4">
                     <h2
                         class="text-2xl font-bold text-slate-900 dark:text-white"
                     >
@@ -171,72 +169,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                     </h2>
 
                     <Card>
-                        <CardContent
-                            class="space-y-4 pt-6 text-slate-700 dark:text-gray-300"
-                        >
-                            <ul class="space-y-3">
-                                <li class="flex gap-3">
+                        <CardContent class="pt-6">
+                            <ul
+                                class="space-y-3 text-slate-700 dark:text-gray-300"
+                            >
+                                <li
+                                    v-for="(tip, index) in safetyTips"
+                                    :key="tip"
+                                    class="flex gap-3"
+                                >
                                     <span
                                         class="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-teal/10 text-sm font-medium text-brand-teal"
                                     >
-                                        1
+                                        {{ index + 1 }}
                                     </span>
-                                    <span>
-                                        Never leave your drink unattended, even
-                                        for a moment.
-                                    </span>
-                                </li>
-                                <li class="flex gap-3">
-                                    <span
-                                        class="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-teal/10 text-sm font-medium text-brand-teal"
-                                    >
-                                        2
-                                    </span>
-                                    <span>
-                                        Watch your drink being prepared and
-                                        carried to you.
-                                    </span>
-                                </li>
-                                <li class="flex gap-3">
-                                    <span
-                                        class="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-teal/10 text-sm font-medium text-brand-teal"
-                                    >
-                                        3
-                                    </span>
-                                    <span>
-                                        If your drink tastes or smells unusual,
-                                        don't drink it.
-                                    </span>
-                                </li>
-                                <li class="flex gap-3">
-                                    <span
-                                        class="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-teal/10 text-sm font-medium text-brand-teal"
-                                    >
-                                        4
-                                    </span>
-                                    <span>
-                                        Stay with trusted friends and look out
-                                        for each other.
-                                    </span>
-                                </li>
-                                <li class="flex gap-3">
-                                    <span
-                                        class="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-teal/10 text-sm font-medium text-brand-teal"
-                                    >
-                                        5
-                                    </span>
-                                    <span>
-                                        If you feel unwell or suspect you've
-                                        been spiked, tell someone immediately
-                                        and seek help.
-                                    </span>
+                                    <span>{{ tip }}</span>
                                 </li>
                             </ul>
                         </CardContent>
                     </Card>
                 </div>
 
-                <div class="space-y-6">
+                <div class="space-y-4">
                     <h2
                         class="text-2xl font-bold text-slate-900 dark:text-white"
                     >
@@ -244,77 +198,91 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                     </h2>
 
                     <Card>
-                        <CardContent
-                            class="space-y-4 pt-6 text-slate-700 dark:text-gray-300"
-                        >
-                            <div>
-                                <h3 class="mb-2 font-semibold dark:text-white">
-                                    Drink Spiking Support
-                                </h3>
-                                <ul class="space-y-2 text-sm">
-                                    <li>
-                                        <strong>Stamp Out Spiking:</strong>
-                                        <a
-                                            href="https://www.stampoutspiking.org"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            class="ml-1 text-brand-teal hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                                        >
-                                            stampoutspiking.org
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <strong>Victim Support:</strong>
-                                        <span class="ml-1">
-                                            08 08 16 89 111
-                                        </span>
-                                    </li>
-                                </ul>
-                            </div>
+                        <CardContent class="pt-6">
+                            <div class="grid gap-6 sm:grid-cols-3">
+                                <div>
+                                    <h3
+                                        class="mb-2 font-semibold text-slate-900 dark:text-white"
+                                    >
+                                        Drink Spiking Support
+                                    </h3>
+                                    <ul
+                                        class="space-y-2 text-sm text-slate-700 dark:text-gray-300"
+                                    >
+                                        <li>
+                                            <strong>Stamp Out Spiking:</strong>
+                                            <a
+                                                href="https://www.stampoutspiking.org"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="ml-1 text-brand-teal hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                                            >
+                                                stampoutspiking.org
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <strong>Victim Support:</strong>
+                                            <span class="ml-1">
+                                                08 08 16 89 111
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </div>
 
-                            <div>
-                                <h3 class="mb-2 font-semibold dark:text-white">
-                                    Sexual Assault Support
-                                </h3>
-                                <ul class="space-y-2 text-sm">
-                                    <li>
-                                        <strong>Rape Crisis:</strong>
-                                        <span class="ml-1">
-                                            0808 500 2222
-                                        </span>
-                                    </li>
-                                    <li>
-                                        <strong>The Survivors Trust:</strong>
-                                        <span class="ml-1">
-                                            08088 010 818
-                                        </span>
-                                    </li>
-                                </ul>
-                            </div>
+                                <div>
+                                    <h3
+                                        class="mb-2 font-semibold text-slate-900 dark:text-white"
+                                    >
+                                        Sexual Assault Support
+                                    </h3>
+                                    <ul
+                                        class="space-y-2 text-sm text-slate-700 dark:text-gray-300"
+                                    >
+                                        <li>
+                                            <strong>Rape Crisis:</strong>
+                                            <span class="ml-1">
+                                                0808 500 2222
+                                            </span>
+                                        </li>
+                                        <li>
+                                            <strong
+                                                >The Survivors Trust:</strong
+                                            >
+                                            <span class="ml-1">
+                                                08088 010 818
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </div>
 
-                            <div>
-                                <h3 class="mb-2 font-semibold dark:text-white">
-                                    Mental Health Support
-                                </h3>
-                                <ul class="space-y-2 text-sm">
-                                    <li>
-                                        <strong>Samaritans:</strong>
-                                        <span class="ml-1">116 123</span>
-                                    </li>
-                                    <li>
-                                        <strong>Mind:</strong>
-                                        <span class="ml-1">
-                                            0300 123 3393
-                                        </span>
-                                    </li>
-                                </ul>
+                                <div>
+                                    <h3
+                                        class="mb-2 font-semibold text-slate-900 dark:text-white"
+                                    >
+                                        Mental Health Support
+                                    </h3>
+                                    <ul
+                                        class="space-y-2 text-sm text-slate-700 dark:text-gray-300"
+                                    >
+                                        <li>
+                                            <strong>Samaritans:</strong>
+                                            <span class="ml-1">116 123</span>
+                                        </li>
+                                        <li>
+                                            <strong>Mind:</strong>
+                                            <span class="ml-1">
+                                                0300 123 3393
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
                 <Card class="bg-slate-50 dark:bg-gray-800">
-                    <CardContent class="space-y-4 pt-6 text-center">
+                    <CardContent class="space-y-3 pt-6 text-center">
                         <p class="text-slate-700 dark:text-gray-300">
                             Have questions or feedback about Drink Safe?
                         </p>

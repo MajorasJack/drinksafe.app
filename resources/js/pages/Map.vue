@@ -24,8 +24,18 @@ const props = withDefaults(defineProps<Props>(), {
     filters: () => ({}),
 });
 
-const { venues: storeVenues, loading, fetchVenues, fetchVenuesByBoundsDebounced } = useVenues();
-const { query: searchQuery, results: searchResults, isSearching, clearResults: clearSearchResults } = useSearch();
+const {
+    venues: storeVenues,
+    loading,
+    fetchVenues,
+    fetchVenuesByBoundsDebounced,
+} = useVenues();
+const {
+    query: searchQuery,
+    results: searchResults,
+    isSearching,
+    clearResults: clearSearchResults,
+} = useSearch();
 const selectedVenue = ref<Venue | null>(null);
 const startDate = ref<string>('');
 const endDate = ref<string>('');
@@ -38,7 +48,9 @@ const MIN_ZOOM_FOR_LIST = 12;
 const isZoomedInEnough = computed(() => currentZoom.value >= MIN_ZOOM_FOR_LIST);
 
 // Only show venues when searching OR zoomed in enough
-const shouldShowVenueList = computed(() => searchQuery.value.trim() || isZoomedInEnough.value);
+const shouldShowVenueList = computed(
+    () => searchQuery.value.trim() || isZoomedInEnough.value,
+);
 
 const filteredVenues = computed(() => {
     // When searching, show search results in sidebar
@@ -71,7 +83,6 @@ const handleSearchClear = (): void => {
 };
 
 const handleDateFilterApply = (): void => {
-    console.log('Applying date filters:', startDate.value, endDate.value);
     fetchVenues();
 };
 
@@ -112,7 +123,7 @@ onMounted(() => {
 <template>
     <AppLayout>
         <div
-            class="flex h-[calc(100vh-80px)] min-h-[600px] flex-col md:flex-row"
+            class="relative flex min-h-[28rem] flex-1 flex-col md:min-h-0 md:flex-row"
         >
             <!-- Sidebar / List View -->
             <div
@@ -164,7 +175,9 @@ onMounted(() => {
                         class="py-10 text-center text-slate-500 dark:text-gray-400"
                     >
                         <p class="mb-2">Zoom in to see venues in this area</p>
-                        <p class="text-sm">Or use the search above to find a specific venue</p>
+                        <p class="text-sm">
+                            Or use the search above to find a specific venue
+                        </p>
                     </div>
 
                     <div
@@ -234,11 +247,12 @@ onMounted(() => {
             >
                 <Button
                     variant="default"
-                    class="absolute bottom-6 left-1/2 z-[1000] flex -translate-x-1/2 items-center gap-2 rounded-full bg-brand-teal px-6 py-3 font-medium text-white shadow-lg md:hidden"
+                    class="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-[1000] flex min-h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-brand-teal px-6 py-3 font-medium text-white shadow-lg md:hidden"
                     @click="isMobileListOpen = true"
                 >
                     <Filter class="size-4" /> View
-                    {{ filteredVenues.length }} Venues
+                    {{ filteredVenues.length }}
+                    {{ filteredVenues.length === 1 ? 'Venue' : 'Venues' }}
                 </Button>
 
                 <VenueMap

@@ -172,6 +172,19 @@
         @apply bg-background text-foreground;
     }
 
+    /*
+      Match native form controls (date/time pickers, selects, scrollbars) to
+      the active theme. Without this, native pickers render light-on-light or
+      dark-on-dark and become effectively invisible in the opposite theme.
+    */
+    :root {
+        color-scheme: light;
+    }
+
+    .dark {
+        color-scheme: dark;
+    }
+
     /* Modern scrollbar styling */
     * {
         scrollbar-width: thin;

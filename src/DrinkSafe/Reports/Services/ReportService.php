@@ -82,6 +82,7 @@ final class ReportService
         return Report::create([
             'venue_uuid' => $venue->uuid,
             'incident_date' => $data['incident_date'],
+            'incident_time' => $data['incident_time'] ?? null,
             'time_of_day' => $data['time_of_day'],
             'description' => $description,
         ]);

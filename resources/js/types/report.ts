@@ -24,6 +24,7 @@ export interface Report {
     uuid: string;
     venue_uuid: string;
     incident_date: string;
+    incident_time: string | null;
     time_of_day: TimeOfDay;
     description: string;
     formatted_date: string;
@@ -53,6 +54,7 @@ export interface ReportSubmitData {
     latitude?: number;
     longitude?: number;
     incident_date: string;
+    incident_time?: string;
     time_of_day: TimeOfDay;
     description: string;
     'cf-turnstile-response': string;

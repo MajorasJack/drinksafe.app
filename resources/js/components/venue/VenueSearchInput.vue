@@ -5,11 +5,16 @@ import Input from '@/components/ui/input/Input.vue';
 import { useSearch } from '@/composables/useSearch';
 import type { Venue } from '@/types/venue';
 
+interface Props {
+    inputId?: string;
+}
+
 interface Emits {
     (e: 'select', venue: Venue): void;
     (e: 'clear'): void;
 }
 
+defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const { query, results, isSearching, search } = useSearch();
@@ -52,11 +57,12 @@ const handleBlur = (): void => {
                 class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400"
             />
             <Input
+                :id="inputId"
                 ref="inputRef"
                 v-model="query"
                 type="text"
                 placeholder="Search by city, town, or venue name..."
-                class="w-full pr-9 pl-9 text-white"
+                class="w-full pr-9 pl-9"
                 @focus="showDropdown = !!query.trim()"
                 @blur="handleBlur"
             />

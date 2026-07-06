@@ -35,6 +35,7 @@ final class ReportFactory extends Factory
         return [
             'venue_uuid' => Venue::factory(),
             'incident_date' => fake()->dateTimeBetween('-6 months', 'now'),
+            'incident_time' => fake()->optional()->time('H:i'),
             'time_of_day' => fake()->randomElement(TimeOfDay::cases()),
             'description' => $this->generateRealisticDescription(),
         ];
@@ -79,6 +80,28 @@ final class ReportFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'incident_date' => fake()->dateTimeBetween('-6 months', '-4 months'),
+        ]);
+    }
+
+    /**
+     * Factory state for a report with a specific exact incident time.
+     *
+     * @param  string  $time  Exact time in 24-hour HH:MM format
+     */
+    public function withTime(string $time): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'incident_time' => $time,
+        ]);
+    }
+
+    /**
+     * Factory state for a report with no exact incident time recorded.
+     */
+    public function withoutTime(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'incident_time' => null,
         ]);
     }
 
