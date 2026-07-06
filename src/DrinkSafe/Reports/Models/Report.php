@@ -10,6 +10,7 @@ use DrinkSafe\Reports\Enums\TimeOfDay;
 use DrinkSafe\Shared\Traits\HasUuid;
 use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,6 +26,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $uuid Primary key (UUID)
  * @property string $venue_uuid Foreign key to venues table
  * @property Carbon $incident_date Date when incident occurred
+ * @property string|null $incident_time Optional exact time of incident (HH:MM)
  * @property TimeOfDay $time_of_day Time of day when incident occurred
  * @property string $description User-provided incident description
  * @property Carbon $created_at Timestamp when report was submitted
@@ -63,6 +65,7 @@ final class Report extends Model
     protected $fillable = [
         'venue_uuid',
         'incident_date',
+        'incident_time',
         'time_of_day',
         'description',
     ];
@@ -81,6 +84,22 @@ final class Report extends Model
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Normalise the optional incident time to 24-hour HH:MM on read.
+     *
+     * The underlying TIME column returns driver-dependent formats
+     * (e.g. "21:30" on SQLite, "21:30:00" on MySQL); this guarantees a
+     * stable "HH:MM" value regardless of the database driver.
+     */
+    protected function incidentTime(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value): ?string => $value !== null
+                ? Carbon::parse($value)->format('H:i')
+                : null,
+        );
     }
 
     /**

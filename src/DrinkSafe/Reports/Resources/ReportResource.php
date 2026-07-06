@@ -30,6 +30,7 @@ final class ReportResource extends JsonResource
             'uuid' => $this->uuid,
             'venue_uuid' => $this->venue_uuid,
             'incident_date' => $this->incident_date?->toDateString(),
+            'incident_time' => $this->incident_time,
             'time_of_day' => $this->time_of_day->value,
             'description' => $this->description,
             'formatted_date' => $this->formatted_date,

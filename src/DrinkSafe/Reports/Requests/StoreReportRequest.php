@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DrinkSafe\Reports\Requests;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use RyanChandler\LaravelCloudflareTurnstile\Rules\Turnstile;
@@ -75,6 +76,10 @@ final class StoreReportRequest extends FormRequest
                 'date',
                 'before_or_equal:today',
             ],
+            'incident_time' => [
+                'nullable',
+                'date_format:H:i',
+            ],
             'time_of_day' => [
                 'required',
                 Rule::in(['Morning', 'Afternoon', 'Evening', 'Night', 'Unknown']),
@@ -109,6 +114,7 @@ final class StoreReportRequest extends FormRequest
             'venue_city.required_without' => 'Please provide a city or select an existing venue.',
             'incident_date.required' => 'Please specify when the incident occurred.',
             'incident_date.before_or_equal' => 'Incident date cannot be in the future.',
+            'incident_time.date_format' => 'Please provide a valid time in 24-hour HH:MM format.',
             'time_of_day.required' => 'Please select the time of day.',
             'time_of_day.in' => 'Please select a valid time of day.',
             'description.required' => 'Please provide a description of the incident.',
@@ -127,9 +133,9 @@ final class StoreReportRequest extends FormRequest
      * in the description field. Prevents submission if emails or phone numbers
      * are detected.
      */
-    public function withValidator($validator): void
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function ($validator): void {
+        $validator->after(function (Validator $validator): void {
             $description = $this->input('description', '');
 
             if ($this->containsPII($description)) {

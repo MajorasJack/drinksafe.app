@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import { toast } from 'vue-sonner';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import ReportForm from '@/components/report/ReportForm.vue';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DisclaimerBanner from '@/components/ui/DisclaimerBanner.vue';
 import { useReports } from '@/composables/useReports';
+import { ReportSubmissionError } from '@/stores/reportStore';
 import type { ReportSubmitData } from '@/types/report';
 import type { Venue } from '@/types/venue';
 
@@ -17,7 +19,11 @@ defineProps<Props>();
 
 const { submitReport } = useReports();
 
+const serverErrors = ref<Record<string, string>>({});
+
 const handleSubmit = async (data: ReportSubmitData): Promise<void> => {
+    serverErrors.value = {};
+
     try {
         const report = await submitReport(data);
 
@@ -32,15 +38,16 @@ const handleSubmit = async (data: ReportSubmitData): Promise<void> => {
             router.visit('/');
         }
     } catch (error) {
-        if (error instanceof Error) {
-            toast.error('Failed to submit report', {
-                description: error.message || 'Please try again later.',
-            });
-        } else {
-            toast.error('Failed to submit report', {
-                description: 'An unexpected error occurred.',
-            });
+        if (error instanceof ReportSubmissionError) {
+            serverErrors.value = error.fieldErrors;
         }
+
+        toast.error('Failed to submit report', {
+            description:
+                error instanceof Error
+                    ? error.message
+                    : 'An unexpected error occurred.',
+        });
     }
 };
 </script>
@@ -71,6 +78,7 @@ const handleSubmit = async (data: ReportSubmitData): Promise<void> => {
                     <CardContent>
                         <ReportForm
                             :initial-venue="venue"
+                            :server-errors="serverErrors"
                             @submit="handleSubmit"
                         />
                     </CardContent>

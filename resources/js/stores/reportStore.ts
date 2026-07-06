@@ -14,6 +14,21 @@ import type {
     TimeOfDay,
 } from '@/types';
 
+/**
+ * Error thrown when a report submission fails, carrying any per-field
+ * validation messages returned by the backend (HTTP 422) so the form can
+ * surface them inline instead of only showing a generic toast.
+ */
+export class ReportSubmissionError extends Error {
+    public readonly fieldErrors: Record<string, string>;
+
+    constructor(message: string, fieldErrors: Record<string, string> = {}) {
+        super(message);
+        this.name = 'ReportSubmissionError';
+        this.fieldErrors = fieldErrors;
+    }
+}
+
 export const useReportStore = defineStore('report', () => {
     // State
     const reports = ref<Report[]>([]);
@@ -106,11 +121,32 @@ export const useReportStore = defineStore('report', () => {
 
             return newReport;
         } catch (err) {
+            if (axios.isAxiosError(err) && err.response) {
+                const body = err.response.data as {
+                    message?: string;
+                    errors?: Record<string, string[]>;
+                };
+
+                const fieldErrors: Record<string, string> = {};
+
+                for (const [field, messages] of Object.entries(
+                    body.errors ?? {},
+                )) {
+                    fieldErrors[field] = messages[0];
+                }
+
+                error.value =
+                    body.message ??
+                    'Failed to submit report. Please try again.';
+
+                throw new ReportSubmissionError(error.value, fieldErrors);
+            }
+
             error.value =
                 err instanceof Error ? err.message : 'Failed to submit report';
             console.error('Failed to submit report:', err);
 
-            throw err;
+            throw new ReportSubmissionError(error.value);
         } finally {
             loading.value = false;
         }
