@@ -52,15 +52,16 @@ jobs:
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
 
-            # Writable dirs use the two-user pattern: the deploy user OWNS them
-            # (so composer/artisan can write cache & logs during deploy), while
-            # www-data is the GROUP with group-write + the setgid bit (so the web
-            # server can also write at runtime and new files inherit the group).
-            # Re-running the chown each deploy self-heals any files the web server
-            # created at runtime. Must run BEFORE the artisan commands below.
+            # Two-user pattern: the deploy user OWNS the writable dirs (so
+            # composer/artisan can write cache & logs during deploy), www-data is
+            # the GROUP with group-write, and the setgid bit (the leading 2 in
+            # 2775) makes files created by EITHER user inherit the www-data group
+            # so the other can always write them at runtime. Uses only chown/chmod
+            # (the deploy user's sudoers may not permit `find`). Must run BEFORE
+            # the artisan commands below; the recursive chown also self-heals the
+            # ownership of any files the web server created at runtime.
             sudo chown -R ${{ secrets.DEPLOY_USER }}:www-data storage bootstrap/cache
-            sudo find storage bootstrap/cache -type d -exec chmod 2775 {} \;
-            sudo find storage bootstrap/cache -type f -exec chmod 0664 {} \;
+            sudo chmod -R 2775 storage bootstrap/cache
 
             composer install --no-dev --optimize-autoloader --no-interaction
             php artisan migrate --force
