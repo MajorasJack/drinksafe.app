@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace DrinkSafe\Shared\Controllers;
 
 use App\Http\Controllers\Controller;
+use DrinkSafe\Shared\Seo\Seo;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -23,6 +24,12 @@ final class PrivacyController extends Controller
      */
     public function __invoke(): Response
     {
-        return Inertia::render('Privacy');
+        $seo = Seo::default()
+            ->withTitle('Privacy Policy — Drink Safe')
+            ->withDescription('Read the Drink Safe privacy policy to understand how we protect your anonymity and handle data across our community drink-spiking awareness platform.');
+
+        return Inertia::render('Privacy', [
+            'seo' => $seo->toArray(),
+        ]);
     }
 }

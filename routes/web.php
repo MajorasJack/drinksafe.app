@@ -7,6 +7,7 @@ use DrinkSafe\Shared\Controllers\ContactController;
 use DrinkSafe\Shared\Controllers\HomeController;
 use DrinkSafe\Shared\Controllers\MapController;
 use DrinkSafe\Shared\Controllers\PrivacyController;
+use DrinkSafe\Shared\Controllers\SitemapController;
 use DrinkSafe\Shared\Controllers\SupportController;
 use DrinkSafe\Shared\Controllers\TermsController;
 use DrinkSafe\Venues\Controllers\VenueDetailController;
@@ -32,6 +33,8 @@ Route::get('/analytics', AnalyticsController::class)->name('analytics');
 Route::get('/privacy', PrivacyController::class)->name('privacy');
 Route::get('/terms', TermsController::class)->name('terms');
 Route::get('/contact', ContactController::class)->name('contact');
+
+Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
 Route::get('/submit-report', [SubmitReportController::class, 'create'])->name('reports.create');
 Route::post('/submit-report', [SubmitReportController::class, 'store'])->name('reports.store');

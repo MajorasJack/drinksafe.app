@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace DrinkSafe\Shared\Controllers;
 
 use App\Http\Controllers\Controller;
+use DrinkSafe\Shared\Seo\Seo;
 use DrinkSafe\Venues\Models\Venue;
 use DrinkSafe\Venues\Resources\VenueMapResource;
 use DrinkSafe\Venues\Services\VenueSearchService;
@@ -52,7 +53,12 @@ final class MapController extends Controller
 
         $venues = $this->resolveVenues($search, $city, $bounds);
 
+        $seo = Seo::default()
+            ->withTitle('Interactive Venue Safety Map — Drink Safe')
+            ->withDescription('Explore an interactive map of community-submitted drink-spiking reports across UK venues. Search by city or venue to see safety information near you.');
+
         return Inertia::render('Map', [
+            'seo' => $seo->toArray(),
             'venues' => VenueMapResource::collection($venues)->resolve(),
             'filters' => [
                 'search' => $search,

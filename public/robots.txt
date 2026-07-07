@@ -1,2 +1,10 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /api
+
+# /submit-report is intentionally crawlable so bots can read its
+# `noindex` meta tag and reliably keep it out of the index.
+
+Sitemap: https://drinksafe.app/sitemap.xml

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace DrinkSafe\Shared\Controllers;
 
 use App\Http\Controllers\Controller;
+use DrinkSafe\Shared\Seo\Seo;
 use DrinkSafe\Venues\Models\Venue;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -31,7 +32,12 @@ final class AnalyticsController extends Controller
             ->pluck('city')
             ->toArray();
 
+        $seo = Seo::default()
+            ->withTitle('Spiking Incident Analytics & Trends — Drink Safe')
+            ->withDescription('Explore time-based analytics on community-reported drink-spiking incidents. Discover temporal patterns and trends by city to understand venue safety.');
+
         return Inertia::render('Analytics', [
+            'seo' => $seo->toArray(),
             'cities' => $cities,
         ]);
     }
