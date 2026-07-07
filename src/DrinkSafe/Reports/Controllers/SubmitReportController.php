@@ -43,7 +43,7 @@ final class SubmitReportController extends Controller
         $venues = Venue::orderBy('name')->get();
 
         $seo = Seo::default()
-            ->withTitle('Submit a Report — Drink Safe')
+            ->withTitle('Submit a Report - Drink Safe')
             ->withDescription('Anonymously report a drink-spiking incident at a venue to help keep the community informed and safe.')
             ->noindex();
 

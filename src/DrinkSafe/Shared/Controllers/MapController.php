@@ -54,7 +54,7 @@ final class MapController extends Controller
         $venues = $this->resolveVenues($search, $city, $bounds);
 
         $seo = Seo::default()
-            ->withTitle('Interactive Venue Safety Map — Drink Safe')
+            ->withTitle('Interactive Venue Safety Map - Drink Safe')
             ->withDescription('Explore an interactive map of community-submitted drink-spiking reports across UK venues. Search by city or venue to see safety information near you.');
 
         return Inertia::render('Map', [

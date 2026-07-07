@@ -59,7 +59,7 @@ final class VenueDetailController extends Controller
         );
 
         $title = sprintf(
-            '%s, %s — community safety reports | Drink Safe',
+            '%s, %s - community safety reports | Drink Safe',
             Str::limit($venue->name, 40),
             $venue->city,
         );

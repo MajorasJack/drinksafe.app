@@ -25,8 +25,8 @@ final class SupportController extends Controller
     public function __invoke(): Response
     {
         $seo = Seo::default()
-            ->withTitle('Support Drink Safe — Help Keep People Safe')
-            ->withDescription('Support Drink Safe with a donation to help cover hosting, security, and development costs — keeping this community safety platform free for everyone.');
+            ->withTitle('Support Drink Safe - Help Keep People Safe')
+            ->withDescription('Support Drink Safe with a donation to help cover hosting, security, and development costs - keeping this community safety platform free for everyone.');
 
         return Inertia::render('Support', [
             'seo' => $seo->toArray(),
