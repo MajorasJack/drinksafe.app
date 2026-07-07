@@ -25,7 +25,7 @@ final class TermsController extends Controller
     public function __invoke(): Response
     {
         $seo = Seo::default()
-            ->withTitle('Terms of Service — Drink Safe')
+            ->withTitle('Terms of Service - Drink Safe')
             ->withDescription('Read the Drink Safe terms of service covering acceptable use, community reporting guidelines, and your responsibilities when using the platform.');
 
         return Inertia::render('Terms', [

@@ -33,7 +33,7 @@ final class AnalyticsController extends Controller
             ->toArray();
 
         $seo = Seo::default()
-            ->withTitle('Spiking Incident Analytics & Trends — Drink Safe')
+            ->withTitle('Spiking Incident Analytics & Trends - Drink Safe')
             ->withDescription('Explore time-based analytics on community-reported drink-spiking incidents. Discover temporal patterns and trends by city to understand venue safety.');
 
         return Inertia::render('Analytics', [

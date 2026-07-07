@@ -38,8 +38,8 @@ final class HomeController extends Controller
         $recentReports = $this->reportService->getRecentReports(5);
 
         $seo = Seo::default()
-            ->withTitle('Drink Safe — Community Spiking Reports & Venue Safety')
-            ->withDescription('Drink Safe is a free, anonymous community platform for viewing and reporting drink-spiking incidents at UK venues — stay informed and safer on nights out.');
+            ->withTitle('Drink Safe - Community Spiking Reports & Venue Safety')
+            ->withDescription('Drink Safe is a free, anonymous community platform for viewing and reporting drink-spiking incidents at UK venues - stay informed and safer on nights out.');
 
         return Inertia::render('Home', [
             'seo' => $seo->toArray(),

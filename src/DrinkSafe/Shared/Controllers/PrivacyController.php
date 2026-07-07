@@ -25,7 +25,7 @@ final class PrivacyController extends Controller
     public function __invoke(): Response
     {
         $seo = Seo::default()
-            ->withTitle('Privacy Policy — Drink Safe')
+            ->withTitle('Privacy Policy - Drink Safe')
             ->withDescription('Read the Drink Safe privacy policy to understand how we protect your anonymity and handle data across our community drink-spiking awareness platform.');
 
         return Inertia::render('Privacy', [
