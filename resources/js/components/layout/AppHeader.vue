@@ -41,8 +41,11 @@ const closeMobileMenu = (): void => {
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="flex h-16 items-center justify-between">
                 <!-- Logo -->
-                <Link href="/" class="text-xl font-bold text-brand-teal">
-                    Drink Safe
+                <Link href="/" class="flex items-center gap-2.5">
+                    <img src="/favicon.svg" alt="" class="size-8" />
+                    <span class="text-xl font-bold text-brand-teal">
+                        Drink Safe
+                    </span>
                 </Link>
 
                 <!-- Desktop Navigation -->
@@ -79,7 +82,10 @@ const closeMobileMenu = (): void => {
                     </SheetTrigger>
                     <SheetContent side="right" class="w-[300px] sm:w-[340px]">
                         <SheetHeader>
-                            <SheetTitle class="text-brand-teal">
+                            <SheetTitle
+                                class="flex items-center gap-2 text-brand-teal"
+                            >
+                                <img src="/favicon.svg" alt="" class="size-6" />
                                 Drink Safe
                             </SheetTitle>
                         </SheetHeader>
