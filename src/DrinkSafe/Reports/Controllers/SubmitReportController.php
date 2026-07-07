@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use DrinkSafe\Reports\Exceptions\ReportValidationException;
 use DrinkSafe\Reports\Requests\StoreReportRequest;
 use DrinkSafe\Reports\Services\ReportService;
+use DrinkSafe\Shared\Seo\Seo;
 use DrinkSafe\Venues\Exceptions\VenueNotFoundException;
 use DrinkSafe\Venues\Models\Venue;
 use DrinkSafe\Venues\Resources\VenueResource;
@@ -41,7 +42,13 @@ final class SubmitReportController extends Controller
     {
         $venues = Venue::orderBy('name')->get();
 
+        $seo = Seo::default()
+            ->withTitle('Submit a Report — Drink Safe')
+            ->withDescription('Anonymously report a drink-spiking incident at a venue to help keep the community informed and safe.')
+            ->noindex();
+
         return Inertia::render('SubmitReport', [
+            'seo' => $seo->toArray(),
             'venues' => VenueResource::collection($venues)->resolve(),
         ]);
     }

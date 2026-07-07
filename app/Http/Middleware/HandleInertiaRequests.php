@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
+use DrinkSafe\Shared\Seo\Seo;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -51,6 +54,7 @@ class HandleInertiaRequests extends Middleware
                 'name' => config('app.name'),
                 'url' => config('app.url'),
             ],
+            'seo' => fn (): array => Seo::default()->toArray(),
             'turnstile' => [
                 'siteKey' => config('turnstile.site_key'),
             ],

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace DrinkSafe\Shared\Controllers;
 
 use App\Http\Controllers\Controller;
+use DrinkSafe\Shared\Seo\Seo;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -23,6 +24,12 @@ final class AboutController extends Controller
      */
     public function __invoke(): Response
     {
-        return Inertia::render('About');
+        $seo = Seo::default()
+            ->withTitle('About Drink Safe — How the Platform Works')
+            ->withDescription('Learn how Drink Safe works — an anonymous, community-driven platform for sharing and viewing drink-spiking reports to help people stay safe on nights out.');
+
+        return Inertia::render('About', [
+            'seo' => $seo->toArray(),
+        ]);
     }
 }
