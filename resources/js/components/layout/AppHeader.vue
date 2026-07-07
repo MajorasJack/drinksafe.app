@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import { Menu } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
+import BrandMark from '@/components/BrandMark.vue';
 import { Button } from '@/components/ui/button';
 import {
     Sheet,
@@ -42,7 +43,7 @@ const closeMobileMenu = (): void => {
             <div class="flex h-16 items-center justify-between">
                 <!-- Logo -->
                 <Link href="/" class="flex items-center gap-2.5">
-                    <img src="/favicon.svg" alt="" class="size-8" />
+                    <BrandMark class="size-8" />
                     <span class="text-xl font-bold text-brand-teal">
                         Drink Safe
                     </span>
@@ -85,7 +86,7 @@ const closeMobileMenu = (): void => {
                             <SheetTitle
                                 class="flex items-center gap-2 text-brand-teal"
                             >
-                                <img src="/favicon.svg" alt="" class="size-6" />
+                                <BrandMark class="size-6" />
                                 Drink Safe
                             </SheetTitle>
                         </SheetHeader>
