@@ -10,8 +10,6 @@ use DrinkSafe\Reports\Requests\StoreReportRequest;
 use DrinkSafe\Reports\Services\ReportService;
 use DrinkSafe\Shared\Seo\Seo;
 use DrinkSafe\Venues\Exceptions\VenueNotFoundException;
-use DrinkSafe\Venues\Models\Venue;
-use DrinkSafe\Venues\Resources\VenueResource;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -34,14 +32,14 @@ final class SubmitReportController extends Controller
     /**
      * Display the report submission form.
      *
-     * Loads all venues for the venue selection dropdown.
+     * Venues are not preloaded here: the form searches them on demand via
+     * the venues API, and shipping the whole table as a page prop made this
+     * response large enough to time out at the edge.
      *
-     * @return Response Inertia response with venues
+     * @return Response Inertia response for the submission form
      */
     public function create(): Response
     {
-        $venues = Venue::orderBy('name')->get();
-
         $seo = Seo::default()
             ->withTitle('Submit a Report - Drink Safe')
             ->withDescription('Anonymously report a drink-spiking incident at a venue to help keep the community informed and safe.')
@@ -49,7 +47,6 @@ final class SubmitReportController extends Controller
 
         return Inertia::render('SubmitReport', [
             'seo' => $seo->toArray(),
-            'venues' => VenueResource::collection($venues)->resolve(),
         ]);
     }
 

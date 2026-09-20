@@ -56,7 +56,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'seo' => fn (): array => Seo::default()->toArray(),
             'turnstile' => [
-                'siteKey' => config('turnstile.site_key'),
+                'siteKey' => config('services.turnstile.key'),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
