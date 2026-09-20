@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    // The Turnstile package reads `services.turnstile.secret` directly, so the
+    // site key lives beside it rather than in a config file of its own.
+    'turnstile' => [
+        'key' => env('TURNSTILE_SITE_KEY'),
+        'secret' => env('TURNSTILE_SECRET_KEY'),
+    ],
+
 ];
