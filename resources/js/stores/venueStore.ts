@@ -9,6 +9,7 @@ import axios from 'axios';
 import type {CancelTokenSource} from 'axios';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
+import { search } from '@/actions/DrinkSafe/Venues/Controllers/VenueSearchController';
 import type { Venue, VenueFilters } from '@/types';
 
 const DEBOUNCE_DELAY_MS = 300;
@@ -168,24 +169,18 @@ export const useVenueStore = defineStore('venue', () => {
         cancelTokenSource = axios.CancelToken.source();
 
         try {
-            const params = new URLSearchParams();
-
-            if (query) {
-                params.append('q', query);
-            }
-
-            if (filters?.city) {
-                params.append('city', filters.city);
-            }
-
-            if (filters?.limit) {
-                params.append('limit', filters.limit.toString());
-            }
-
-            const url = `/api/venues${params.toString() ? `?${params.toString()}` : ''}`;
-            const response = await axios.get(url, {
-                cancelToken: cancelTokenSource.token,
-            });
+            // The index endpoint ignores `q`; only the dedicated search route filters by name/city.
+            const response = await axios.get(
+                search.url({
+                    query: {
+                        q: query,
+                        ...(filters?.city ? { city: filters.city } : {}),
+                    },
+                }),
+                {
+                    cancelToken: cancelTokenSource.token,
+                },
+            );
 
             searchResults.value = response.data.data;
 

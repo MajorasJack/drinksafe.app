@@ -23,6 +23,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import VenueSearchInput from '@/components/venue/VenueSearchInput.vue';
+import { timeOfDayFromTime } from '@/lib/timeOfDay';
 import { TimeOfDay } from '@/types/report';
 import type { Venue } from '@/types/venue';
 
@@ -337,6 +338,15 @@ const handleSubmit = (): void => {
     emit('submit', data);
 };
 
+// An exact time is more specific than a band, so it wins whenever one is given.
+// Clearing the time leaves the band alone: the user may still know it was
+// "evening" without remembering the clock.
+watch(incidentTime, (time): void => {
+    if (time !== '') {
+        timeOfDay.value = timeOfDayFromTime(time);
+    }
+});
+
 // When the backend rejects a submission, jump to the step holding the offending
 // field so the inline error is actually visible to the user.
 watch(
@@ -629,41 +639,41 @@ onUnmounted(() => {
                     </div>
 
                     <div class="space-y-2">
-                        <Label for="incident-time">Time (optional)</Label>
-                        <Input
-                            id="incident-time"
-                            v-model="incidentTime"
-                            type="time"
-                            class="h-11 dark:[color-scheme:dark]"
-                            :aria-invalid="!!timeError"
-                        />
-                        <p
-                            v-if="timeError"
-                            class="text-sm font-medium text-red-600 dark:text-red-400"
-                        >
-                            {{ timeError }}
-                        </p>
+                        <Label for="time-of-day">Time of Day (optional)</Label>
+                        <Select v-model="timeOfDay">
+                            <SelectTrigger id="time-of-day" class="h-11 w-full">
+                                <SelectValue placeholder="Select time of day" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectItem
+                                        v-for="option in timeOfDayOptions"
+                                        :key="option.value"
+                                        :value="option.value"
+                                    >
+                                        {{ option.label }}
+                                    </SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
 
                 <div class="space-y-2">
-                    <Label for="time-of-day">Time of Day (optional)</Label>
-                    <Select v-model="timeOfDay">
-                        <SelectTrigger id="time-of-day" class="h-11">
-                            <SelectValue placeholder="Select time of day" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                <SelectItem
-                                    v-for="option in timeOfDayOptions"
-                                    :key="option.value"
-                                    :value="option.value"
-                                >
-                                    {{ option.label }}
-                                </SelectItem>
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
+                    <Label for="incident-time">Time (optional)</Label>
+                    <Input
+                        id="incident-time"
+                        v-model="incidentTime"
+                        type="time"
+                        class="h-11 dark:[color-scheme:dark]"
+                        :aria-invalid="!!timeError"
+                    />
+                    <p
+                        v-if="timeError"
+                        class="text-sm font-medium text-red-600 dark:text-red-400"
+                    >
+                        {{ timeError }}
+                    </p>
                 </div>
 
                 <div class="space-y-2">

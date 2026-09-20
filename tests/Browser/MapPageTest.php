@@ -335,3 +335,27 @@ it('mobile map view shows venue count', function (): void {
     $page->wait(1000)
         ->assertSee('5 Venues');
 });
+
+it('does not list venues that do not match the search term', function (): void {
+    Venue::factory()->create(['name' => 'Bishops Tavern', 'city' => 'Bristol']);
+    Venue::factory()->create(['name' => 'Tobacco Factory', 'city' => 'Bristol']);
+
+    $page = visit('/map');
+
+    $page->fill('input[placeholder*="Search"]', 'satan')
+        ->wait(1)
+        ->assertDontSee('Bishops Tavern')
+        ->assertDontSee('Tobacco Factory');
+});
+
+it('only lists venues matching a partial search term', function (): void {
+    Venue::factory()->create(['name' => 'Bishops Tavern', 'city' => 'Bristol']);
+    Venue::factory()->create(['name' => 'Tobacco Factory', 'city' => 'Bristol']);
+
+    $page = visit('/map');
+
+    $page->fill('input[placeholder*="Search"]', 'Bishops')
+        ->wait(1)
+        ->assertSee('Bishops Tavern')
+        ->assertDontSee('Tobacco Factory');
+});
