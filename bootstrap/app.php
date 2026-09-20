@@ -6,7 +6,6 @@ use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,11 +16,15 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        // AddLinkHeadersForPreloadedAssets is deliberately not registered. It
+        // repeats every Vite preload tag in a `Link` header, which on the
+        // heavier pages pushes the response headers past nginx's 4 KB FastCGI
+        // buffer and the origin answers with a 502. The <link rel="preload">
+        // tags in the HTML give browsers the same hint without the header.
         $middleware->web(append: [
             EnforceProduction::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
-            AddLinkHeadersForPreloadedAssets::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
