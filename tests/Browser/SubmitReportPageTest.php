@@ -361,3 +361,58 @@ it('displays step indicator correctly on all steps', function (): void {
         ->wait(500)
         ->assertSee('Step 3 of 3');
 });
+
+it('does not list venues that do not match the search term', function (): void {
+    Venue::factory()->create(['name' => 'Bishops Tavern', 'city' => 'Bristol']);
+    Venue::factory()->create(['name' => 'Tobacco Factory', 'city' => 'Bristol']);
+
+    $page = visit('/submit-report');
+
+    $page->fill('#venue-search', 'satan')
+        ->wait(1)
+        ->assertDontSee('Bishops Tavern')
+        ->assertDontSee('Tobacco Factory');
+});
+
+it('only lists venues matching a partial search term', function (): void {
+    Venue::factory()->create(['name' => 'Bishops Tavern', 'city' => 'Bristol']);
+    Venue::factory()->create(['name' => 'Tobacco Factory', 'city' => 'Bristol']);
+
+    $page = visit('/submit-report');
+
+    $page->fill('#venue-search', 'Bishops')
+        ->wait(1)
+        ->assertSee('Bishops Tavern')
+        ->assertDontSee('Tobacco Factory');
+});
+
+it('places the time of day beside the date and the exact time below it', function (): void {
+    $page = visit('/submit-report');
+
+    $page->click("Can't find your venue? Add it")
+        ->wait(0.5)
+        ->fill('#venue-name', 'Test Venue')
+        ->fill('#venue-city', 'London')
+        ->click('Next')
+        ->wait(0.5);
+
+    $fieldOrder = $page->script(
+        "Array.from(document.querySelectorAll('#incident-date, #incident-time, #time-of-day')).map((element) => element.id)"
+    );
+
+    expect($fieldOrder)->toBe(['incident-date', 'time-of-day', 'incident-time']);
+});
+
+it('auto-fills the time of day from the incident time', function (): void {
+    $page = visit('/submit-report');
+
+    $page->click("Can't find your venue? Add it")
+        ->wait(0.5)
+        ->fill('#venue-name', 'Test Venue')
+        ->fill('#venue-city', 'London')
+        ->click('Next')
+        ->wait(0.5)
+        ->fill('#incident-time', '21:00')
+        ->wait(0.5)
+        ->assertSeeIn('#time-of-day', 'Evening (6pm - 10pm)');
+});

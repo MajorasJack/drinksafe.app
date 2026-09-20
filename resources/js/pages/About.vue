@@ -122,7 +122,8 @@ const safetyTips = [
                 </div>
 
                 <Card
-                    class="border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-900/20"
+                    id="police"
+                    class="scroll-mt-6 border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-900/20"
                 >
                     <CardHeader>
                         <div class="flex items-center gap-3">

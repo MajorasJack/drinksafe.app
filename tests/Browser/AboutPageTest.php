@@ -157,3 +157,10 @@ it('all sections are properly structured with cards', function (): void {
         ->assertSee('Resources & Support')
         ->assertNoJavaScriptErrors();
 });
+
+it('anchors the police contact guide at #police', function (): void {
+    $page = visit('/about#police');
+
+    $page->assertPresent('#police')
+        ->assertSeeIn('#police', 'UK Non-Emergency: 101');
+});

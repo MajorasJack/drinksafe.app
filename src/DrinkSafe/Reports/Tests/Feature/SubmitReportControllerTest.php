@@ -26,7 +26,19 @@ describe('SubmitReportController', function (): void {
             );
         });
 
-        it('renders submit report page with venues', function (): void {
+        it('shares the configured Turnstile site key with the page', function (): void {
+            config(['services.turnstile.key' => 'site-key-123']);
+
+            $response = $this->get(route('reports.create'));
+
+            $response->assertOk();
+            $response->assertInertia(fn ($page) => $page
+                ->component('SubmitReport')
+                ->where('turnstile.siteKey', 'site-key-123')
+            );
+        });
+
+        it('does not ship the full venue list as a page prop', function (): void {
             Venue::factory()->count(3)->create();
 
             $response = $this->get(route('reports.create'));
@@ -34,19 +46,7 @@ describe('SubmitReportController', function (): void {
             $response->assertOk();
             $response->assertInertia(fn ($page) => $page
                 ->component('SubmitReport')
-                ->has('venues', 3)
-                ->has('venues.0.uuid')
-                ->has('venues.0.name')
-            );
-        });
-
-        it('shows empty venues array when no venues exist', function (): void {
-            $response = $this->get(route('reports.create'));
-
-            $response->assertOk();
-            $response->assertInertia(fn ($page) => $page
-                ->component('SubmitReport')
-                ->has('venues', 0)
+                ->missing('venues')
             );
         });
     });
