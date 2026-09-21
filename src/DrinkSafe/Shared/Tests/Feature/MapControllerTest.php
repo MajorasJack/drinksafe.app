@@ -16,6 +16,18 @@ describe('MapController', function (): void {
         $response->assertOk();
     });
 
+    it('shares the configured CARTO basemap key with the page', function (): void {
+        config(['services.carto.key' => 'carto-key-123']);
+
+        $response = $this->get(route('map'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Map')
+            ->where('carto.apiKey', 'carto-key-123')
+        );
+    });
+
     it('shows map page with Inertia component', function (): void {
         $response = $this->get(route('map'));
 

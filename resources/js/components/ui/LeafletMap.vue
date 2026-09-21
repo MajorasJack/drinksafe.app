@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
 import type { HeatLayer, Icon, Map, Marker, MarkerClusterGroup } from 'leaflet';
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { HeatmapControls } from '@/components/map';
@@ -42,6 +43,11 @@ const isLoadingMarkers = ref(false);
 
 // Flag to prevent emitting bounds change during programmatic view updates
 let isProgrammaticMove = false;
+
+// CARTO watermarks tiles "API KEY REQUIRED" when the key is missing, so a
+// blank key still renders a usable (if ugly) map rather than nothing.
+const cartoApiKey = usePage().props.carto?.apiKey ?? '';
+const cartoTileUrl = `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png${cartoApiKey ? `?key=${encodeURIComponent(cartoApiKey)}` : ''}`;
 
 // These will be set after dynamic import
 let L: LeafletModule | null = null;
@@ -239,7 +245,7 @@ onMounted(async () => {
     map = L.map(mapContainer.value).setView(props.center, props.zoom);
 
     // Use CartoDB's Voyager tiles - faster CDN, cleaner design, better caching
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    L.tileLayer(cartoTileUrl, {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 20,
