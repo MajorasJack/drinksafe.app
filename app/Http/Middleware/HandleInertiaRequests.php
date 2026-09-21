@@ -58,6 +58,9 @@ class HandleInertiaRequests extends Middleware
             'turnstile' => [
                 'siteKey' => config('services.turnstile.key'),
             ],
+            'carto' => [
+                'apiKey' => config('services.carto.key'),
+            ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

@@ -26,6 +26,12 @@ declare module '@inertiajs/core' {
                 name: string;
                 url: string;
             };
+            turnstile: {
+                siteKey: string | null;
+            };
+            carto: {
+                apiKey: string | null;
+            };
             sidebarOpen: boolean;
             [key: string]: unknown;
         };
