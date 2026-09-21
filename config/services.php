@@ -42,4 +42,9 @@ return [
         'secret' => env('TURNSTILE_SECRET_KEY'),
     ],
 
+    // CARTO's basemap tiles are watermarked "API KEY REQUIRED" without one.
+    'carto' => [
+        'key' => env('CARTO_API_KEY'),
+    ],
+
 ];

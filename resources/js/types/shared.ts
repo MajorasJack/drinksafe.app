@@ -19,6 +19,12 @@ export interface SharedProps {
         name: string;
         url: string;
     };
+    turnstile: {
+        siteKey: string | null;
+    };
+    carto: {
+        apiKey: string | null;
+    };
     sidebarOpen: boolean;
 }
 
