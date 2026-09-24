@@ -9,7 +9,7 @@ it('loads home page and displays hero section', function (): void {
     $page = visit('/');
 
     $page->assertSee('Community awareness for safer nights out')
-        ->assertSee('DrinkSafe is an anonymous, informational platform')
+        ->assertSee('Drink Safe is an anonymous, informational platform')
         ->assertNoJavaScriptErrors();
 });
 
@@ -32,14 +32,16 @@ it('navigates to map page when Browse Map clicked', function (): void {
     $page = visit('/');
 
     $page->click('Browse Map')
-        ->assertUrlIs('/map');
+        ->wait(1)
+        ->assertPathIs('/map');
 });
 
 it('navigates to submit report page when Share a Report clicked', function (): void {
     $page = visit('/');
 
     $page->click('Share a Report')
-        ->assertUrlIs('/report');
+        ->wait(1)
+        ->assertPathIs('/submit-report');
 });
 
 it('displays recent reports section', function (): void {
@@ -80,7 +82,8 @@ it('navigates to venue detail when report card clicked', function (): void {
     $page = visit('/');
 
     $page->click($venue->name)
-        ->assertPathIs(sprintf('/venues/%s', $venue->uuid));
+        ->wait(1)
+        ->assertPathIs(sprintf('/venues/%s', $venue->slug));
 });
 
 it('displays How it works section', function (): void {
@@ -105,7 +108,8 @@ it('performs search and navigates to map with query', function (): void {
 
     $page->fill('search', 'London')
         ->click('button[type="submit"]')
-        ->assertUrlIs('/map')
+        ->wait(1)
+        ->assertPathIs('/map')
         ->assertQueryStringHas('search', 'London');
 });
 
@@ -121,7 +125,7 @@ it('displays statistics on homepage', function (): void {
 it('displays disclaimer banner', function (): void {
     $page = visit('/');
 
-    $page->assertSee('informational purposes only')
+    $page->assertSee('Drink Safe is an informational platform')
         ->assertNoJavaScriptErrors();
 });
 

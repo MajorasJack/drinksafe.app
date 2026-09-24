@@ -74,7 +74,9 @@ onMounted(() => {
             <div class="grid gap-8 lg:grid-cols-2">
                 <div class="space-y-6">
                     <div class="space-y-2">
-                        <div class="flex flex-wrap items-start justify-between gap-4">
+                        <div
+                            class="flex flex-wrap items-start justify-between gap-4"
+                        >
                             <h1
                                 class="text-4xl font-bold text-slate-900 dark:text-white"
                             >
@@ -174,7 +176,9 @@ onMounted(() => {
                                     variant="secondary"
                                     class="w-full"
                                 >
-                                    <Link :href="`/report?venue=${venue.uuid}`">
+                                    <Link
+                                        :href="`/submit-report?venue=${venue.uuid}`"
+                                    >
                                         Submit Report
                                     </Link>
                                 </Button>

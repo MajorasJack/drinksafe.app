@@ -26,6 +26,28 @@ describe('SubmitReportController', function (): void {
             );
         });
 
+        it('preselects the venue named in the query string', function (): void {
+            $venue = Venue::factory()->create();
+
+            $response = $this->get(route('reports.create', ['venue' => $venue->uuid]));
+
+            $response->assertOk();
+            $response->assertInertia(fn ($page) => $page
+                ->component('SubmitReport')
+                ->where('venue.uuid', $venue->uuid)
+            );
+        });
+
+        it('renders without a venue when the query string names an unknown one', function (): void {
+            $response = $this->get(route('reports.create', ['venue' => 'not-a-venue']));
+
+            $response->assertOk();
+            $response->assertInertia(fn ($page) => $page
+                ->component('SubmitReport')
+                ->where('venue', null)
+            );
+        });
+
         it('shares the configured Turnstile site key with the page', function (): void {
             config(['services.turnstile.key' => 'site-key-123']);
 
