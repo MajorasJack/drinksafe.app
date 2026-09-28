@@ -36,13 +36,14 @@ CMYK starting points, for the printer to replace with their own profile conversi
 The navy is a heavy four-colour build. Ask Solopress whether their press prefers a richer or
 lighter black build for a flood of that size, and follow their answer over these figures.
 
-The shield mark is drawn at 14mm or larger. Its stroke is 2.3 units at a 24 unit viewbox, so
+The shield mark is drawn at 11mm or larger. Its stroke is 2.3 units at a 24 unit viewbox, so
 below roughly 12mm the tick begins to fill in.
 
 ## Stickers
 
-Two designs, 100 x 100mm square. The size is set by the copy on sticker A: at 90mm the body
-drops to 8pt, and 10pt is the difference between readable and squinted at across a cubicle.
+Two designs, 100 x 100mm square, giving a 94mm content area once the 3mm bleed and 3mm safe
+margin are taken off. The size is set by the copy on sticker A, which fills that square at
+9.5pt body with the steps at their longest wrap.
 
 ### Sticker A, cubicle door
 
@@ -53,15 +54,15 @@ putting the decision on the reader.
 Navy ground, white text.
 
 ```
-▣  DRINK SAFE                         mark 14mm, wordmark 12pt / 600
+▣  DRINK SAFE                         mark 11mm, wordmark 11pt / 600
 
-Think your drink                      20pt / 600 / white
+Think your drink                      16pt / 600 / white
 has been spiked?
 
-Sudden dizziness, confusion or        10pt / 400 / #94A3B8
+Sudden dizziness, confusion or        8.5pt / 400 / #94A3B8
 losing your balance can be signs.
 
-①  Tell bar staff now. They can       11pt / 500 / white
+①  Tell bar staff now. They can       9.5pt / 500 / white
    help you get somewhere safe.       numerals #2DD4BF
 
 ②  Stay with people you trust.
@@ -72,8 +73,8 @@ losing your balance can be signs.
                                       1pt rule, #0D9488
 ┌──────┐  Report it afterwards,       QR 22mm, dark modules
 │  QR  │  anonymously. No names,      on a white square
-│ 22mm │  no sign-up.                 9pt / 400 / #94A3B8
-└──────┘  drinksafe.app               10pt / 600 / #2DD4BF
+│ 22mm │  no sign-up.                 8pt / 400 / #94A3B8
+└──────┘  drinksafe.app               9.5pt / 600 / #2DD4BF
 ```
 
 QR target: `https://drinksafe.app/submit-report`
@@ -86,22 +87,22 @@ so the QR can take the space instead.
 Navy ground, white text.
 
 ```
-▣  DRINK SAFE                         mark 14mm, wordmark 12pt / 600
+▣  DRINK SAFE                         mark 11mm, wordmark 11pt / 600
 
-Something happened                    20pt / 600 / white
+Something happened                    17pt / 600 / white
 on a night out?
 
-      ┌──────────────┐                QR 34mm, dark modules on
+      ┌──────────────┐                QR 30mm, dark modules on
       │      QR      │                a white square, sitting
       └──────────────┘                on the navy ground
 
-Report it anonymously.                12pt / 500 / white
+Report it anonymously.                11pt / 500 / white
 No names. No sign-up.
 
-Or check what has been reported       10pt / 400 / #94A3B8
+Or check what has been reported       8.5pt / 400 / #94A3B8
 at a venue before you go.
 
-drinksafe.app                         11pt / 600 / #2DD4BF
+drinksafe.app                         10pt / 600 / #2DD4BF
 ```
 
 QR target: `https://drinksafe.app`
@@ -109,46 +110,59 @@ QR target: `https://drinksafe.app`
 ## Flyer
 
 One design, A5, double sided. Front is useful whether or not the reader ever opens the app;
-back is what to do and who to call.
+back is what to do and who to call. Both sides carry the QR, because the front is the side
+facing up when it is left on a bar and it needs an action of its own.
+
+The type runs larger than a screen layout would suggest. These are read at arm's length in a
+badly lit room, and at 11pt the page was both hard work to read and two thirds empty.
 
 ```
 FRONT                                   BACK
 
-▣ Drink Safe            teal bar        If it happens             22pt / 600
-
-Looking out for         28pt / 600      1 Tell bar staff. They    11pt
-each other              white on navy     can help you get
-                                          somewhere safe.
-A free, anonymous       11pt / 400      2 Stay with people you
-place to report drink                     trust. Do not leave
-spiking at UK venues,                     on your own.
-and to check a venue                    3 If you feel very
-before you go.                            unwell, ask staff to
-                                          call for help.
-── Five things that help ──
-                                        ── Who can help ──
-1 Never leave your      11pt
-  drink unattended,                     Emergency          999    10pt
-  even for a moment.                    Non-emergency      101    two columns
-2 Watch your drink                      Crimestoppers
-  being prepared and                      0800 555 111
-  carried to you.                       Victim Support
-3 If your drink tastes                    08 08 16 89 111
-  or smells unusual,                    Rape Crisis
-  do not drink it.                        0808 500 2222
-4 Stay with trusted                     Samaritans      116 123
-  friends and look out
-  for each other.                       ┌──────┐ Report
-5 If you feel unwell                    │  QR  │ anonymously.
-  or suspect you have                   │ 25mm │ No names, no
-  been spiked, tell                     └──────┘ sign-up.
-  someone immediately                            drinksafe.app
-  and seek help.
-                                        Drink Safe is an          7pt / #64748B
-drinksafe.app           #0D9488         informational platform.
-                                        It does not replace
-                                        the police.
+▣ Drink Safe        mark 17mm          If it happens             30pt / 600
+                    wordmark 15pt
+                                       1 Tell bar staff. They    14pt / 500
+Looking out for     38pt / 600           can help you get
+each other                               somewhere safe.
+                                       2 Stay with people you
+A free, anonymous   13.5pt / 400         trust. Do not leave
+place to report                          on your own.
+drink spiking at                       3 If you feel very
+UK venues, and to                        unwell, ask staff to
+check a venue                            call for help.
+before you go.
+                                       ── WHO CAN HELP ──        11pt / 600
+── FIVE THINGS      11pt / 600                                   teal, tracked
+   THAT HELP        teal, tracked       Emergency        999
+                                        Non-emergency    101     label 11pt grey
+1 Never leave your  14.5pt / 400        Crimestoppers            number 16pt / 600
+  drink unattended,                       0800 555 111           two columns
+  even for a moment.                    Victim Support
+2 Watch your drink                        08 08 16 89 111
+  being prepared and                    Rape Crisis
+  carried to you.                         0808 500 2222
+3 If your drink                         The Survivors Trust
+  tastes or smells                        08088 010 818
+  unusual, do not                       Samaritans       116 123
+  drink it.                             Mind
+4 Stay with trusted                       0300 123 3393
+  friends and look
+  out for each other.                  ┌──────┐ Report it       QR 25mm
+5 If you feel unwell                   │  QR  │ anonymously.    11.5pt
+  or suspect you                       │ 25mm │ No names,
+  have been spiked,                    └──────┘ no sign-up.
+  tell someone                                  drinksafe.app   13pt / 600
+  immediately and
+  seek help.                           Drink Safe is an         8pt / #64748B
+                                       informational platform.
+┌──────┐ Report a venue                It does not replace
+│  QR  │ anonymously, or               the police.
+│ 25mm │ check one before
+└──────┘ you go.
+         drinksafe.app
 ```
+
+QR target, both sides: `https://drinksafe.app/submit-report`
 
 QR target: `https://drinksafe.app/submit-report`
 
@@ -163,7 +177,7 @@ Generated as vector at final size and committed to `print/qr/`.
 | File | Target | Symbol | Size | Module |
 |---|---|---|---|---|
 | `qr-report-22mm.svg` | `/submit-report` | 3-M | 22mm | 595 micron |
-| `qr-home-34mm.svg` | home | 2-M | 34mm | 1030 micron |
+| `qr-home-34mm.svg` | home | 2-M | 34mm | 1030 micron, placed at 30mm |
 | `qr-report-25mm.svg` | `/submit-report` | 3-M | 25mm | 676 micron |
 
 Each file already contains its four module quiet zone, so the stated size is the full square
@@ -222,6 +236,30 @@ disagrees, because their per-product templates are the authority on their own pr
 
 Instrument Sans is free to install, but the fonts are outlined anyway so nothing can
 substitute on someone else's machine.
+
+## Producing the files
+
+The artwork is HTML rendered to PDF, so the type and colours stay tied to the same values the
+site uses and the files can be rebuilt whenever the copy changes.
+
+```
+node print/artwork/render.mjs
+```
+
+That writes PDFs and 300dpi PNG proofs to `print/output/`. Sources are in `print/artwork/`,
+with the fonts copied alongside them so nothing depends on what is installed locally.
+
+Each page is rendered 0.2mm larger than trim plus bleed. Chromium rounds the PDF media box
+down to whole points, and without the margin a 106mm page comes out at 105.83mm, which would
+leave the bleed a hair under 3mm and could trip a preflight check.
+
+Two things the renderer cannot do, both of which Solopress handle as a matter of course:
+
+1. **The PDFs are RGB.** Chromium has no CMYK output. Solopress convert on receipt. The CMYK
+   figures above are there so the conversion can be checked rather than assumed.
+2. **Fonts are embedded as subsets, not outlined.** Embedded subsets are accepted by every UK
+   trade printer and Instrument Sans is licensed for it. Ask for outlines only if preflight
+   objects.
 
 ## Things to confirm before ordering
 

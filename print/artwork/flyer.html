@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Drink Safe flyer</title>
+<link rel="stylesheet" href="artwork.css">
+<style>
+    /*
+     * A5 148 x 210mm trim, 3mm bleed all round. Page 1 front, page 2 back.
+     *
+     * The type runs larger than screen sizes would suggest. These are read at
+     * arm's length in a badly lit bar, and at 11pt the page was both hard work
+     * and two thirds empty.
+     */
+    @page { size: 154.2mm 216.2mm; margin: 0; }
+    .piece { width: 154.2mm; height: 216.2mm; }
+    .piece--flyer .safe { gap: 6mm; }
+
+    .mark { width: 17mm; height: 17mm; }
+    .wordmark { font-size: 15pt; }
+
+    h1 { font-size: 38pt; line-height: 1.06; }
+
+    .lede { font-size: 13.5pt; line-height: 1.4; }
+    .rule-label { font-size: 11pt; }
+
+    .steps li { font-size: 14pt; line-height: 1.3; grid-template-columns: 7mm 1fr; }
+    .steps { gap: 4mm; }
+
+    .tips {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 5mm;
+    }
+
+    .tips li {
+        display: grid;
+        grid-template-columns: 7mm 1fr;
+        gap: 2mm;
+        font-size: 14.5pt;
+        line-height: 1.32;
+    }
+
+    .tips .n {
+        font-weight: 600;
+        color: var(--teal-accent);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .contacts {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6mm 6mm;
+        line-height: 1.25;
+    }
+
+    .contacts div span {
+        display: block;
+        color: var(--body-grey);
+        font-size: 11pt;
+    }
+
+    .contacts div strong {
+        font-weight: 600;
+        font-size: 16pt;
+    }
+
+    .qr-copy { font-size: 11.5pt; }
+    .url { font-size: 13pt; }
+    .small-print { font-size: 8pt; }
+</style>
+</head>
+<body>
+
+<!-- Front -->
+<div class="piece piece--flyer">
+    <div class="safe">
+        <div class="masthead">
+            <svg class="mark" width="13mm" height="13mm" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="dsTealF1" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#2dd4bf"/>
+                        <stop offset="1" stop-color="#0d9488"/>
+                    </linearGradient>
+                </defs>
+                <rect width="64" height="64" rx="16" fill="url(#dsTealF1)"/>
+                <g transform="translate(8 8) scale(2)" fill="none" stroke="#0b1220" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </g>
+            </svg>
+            <span class="wordmark">Drink&nbsp;<em>Safe</em></span>
+        </div>
+
+        <h1>Looking out for<br>each other</h1>
+
+        <p class="lede">
+            A free, anonymous place to report drink spiking at UK venues,
+            and to check a venue before you go.
+        </p>
+
+        <p class="rule-label">Five things that help</p>
+
+        <ol class="tips">
+            <li><span class="n">1</span><span>Never leave your drink unattended, even for a moment.</span></li>
+            <li><span class="n">2</span><span>Watch your drink being prepared and carried to you.</span></li>
+            <li><span class="n">3</span><span>If your drink tastes or smells unusual, do not drink it.</span></li>
+            <li><span class="n">4</span><span>Stay with trusted friends and look out for each other.</span></li>
+            <li><span class="n">5</span><span>If you feel unwell or suspect you have been spiked, tell someone immediately and seek help.</span></li>
+        </ol>
+
+        <div class="spacer"></div>
+
+        <hr class="rule">
+
+        <div class="qr-row">
+            <img class="qr qr--25" src="../qr/qr-report-25mm.svg" alt="">
+            <div>
+                <p class="qr-copy">Report a venue anonymously,<br>or check one before you go.</p>
+                <p class="url">drinksafe.app</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Back -->
+<div class="piece piece--flyer">
+    <div class="safe">
+        <h1 style="font-size: 30pt;">If it happens</h1>
+
+        <ol class="steps">
+            <li><span class="n">1</span><span>Tell bar staff. They can help you get somewhere safe.</span></li>
+            <li><span class="n">2</span><span>Stay with people you trust. Do not leave on your own.</span></li>
+            <li><span class="n">3</span><span>If you feel very unwell, ask staff to call for help.</span></li>
+        </ol>
+
+        <p class="rule-label">Who can help</p>
+
+        <div class="contacts">
+            <div><span>Emergency</span><strong>999</strong></div>
+            <div><span>Non-emergency</span><strong>101</strong></div>
+            <div><span>Crimestoppers</span><strong>0800 555 111</strong></div>
+            <div><span>Victim Support</span><strong>08 08 16 89 111</strong></div>
+            <div><span>Rape Crisis</span><strong>0808 500 2222</strong></div>
+            <div><span>The Survivors Trust</span><strong>08088 010 818</strong></div>
+            <div><span>Samaritans</span><strong>116 123</strong></div>
+            <div><span>Mind</span><strong>0300 123 3393</strong></div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <hr class="rule">
+
+        <div class="qr-row">
+            <img class="qr qr--25" src="../qr/qr-report-25mm.svg" alt="">
+            <div>
+                <p class="qr-copy">Report it anonymously.<br>No names, no sign-up.</p>
+                <p class="url">drinksafe.app</p>
+            </div>
+        </div>
+
+        <p class="small-print">
+            Drink Safe is an informational platform. It does not replace the police.
+        </p>
+    </div>
+</div>
+
+</body>
+</html>
