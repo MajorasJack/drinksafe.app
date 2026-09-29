@@ -127,6 +127,13 @@ FRONT                                   BACK
 
 ▣ Drink Safe        mark 17mm          If it happens             30pt / 600
                     wordmark 15pt
+Often the only sign is    13.5pt / 400
+                                       feeling far drunker than  #94A3B8
+                                       you should for what you
+                                       have had. Dizziness or
+                                       confusion can also be
+                                       signs.
+
                                        1 Tell bar staff. They    14pt / 500
 Looking out for     38pt / 600           can help you get
 each other                               somewhere safe.
@@ -175,6 +182,11 @@ QR target: `https://drinksafe.app/submit-report`
 The five tips, the support numbers and the small print are taken word for word from the About
 page and the footer disclaimer, so the print and the site cannot drift apart. If the site's
 wording changes, the artwork changes with it.
+
+The one exception is the line about what being spiked feels like, which appears on both the
+sticker and the flyer but has no equivalent on the site. The About page's safety tips cover
+avoiding it and what to do afterwards, but never how to recognise it. Adding it there would
+close the gap and put the print and the site back in step.
 
 ## QR codes
 
