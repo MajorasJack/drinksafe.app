@@ -183,10 +183,9 @@ The five tips, the support numbers and the small print are taken word for word f
 page and the footer disclaimer, so the print and the site cannot drift apart. If the site's
 wording changes, the artwork changes with it.
 
-The one exception is the line about what being spiked feels like, which appears on both the
-sticker and the flyer but has no equivalent on the site. The About page's safety tips cover
-avoiding it and what to do afterwards, but never how to recognise it. Adding it there would
-close the gap and put the print and the site back in step.
+The line about what being spiked feels like is on the site as well, as the fifth Staying Safe
+tip. The print drops "of being spiked" from it, because on both pieces a heading directly
+above already says so, and the list item on the site has nothing above it to lean on.
 
 ## QR codes
 
