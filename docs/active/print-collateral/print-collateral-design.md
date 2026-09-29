@@ -51,6 +51,10 @@ Aimed at someone who may be frightened while reading it. Nobody is asked to dial
 themselves; step three asks staff to call, which keeps the emergency route open without
 putting the decision on the reader.
 
+The signs line leads with feeling drunker than the amount drunk accounts for, on the advice
+of someone who has been spiked and had no other symptom at all. Listing dizziness first
+invites the reader to rule themselves out for lacking it.
+
 Navy ground, white text.
 
 ```
@@ -59,8 +63,10 @@ Navy ground, white text.
 Think your drink                      16pt / 600 / white
 has been spiked?
 
-Sudden dizziness, confusion or        8.5pt / 400 / #94A3B8
-losing your balance can be signs.
+Often the only sign is feeling far    8.5pt / 400 / #94A3B8
+drunker than you should for what
+you have had. Dizziness or
+confusion can also be signs.
 
 ①  Tell bar staff now. They can       9.5pt / 500 / white
    help you get somewhere safe.       numerals #2DD4BF
