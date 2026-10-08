@@ -152,6 +152,7 @@ onMounted(() => {
 
                     <div class="mb-3">
                         <VenueSearchInput
+                            v-model="searchQuery"
                             @select="handleVenueSelect"
                             @clear="handleSearchClear"
                         />

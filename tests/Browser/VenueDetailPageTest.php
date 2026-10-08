@@ -12,7 +12,7 @@ it('displays venue detail page with venue information', function (): void {
         'address' => '123 Test Street',
     ]);
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
     $page->assertSee('Test Venue Detail')
         ->assertSee('London')
@@ -23,7 +23,7 @@ it('displays venue detail page with venue information', function (): void {
 it('displays breadcrumb navigation', function (): void {
     $venue = Venue::factory()->create(['name' => 'Breadcrumb Venue']);
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
     $page->assertSeeLink('Home')
         ->assertSeeLink('Map')
@@ -33,27 +33,29 @@ it('displays breadcrumb navigation', function (): void {
 it('breadcrumb Home link navigates to homepage', function (): void {
     $venue = Venue::factory()->create();
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
     $page->click('Home')
-        ->assertUrlIs('/');
+        ->wait(1)
+        ->assertPathIs('/');
 });
 
 it('breadcrumb Map link navigates to map page', function (): void {
     $venue = Venue::factory()->create();
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
     $page->click('Map')
-        ->assertUrlIs('/map');
+        ->wait(1)
+        ->assertPathIs('/map');
 });
 
 it('displays map with single venue marker', function (): void {
     $venue = Venue::factory()->create();
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
-    $page->wait(2000)
+    $page->wait(2)
         ->assertPresent('.leaflet-container')
         ->assertPresent('.leaflet-marker-icon')
         ->assertNoJavaScriptErrors();
@@ -65,7 +67,7 @@ it('displays venue coordinates', function (): void {
         'longitude' => -0.118092,
     ]);
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
     $page->assertSee('51.509865')
         ->assertSee('-0.118092')
@@ -77,7 +79,7 @@ it('displays report count alert when venue has reports', function (): void {
         ->has(Report::factory()->count(3))
         ->create();
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
     $page->assertSee('3 reports at this venue')
         ->assertSee('Review the reports below');
@@ -86,7 +88,7 @@ it('displays report count alert when venue has reports', function (): void {
 it('does not display report alert when venue has no reports', function (): void {
     $venue = Venue::factory()->create();
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
     $page->assertDontSee('reports at this venue');
 });
@@ -94,7 +96,7 @@ it('does not display report alert when venue has no reports', function (): void 
 it('displays Submit Report call to action card', function (): void {
     $venue = Venue::factory()->create();
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
     $page->assertSee('Experienced something here?')
         ->assertSee('Help others stay safe by submitting an anonymous report')
@@ -104,10 +106,11 @@ it('displays Submit Report call to action card', function (): void {
 it('Submit Report button navigates with venue pre-selected', function (): void {
     $venue = Venue::factory()->create();
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
     $page->click('Submit Report')
-        ->assertPathIs('/report')
+        ->wait(1)
+        ->assertPathIs('/submit-report')
         ->assertQueryStringHas('venue', $venue->uuid);
 });
 
@@ -118,7 +121,7 @@ it('displays reports list when venue has reports', function (): void {
         'description' => 'Test report description',
     ]);
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
     $page->assertSee('Test report description');
 });
@@ -130,9 +133,9 @@ it('displays report incident date in reports list', function (): void {
         'incident_date' => now()->subDays(5),
     ]);
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
-    $page->assertSee('5 days ago')
+    $page->assertSee(now()->subDays(5)->format('d M Y'))
         ->assertNoJavaScriptErrors();
 });
 
@@ -141,7 +144,7 @@ it('displays time of day filter in reports list', function (): void {
         ->has(Report::factory()->count(2))
         ->create();
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
     $page->assertNoJavaScriptErrors();
 });
@@ -149,7 +152,7 @@ it('displays time of day filter in reports list', function (): void {
 it('renders correctly on mobile viewport', function (): void {
     $venue = Venue::factory()->create(['name' => 'Mobile Venue']);
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid))->on()->iPhone14Pro();
+    $page = visit(sprintf('/venues/%s', $venue->slug))->on()->iPhone14Pro();
 
     $page->assertSee('Mobile Venue')
         ->assertNoJavaScriptErrors();
@@ -160,7 +163,7 @@ it('renders correctly on desktop viewport', function (): void {
         ->has(Report::factory()->count(2))
         ->create(['name' => 'Desktop Venue']);
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid))->resize(1920, 1080);
+    $page = visit(sprintf('/venues/%s', $venue->slug))->resize(1920, 1080);
 
     $page->assertSee('Desktop Venue')
         ->assertPresent('.leaflet-container')
@@ -172,7 +175,7 @@ it('desktop displays two column layout', function (): void {
         ->has(Report::factory()->count(3))
         ->create();
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid))->resize(1920, 1080);
+    $page = visit(sprintf('/venues/%s', $venue->slug))->resize(1920, 1080);
 
     $page->assertPresent('.lg\\:grid-cols-2')
         ->assertNoJavaScriptErrors();
@@ -187,7 +190,7 @@ it('handles venue not found gracefully', function (): void {
 it('map card displays Location title', function (): void {
     $venue = Venue::factory()->create();
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
     $page->assertSee('Location')
         ->assertNoJavaScriptErrors();
@@ -206,7 +209,7 @@ it('reports section displays all venue reports', function (): void {
         'description' => 'Second report content',
     ]);
 
-    $page = visit(sprintf('/venues/%s', $venue->uuid));
+    $page = visit(sprintf('/venues/%s', $venue->slug));
 
     $page->assertSee('First report content')
         ->assertSee('Second report content');

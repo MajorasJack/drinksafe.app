@@ -43,7 +43,7 @@ it('shows new venue form when add venue fallback clicked', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->assertPresent('#venue-name')
         ->assertPresent('#venue-city')
         ->assertPresent('#venue-address');
@@ -53,7 +53,7 @@ it('displays Back to search button in new venue form', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->assertSee('Back to search');
 });
 
@@ -61,7 +61,7 @@ it('shows a validation error when advancing with no venue selected', function ()
     $page = visit('/submit-report');
 
     $page->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertSee('Please search and select a venue')
         ->assertSee('Step 1 of 3');
 });
@@ -70,7 +70,7 @@ it('allows filling new venue form fields', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue Name')
         ->fill('#venue-city', 'Test City')
         ->fill('#venue-address', '123 Test Street');
@@ -80,11 +80,11 @@ it('progresses to step 2 when Next clicked with valid data', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertSee('Step 2 of 3')
         ->assertSee('Incident Details');
 });
@@ -93,11 +93,11 @@ it('displays date picker in step 2', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertPresent('#incident-date')
         ->assertSee('Date of Incident');
 });
@@ -106,11 +106,11 @@ it('displays optional time picker in step 2', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertPresent('#incident-time')
         ->assertSee('Time (optional)');
 });
@@ -119,11 +119,11 @@ it('date picker only allows past dates', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertAttribute('#incident-date', 'max', now()->toDateString());
 });
 
@@ -131,11 +131,11 @@ it('displays time of day dropdown in step 2', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertPresent('#time-of-day')
         ->assertSee('Time of Day');
 });
@@ -144,11 +144,11 @@ it('displays description textarea in step 2', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertPresent('#description')
         ->assertSee('Description');
 });
@@ -157,11 +157,11 @@ it('shows character count for description', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertSee('20 min');
 });
 
@@ -169,11 +169,11 @@ it('displays privacy notice in step 2', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertSee('Privacy Notice')
         ->assertSee('Do not include any personal information');
 });
@@ -182,14 +182,14 @@ it('shows PII warning when email detected', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#incident-date', now()->subDays(1)->toDateString())
         ->fill('#description', 'Contact me at test@example.com please')
-        ->wait(500)
+        ->wait(0.5)
         ->assertSee('Personal Information Detected');
 });
 
@@ -197,14 +197,14 @@ it('shows PII warning when phone number detected', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#incident-date', now()->subDays(1)->toDateString())
         ->fill('#description', 'Call me on 123-456-7890 for more details')
-        ->wait(500)
+        ->wait(0.5)
         ->assertSee('Personal Information Detected');
 });
 
@@ -212,13 +212,13 @@ it('Back button works in step 2', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->click('Back')
-        ->wait(500)
+        ->wait(0.5)
         ->assertSee('Step 1 of 3')
         ->assertSee('Select Venue');
 });
@@ -227,15 +227,15 @@ it('shows a validation error when advancing with a future date', function (): vo
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#incident-date', now()->addDays(5)->toDateString())
         ->fill('#description', 'A description with plenty of detail for this incident.')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertSee('The incident date cannot be in the future.')
         ->assertSee('Step 2 of 3');
 });
@@ -244,15 +244,15 @@ it('progresses to step 3 review when step 2 valid', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Review Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#incident-date', now()->subDays(2)->toDateString())
         ->fill('#description', 'This is a test report description that is long enough')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertSee('Step 3 of 3')
         ->assertSee('Review & Submit');
 });
@@ -261,16 +261,16 @@ it('displays all entered data in step 3 review', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Review Test Venue')
         ->fill('#venue-city', 'Manchester')
         ->fill('#venue-address', '456 Review Street')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#incident-date', now()->subDays(3)->toDateString())
         ->fill('#description', 'This is my review test description')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertSee('Review Test Venue')
         ->assertSee('Manchester')
         ->assertSee('456 Review Street')
@@ -281,15 +281,15 @@ it('Submit button is disabled when PII detected', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#incident-date', now()->subDays(1)->toDateString())
         ->fill('#description', 'Email me at bad@example.com with more info please')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertPresent('button[disabled]:has-text("Submit Report")');
 });
 
@@ -321,7 +321,7 @@ it('pre-populates venue when URL has venue parameter', function (): void {
 
     $page = visit(sprintf('/submit-report?venue=%s', $venue->uuid));
 
-    $page->wait(1000)
+    $page->wait(1)
         ->assertNoJavaScriptErrors();
 });
 
@@ -329,15 +329,15 @@ it('validates minimum description length', function (): void {
     $page = visit('/submit-report');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Test Venue')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#incident-date', now()->subDays(1)->toDateString())
         ->fill('#description', 'Short')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertSee('at least 20 characters')
         ->assertSee('Step 2 of 3');
 });
@@ -348,17 +348,17 @@ it('displays step indicator correctly on all steps', function (): void {
     $page->assertSee('Step 1 of 3');
 
     $page->click("Can't find your venue? Add it")
-        ->wait(500)
+        ->wait(0.5)
         ->fill('#venue-name', 'Step Test')
         ->fill('#venue-city', 'London')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertSee('Step 2 of 3');
 
     $page->fill('#incident-date', now()->subDays(1)->toDateString())
         ->fill('#description', 'Step test description content here')
         ->click('Next')
-        ->wait(500)
+        ->wait(0.5)
         ->assertSee('Step 3 of 3');
 });
 

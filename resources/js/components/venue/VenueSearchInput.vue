@@ -17,7 +17,12 @@ interface Emits {
 defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-const { query, results, isSearching, search } = useSearch();
+// Each useSearch() call owns its own query ref, so a parent that needs to react
+// to the term (the map sidebar, for one) reads it through this model rather
+// than calling the composable again and getting an unrelated ref.
+const query = defineModel<string>({ default: '' });
+
+const { results, isSearching, search } = useSearch();
 const showDropdown = ref(false);
 const inputRef = ref<HTMLInputElement | null>(null);
 

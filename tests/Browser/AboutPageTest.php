@@ -5,7 +5,7 @@ declare(strict_types=1);
 it('displays about page title and description', function (): void {
     $page = visit('/about');
 
-    $page->assertSee('About DrinkSafe')
+    $page->assertSee('About Drink Safe')
         ->assertSee('Empowering communities to stay informed')
         ->assertNoJavaScriptErrors();
 });
@@ -14,14 +14,14 @@ it('displays mission section', function (): void {
     $page = visit('/about');
 
     $page->assertSee('Our Mission')
-        ->assertSee('DrinkSafe was created to address the serious issue of drink spiking')
+        ->assertSee('Drink Safe was created to address the serious issue of drink spiking')
         ->assertNoJavaScriptErrors();
 });
 
-it('displays How to Use DrinkSafe section', function (): void {
+it('displays How to Use Drink Safe section', function (): void {
     $page = visit('/about');
 
-    $page->assertSee('How to Use DrinkSafe')
+    $page->assertSee('How to Use Drink Safe')
         ->assertSee('Search Venues')
         ->assertSee('View on Map')
         ->assertSee('Report Incidents');
@@ -86,7 +86,8 @@ it('displays support phone numbers correctly', function (): void {
 it('displays external link to Stamp Out Spiking', function (): void {
     $page = visit('/about');
 
-    $page->assertSeeLink('stampoutspiking.org');
+    $page->assertPresent('a[href="https://www.stampoutspiking.org"]')
+        ->assertSee('stampoutspiking.org');
 });
 
 it('displays numbered staying safe tips', function (): void {
@@ -110,14 +111,14 @@ it('displays how to use cards with icons', function (): void {
 it('displays questions and feedback section', function (): void {
     $page = visit('/about');
 
-    $page->assertSee('Have questions or feedback about DrinkSafe?')
+    $page->assertSee('Have questions or feedback about Drink Safe?')
         ->assertSee('community-driven platform');
 });
 
 it('renders correctly on mobile viewport', function (): void {
     $page = visit('/about')->on()->iPhone14Pro();
 
-    $page->assertSee('About DrinkSafe')
+    $page->assertSee('About Drink Safe')
         ->assertSee('Our Mission')
         ->assertNoJavaScriptErrors();
 });
@@ -125,8 +126,8 @@ it('renders correctly on mobile viewport', function (): void {
 it('renders correctly on desktop viewport', function (): void {
     $page = visit('/about')->resize(1920, 1080);
 
-    $page->assertSee('About DrinkSafe')
-        ->assertSee('How to Use DrinkSafe')
+    $page->assertSee('About Drink Safe')
+        ->assertSee('How to Use Drink Safe')
         ->assertSee('Resources & Support')
         ->assertNoJavaScriptErrors();
 });
@@ -151,7 +152,7 @@ it('all sections are properly structured with cards', function (): void {
     $page = visit('/about');
 
     $page->assertSee('Our Mission')
-        ->assertSee('How to Use DrinkSafe')
+        ->assertSee('How to Use Drink Safe')
         ->assertSee('Important Safety Information')
         ->assertSee('Staying Safe')
         ->assertSee('Resources & Support')
