@@ -165,3 +165,9 @@ it('anchors the police contact guide at #police', function (): void {
     $page->assertPresent('#police')
         ->assertSeeIn('#police', 'UK Non-Emergency: 101');
 });
+
+it('tells people what being spiked can feel like', function (): void {
+    $page = visit('/about');
+
+    $page->assertSee('Often the only sign of being spiked is feeling far drunker than you should for what you have had.');
+});
