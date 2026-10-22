@@ -47,4 +47,9 @@ return [
         'key' => env('CARTO_API_KEY'),
     ],
 
+    // Search Console ownership token. Empty on forks, so no verification tag is rendered.
+    'google' => [
+        'site_verification' => env('GOOGLE_SITE_VERIFICATION'),
+    ],
+
 ];

@@ -23,6 +23,9 @@
 <meta name="description" content="{{ $seoDescription }}">
 <link rel="canonical" href="{{ $seoCanonical }}">
 <meta name="robots" content="{{ $seoRobots }}">
+@if (config('services.google.site_verification'))
+<meta name="google-site-verification" content="{{ config('services.google.site_verification') }}">
+@endif
 
 <meta property="og:type" content="{{ $seoType }}">
 <meta property="og:site_name" content="{{ config('app.name') }}">
