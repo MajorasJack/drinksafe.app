@@ -1,12 +1,42 @@
 <script setup lang="ts">
-import { Coffee, Heart, Server, Shield } from 'lucide-vue-next';
+import {
+    Coffee,
+    Heart,
+    Megaphone,
+    Server,
+    Shield,
+    Wallet,
+} from 'lucide-vue-next';
 import type { Component } from 'vue';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import Button from '@/components/ui/button/Button.vue';
 import { Card, CardContent } from '@/components/ui/card';
 
-const kofiUsername = 'parasyte';
-const kofiUrl = `https://ko-fi.com/${kofiUsername}`;
+const props = defineProps<{
+    donationLinks: Partial<Record<'kofi' | 'paypal', string>>;
+}>();
+
+interface DonationOption {
+    label: string;
+    url: string;
+    icon: Component;
+    class: string;
+}
+
+const donationOptions: DonationOption[] = [
+    {
+        label: 'Support us on Ko-fi',
+        url: props.donationLinks.kofi ?? '',
+        icon: Coffee,
+        class: 'bg-[#FF5E5B] hover:bg-[#e54d4a]',
+    },
+    {
+        label: 'Donate with PayPal',
+        url: props.donationLinks.paypal ?? '',
+        icon: Wallet,
+        class: 'bg-[#0070BA] hover:bg-[#005ea6]',
+    },
+].filter((option) => option.url !== '');
 
 interface SupportArea {
     icon: Component;
@@ -32,6 +62,12 @@ const supportAreas: SupportArea[] = [
         title: 'Development',
         description:
             'Continued improvements, new features, and maintaining the platform for the community.',
+    },
+    {
+        icon: Megaphone,
+        title: 'Printing & Advertising',
+        description:
+            'Stickers, flyers, business cards and advertising that help more people find out Drink Safe exists.',
     },
 ];
 </script>
@@ -81,23 +117,36 @@ const supportAreas: SupportArea[] = [
                                     We believe safety information should be
                                     accessible to everyone. That's why Drink
                                     Safe will always be free to use, with no
-                                    ads, no paywalls, and no data collection.
+                                    ads on the site, no paywalls, and no data
+                                    collection.
                                 </p>
                             </div>
-                            <a
-                                :href="kofiUrl"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="inline-block"
+                            <div
+                                class="flex flex-col items-center gap-3 sm:flex-row"
                             >
-                                <Button
-                                    size="lg"
-                                    class="min-h-12 bg-[#FF5E5B] text-white hover:bg-[#e54d4a]"
+                                <a
+                                    v-for="option in donationOptions"
+                                    :key="option.label"
+                                    :href="option.url"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-block"
                                 >
-                                    <Coffee class="mr-2 size-5" />
-                                    Support us on Ko-fi
-                                </Button>
-                            </a>
+                                    <Button
+                                        size="lg"
+                                        :class="[
+                                            'min-h-12 text-white',
+                                            option.class,
+                                        ]"
+                                    >
+                                        <component
+                                            :is="option.icon"
+                                            class="mr-2 size-5"
+                                        />
+                                        {{ option.label }}
+                                    </Button>
+                                </a>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -109,7 +158,7 @@ const supportAreas: SupportArea[] = [
                         Where your support goes
                     </h2>
 
-                    <div class="grid gap-4 sm:grid-cols-3 sm:gap-6">
+                    <div class="grid gap-4 sm:grid-cols-2 sm:gap-6">
                         <Card v-for="area in supportAreas" :key="area.title">
                             <CardContent
                                 class="flex items-start gap-4 p-4 sm:block sm:p-6"
@@ -149,7 +198,10 @@ const supportAreas: SupportArea[] = [
                         <p class="text-slate-600 dark:text-gray-300">
                             Whether it's the price of a coffee or more, your
                             support directly helps keep Drink Safe available for
-                            everyone who needs it.
+                            everyone who needs it. Donations also pay for
+                            printing and advertising, so the people who would
+                            benefit most hear about Drink Safe in the first
+                            place.
                         </p>
                         <p class="text-sm text-slate-500 dark:text-gray-400">
                             Drink Safe is a community-driven project built by
