@@ -40,3 +40,16 @@ describe('SEO foundation', function (): void {
         expect(substr_count($response->getContent(), '<title>'))->toBe(1);
     });
 });
+
+it('renders the Google site verification tag when a token is configured', function (): void {
+    $token = fake()->regexify('[A-Za-z0-9_-]{43}');
+    config(['services.google.site_verification' => $token]);
+
+    $this->get(route('home'))->assertOk()->assertSee(sprintf('<meta name="google-site-verification" content="%s">', $token), escape: false);
+});
+
+it('omits the Google site verification tag when no token is configured', function (): void {
+    config(['services.google.site_verification' => null]);
+
+    $this->get(route('home'))->assertOk()->assertDontSee('google-site-verification');
+});

@@ -47,4 +47,15 @@ return [
         'key' => env('CARTO_API_KEY'),
     ],
 
+    // Search Console ownership token. Empty on forks, so no verification tag is rendered.
+    'google' => [
+        'site_verification' => env('GOOGLE_SITE_VERIFICATION'),
+    ],
+
+    // Donation links shown on /support. A link left empty is not shown.
+    'donations' => [
+        'kofi' => env('DONATION_KOFI_URL', 'https://ko-fi.com/parasyte'),
+        'paypal' => env('DONATION_PAYPAL_URL'),
+    ],
+
 ];
