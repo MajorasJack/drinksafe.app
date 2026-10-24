@@ -30,6 +30,7 @@ final class SupportController extends Controller
 
         return Inertia::render('Support', [
             'seo' => $seo->toArray(),
+            'donationLinks' => array_filter(config('services.donations')),
         ]);
     }
 }
