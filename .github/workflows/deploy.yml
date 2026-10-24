@@ -28,6 +28,8 @@ jobs:
           node-version: '22'
 
       - name: Build assets
+        env:
+          VITE_APP_NAME: DrinkSafe
         run: |
           rm -rf node_modules package-lock.json
           npm install
