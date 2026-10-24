@@ -810,3 +810,23 @@ After successful deployment:
 ---
 
 **End of Deployment Guide**
+
+## Automated Deploys (GitHub Actions)
+
+`.github/workflows/deploy.yml` builds the assets, copies the release to a staging directory over rsync, then runs one command on the server. Nothing about the server's users, groups, paths or PHP version is in the repository.
+
+Set these repository secrets:
+
+| Secret | Value |
+|---|---|
+| `DEPLOY_HOST` | Server host name or IP address |
+| `DEPLOY_USER` | Unprivileged SSH user the workflow connects as |
+| `DEPLOY_KEY` | Private SSH key for that user |
+| `DEPLOY_PATH` | Staging directory that user can write to |
+| `DEPLOY_SCRIPT` | Absolute path of the server's deploy script |
+
+The deploy script is owned by root and kept on the server. `DEPLOY_USER` is allowed to run only that script through `sudo`. The script must:
+
+1. Copy the staging directory into the live site, leaving `.env` and the runtime directories under `storage/` and `bootstrap/cache/` alone.
+2. Run `composer install --no-dev --optimize-autoloader`, `php artisan migrate --force` and `php artisan optimize`.
+3. Restore ownership and permissions on the live site for the web server user.
