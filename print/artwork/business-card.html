@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Drink Safe business card</title>
+<link rel="stylesheet" href="artwork.css">
+<style>
+    /*
+     * 85 x 55mm trim, 3mm bleed all round, so a 79 x 49mm content area with the
+     * 3mm safe margin. Page 1 front, page 2 back.
+     */
+    @page { size: 91.2mm 61.2mm; margin: 0; }
+    .piece { width: 91.2mm; height: 61.2mm; }
+    .safe { gap: 3mm; }
+    .mark { width: 12mm; height: 12mm; }
+    .wordmark { font-size: 12pt; }
+    h1 { font-size: 17pt; line-height: 1.1; }
+    .lede { font-size: 8.5pt; line-height: 1.35; }
+    .url { font-size: 11pt; }
+    .qr-row { gap: 4mm; }
+    .qr-copy { font-size: 8.5pt; line-height: 1.35; }
+    .back-title { font-size: 12pt; font-weight: 600; line-height: 1.15; margin-bottom: 1.6mm; }
+</style>
+</head>
+<body>
+<div class="piece piece--card">
+    <div class="safe">
+        <div class="masthead">
+            <svg class="mark" width="12mm" height="12mm" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="dsTealCard" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#2dd4bf"/>
+                        <stop offset="1" stop-color="#0d9488"/>
+                    </linearGradient>
+                </defs>
+                <rect width="64" height="64" rx="16" fill="url(#dsTealCard)"/>
+                <g transform="translate(8 8) scale(2)" fill="none" stroke="#0b1220" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </g>
+            </svg>
+            <span class="wordmark">Drink&nbsp;<em>Safe</em></span>
+        </div>
+
+        <div class="spacer"></div>
+
+        <h1>Looking out for<br>each other</h1>
+        <p class="lede">A free, anonymous place to report drink spiking at UK venues, and to check a venue before you go.</p>
+    </div>
+</div>
+
+<div class="piece piece--card">
+    <div class="safe">
+        <div class="spacer"></div>
+        <div class="qr-row">
+            <img class="qr qr--30" src="../qr/qr-home-34mm.svg" alt="">
+            <div>
+                <p class="back-title">Report it.<br>Check a venue.</p>
+                <p class="qr-copy">Anonymous. No names,<br>no sign-up.</p>
+                <p class="url">drinksafe.app</p>
+            </div>
+        </div>
+        <div class="spacer"></div>
+    </div>
+</div>
+</body>
+</html>

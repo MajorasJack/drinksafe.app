@@ -18,6 +18,7 @@ const pieces = [
     { file: 'sticker-a.html', name: 'sticker-a', width: 106.2, height: 106.2 },
     { file: 'sticker-b.html', name: 'sticker-b', width: 106.2, height: 106.2 },
     { file: 'flyer.html', name: 'flyer', width: 154.2, height: 216.2 },
+    { file: 'business-card.html', name: 'business-card', width: 91.2, height: 61.2 },
 ];
 
 const MM_PER_INCH = 25.4;

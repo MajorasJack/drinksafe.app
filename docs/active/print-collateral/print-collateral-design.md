@@ -187,6 +187,16 @@ The line about what being spiked feels like is on the site as well, as the fifth
 tip. The print drops "of being spiked" from it, because on both pieces a heading directly
 above already says so, and the list item on the site has nothing above it to lean on.
 
+## Business card
+
+One design, 85 x 55mm, double sided, navy ground. Front is the mark, wordmark and the same
+"Looking out for each other" line as the flyer. Back is the home page QR (30mm, the same
+`qr-home-34mm.svg` as sticker B) with "Report it. Check a venue." and the URL, so a card
+handed over in conversation has one action on it.
+
+3mm bleed and 3mm safe margin, as the stickers. Ordered and set up like the flyer, on 350gsm
+matt or silk stock.
+
 ## QR codes
 
 Generated as vector at final size and committed to `print/qr/`.
