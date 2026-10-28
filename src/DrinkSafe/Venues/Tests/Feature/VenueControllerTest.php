@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
@@ -190,5 +191,53 @@ describe('VenueController', function (): void {
             $response->assertUnprocessable()
                 ->assertJsonValidationErrors(['longitude']);
         });
+    });
+});
+
+describe('VenueController review queue', function (): void {
+    it('counts only published reports when listing venues', function (): void {
+        $venue = Venue::factory()->create();
+        Report::factory()->for($venue, 'venue')->create();
+        Report::factory()->for($venue, 'venue')->pending()->create();
+        Report::factory()->for($venue, 'venue')->rejected()->create();
+
+        $response = $this->getJson(route('api.venues.index'));
+
+        $response->assertOk()->assertJsonPath('data.0.reports_count', 1);
+    });
+
+    it('counts only published reports when listing venues in a city', function (): void {
+        $venue = Venue::factory()->create();
+        Report::factory()->for($venue, 'venue')->create();
+        Report::factory()->for($venue, 'venue')->pending()->create();
+        Report::factory()->for($venue, 'venue')->rejected()->create();
+
+        $response = $this->getJson(route('api.venues.index', ['city' => $venue->city]));
+
+        $response->assertOk()->assertJsonPath('data.0.reports_count', 1);
+    });
+
+    it('leaves out venues whose only reports are unpublished when listing by bounds', function (): void {
+        $venue = Venue::factory()->create(['latitude' => 51.5, 'longitude' => -0.1]);
+        Report::factory()->for($venue, 'venue')->pending()->create();
+        Report::factory()->for($venue, 'venue')->rejected()->create();
+
+        $response = $this->getJson(route('api.venues.index', ['bounds' => '51.0,-0.5,52.0,0.5']));
+
+        $response->assertOk()->assertJsonCount(0, 'data');
+    });
+
+    it('shows only published reports for a single venue', function (): void {
+        $venue = Venue::factory()->create();
+        $published = Report::factory()->for($venue, 'venue')->create();
+        Report::factory()->for($venue, 'venue')->pending()->create();
+        Report::factory()->for($venue, 'venue')->rejected()->create();
+
+        $response = $this->getJson(route('api.venues.show', $venue->uuid));
+
+        $response->assertOk()
+            ->assertJsonPath('reports_count', 1)
+            ->assertJsonPath('reports.0.uuid', $published->uuid)
+            ->assertJsonCount(1, 'reports');
     });
 });

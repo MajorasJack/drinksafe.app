@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use DrinkSafe\Reports\Enums\ReportStatus;
+use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Reports\Scopes\PublishedScope;
 use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use RyanChandler\LaravelCloudflareTurnstile\Facades\Turnstile;
@@ -88,11 +91,49 @@ describe('SubmitReportController', function (): void {
             $response = $this->post(route('reports.store'), $data);
 
             $response->assertRedirect(route('venues.show', $venue->uuid));
-            $response->assertSessionHas('success', 'Report submitted successfully');
+            $response->assertSessionHas('success', 'Thank you. Your report will appear once it has been reviewed.');
 
             $this->assertDatabaseHas('reports', [
                 'venue_uuid' => $venue->uuid,
                 'time_of_day' => 'Evening',
+            ]);
+        });
+
+        it('saves a submitted report as pending', function (): void {
+            Turnstile::fake();
+            $venue = Venue::factory()->create();
+
+            $this->post(route('reports.store'), [
+                'venue_uuid' => $venue->uuid,
+                'incident_date' => now()->subDays(2)->toDateString(),
+                'time_of_day' => 'Evening',
+                'description' => fake()->paragraph(),
+                'cf-turnstile-response' => 'test-token',
+            ]);
+
+            $this->assertDatabaseHas('reports', [
+                'venue_uuid' => $venue->uuid,
+                'status' => ReportStatus::Pending->value,
+                'reviewed_at' => null,
+            ]);
+        });
+
+        it('ignores a status sent with the submission', function (): void {
+            Turnstile::fake();
+            $venue = Venue::factory()->create();
+
+            $this->post(route('reports.store'), [
+                'venue_uuid' => $venue->uuid,
+                'incident_date' => now()->subDays(2)->toDateString(),
+                'time_of_day' => 'Evening',
+                'description' => fake()->paragraph(),
+                'status' => ReportStatus::Published->value,
+                'cf-turnstile-response' => 'test-token',
+            ]);
+
+            $this->assertDatabaseHas('reports', [
+                'venue_uuid' => $venue->uuid,
+                'status' => ReportStatus::Pending->value,
             ]);
         });
 
@@ -137,7 +178,7 @@ describe('SubmitReportController', function (): void {
                 'venue_uuid' => $venue->uuid,
             ]);
 
-            $report = $venue->fresh()->reports->first();
+            $report = Report::withoutGlobalScope(PublishedScope::class)->where('venue_uuid', $venue->uuid)->first();
             expect($report->incident_date->toDateString())->toBe($incidentDate->toDateString());
         });
 

@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
+use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Enums\TimeOfDay;
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Reports\Scopes\PublishedScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -163,5 +165,31 @@ describe('Report Model', function (): void {
         // Assert
         expect($formattedDate)->toBeString()
             ->and($formattedDate)->toContain('ago');
+    });
+});
+
+describe('Report review status', function (): void {
+    it('hides pending and rejected reports from queries by default', function (): void {
+        $published = Report::factory()->create();
+        Report::factory()->pending()->create();
+        Report::factory()->rejected()->create();
+
+        expect(Report::pluck('uuid')->all())->toBe([$published->uuid]);
+    });
+
+    it('can include unpublished reports by removing the published scope', function (): void {
+        Report::factory()->create();
+        Report::factory()->pending()->create();
+        Report::factory()->rejected()->create();
+
+        expect(Report::withoutGlobalScope(PublishedScope::class)->count())->toBe(3);
+    });
+
+    it('defaults new reports to pending', function (): void {
+        expect((new Report)->status)->toBe(ReportStatus::Pending);
+    });
+
+    it('does not allow status to be mass assigned', function (): void {
+        expect((new Report)->isFillable('status'))->toBeFalse();
     });
 });

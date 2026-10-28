@@ -113,3 +113,37 @@ describe('MapController', function (): void {
         );
     });
 });
+
+describe('MapController review queue', function (): void {
+    it('counts only published reports when searching the map', function (): void {
+        $venue = Venue::factory()->create(['name' => 'The Neon Arms']);
+        Report::factory()->for($venue, 'venue')->create();
+        Report::factory()->for($venue, 'venue')->pending()->create();
+        Report::factory()->for($venue, 'venue')->rejected()->create();
+
+        $response = $this->get(route('map', ['search' => 'Neon']));
+
+        $response->assertInertia(fn ($page) => $page->where('venues.0.reports_count', 1));
+    });
+
+    it('counts only published reports when filtering the map by city', function (): void {
+        $venue = Venue::factory()->create();
+        Report::factory()->for($venue, 'venue')->create();
+        Report::factory()->for($venue, 'venue')->pending()->create();
+        Report::factory()->for($venue, 'venue')->rejected()->create();
+
+        $response = $this->get(route('map', ['city' => $venue->city]));
+
+        $response->assertInertia(fn ($page) => $page->where('venues.0.reports_count', 1));
+    });
+
+    it('leaves out venues whose only reports are unpublished when loading by bounds', function (): void {
+        $venue = Venue::factory()->create(['latitude' => 51.5, 'longitude' => -0.1]);
+        Report::factory()->for($venue, 'venue')->pending()->create();
+        Report::factory()->for($venue, 'venue')->rejected()->create();
+
+        $response = $this->get(route('map', ['bounds' => '51.0,-0.5,52.0,0.5']));
+
+        $response->assertInertia(fn ($page) => $page->has('venues', 0));
+    });
+});

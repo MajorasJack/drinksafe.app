@@ -85,3 +85,28 @@ describe('HomeController', function (): void {
         );
     });
 });
+
+describe('HomeController review queue', function (): void {
+    it('shows only published reports in recent reports', function (): void {
+        $published = Report::factory()->create();
+        Report::factory()->pending()->create();
+        Report::factory()->rejected()->create();
+
+        $response = $this->get(route('home'));
+
+        $response->assertInertia(fn ($page) => $page
+            ->has('recent_reports', 1)
+            ->where('recent_reports.0.uuid', $published->uuid)
+        );
+    });
+
+    it('counts only published reports in the stats', function (): void {
+        Report::factory()->create();
+        Report::factory()->pending()->create();
+        Report::factory()->rejected()->create();
+
+        $response = $this->get(route('home'));
+
+        $response->assertInertia(fn ($page) => $page->where('stats.total_reports', 1));
+    });
+});

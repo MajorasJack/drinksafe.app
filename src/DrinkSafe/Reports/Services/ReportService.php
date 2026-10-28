@@ -5,13 +5,18 @@ declare(strict_types=1);
 namespace DrinkSafe\Reports\Services;
 
 use Carbon\Carbon;
+use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Enums\TimeOfDay;
 use DrinkSafe\Reports\Exceptions\ReportNotFoundException;
 use DrinkSafe\Reports\Exceptions\ReportValidationException;
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Reports\Notifications\ReportAwaitingReviewNotification;
+use DrinkSafe\Reports\Scopes\PublishedScope;
 use DrinkSafe\Venues\Models\Venue;
 use DrinkSafe\Venues\Services\VenueService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Notification;
 
 /**
  * ReportService
@@ -36,6 +41,9 @@ final class ReportService
      * Accepts either a venue UUID or venue details (name + city). If venue
      * details are provided, checks if venue exists or creates a new one.
      * Sanitises description and validates for PII before storage.
+     *
+     * The report is saved as pending and stays hidden until an admin
+     * publishes it. The moderators get an email saying one is waiting.
      *
      * @param  array<string, mixed>  $data  Report data
      *
@@ -78,14 +86,84 @@ final class ReportService
             }
         }
 
-        // Create report
-        return Report::create([
+        $report = Report::create([
             'venue_uuid' => $venue->uuid,
             'incident_date' => $data['incident_date'],
             'incident_time' => $data['incident_time'] ?? null,
             'time_of_day' => $data['time_of_day'],
             'description' => $description,
         ]);
+
+        // The report is already saved, so a mail or queue outage must not fail the submission.
+        rescue(fn () => Notification::route('mail', config('services.reports.alert_email'))
+            ->notify(new ReportAwaitingReviewNotification));
+
+        return $report;
+    }
+
+    /**
+     * Get the reports waiting for review, oldest first.
+     *
+     * @param  int  $limit  Maximum number of reports to return (default: 50)
+     * @return Collection<int, Report>
+     */
+    public function getPendingReports(int $limit = 50): Collection
+    {
+        return Report::withoutGlobalScope(PublishedScope::class)
+            ->with('venue')
+            ->where('status', ReportStatus::Pending)
+            ->oldest()
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Count the reports waiting for review.
+     */
+    public function countPendingReports(): int
+    {
+        return Report::withoutGlobalScope(PublishedScope::class)
+            ->where('status', ReportStatus::Pending)
+            ->count();
+    }
+
+    /**
+     * Get the most recently published or rejected reports.
+     *
+     * @param  int  $limit  Maximum number of reports to return (default: 20)
+     * @return Collection<int, Report>
+     */
+    public function getRecentlyReviewedReports(int $limit = 20): Collection
+    {
+        return Report::withoutGlobalScope(PublishedScope::class)
+            ->with('venue')
+            ->whereIn('status', [ReportStatus::Published, ReportStatus::Rejected])
+            ->whereNotNull('reviewed_at')
+            ->latest('reviewed_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Publish or reject a report, whatever its current status.
+     *
+     * @param  string  $uuid  The report UUID
+     * @param  ReportStatus  $status  The admin's decision
+     *
+     * @throws ModelNotFoundException If no report has this UUID
+     */
+    public function reviewReport(string $uuid, ReportStatus $status): Report
+    {
+        $report = Report::withoutGlobalScope(PublishedScope::class)
+            ->where('uuid', $uuid)
+            ->firstOrFail();
+
+        $report->forceFill([
+            'status' => $status,
+            'reviewed_at' => now(),
+        ])->save();
+
+        return $report;
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
+use DrinkSafe\Reports\Commands\MakeAdminCommand;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Observers\ReportObserver;
 use DrinkSafe\Venues\Commands\FetchVenuesCommand;
@@ -48,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 FetchVenuesCommand::class,
+                MakeAdminCommand::class,
             ]);
         }
     }

@@ -326,3 +326,27 @@ describe('TemporalAnalyticsController', function (): void {
         });
     });
 });
+
+describe('TemporalAnalyticsController review queue', function (): void {
+    it('analyses only published reports', function (): void {
+        $venue = Venue::factory()->create();
+        Report::factory()->count(10)->for($venue, 'venue')->daysAgo(10)->create();
+        Report::factory()->count(5)->for($venue, 'venue')->daysAgo(10)->pending()->create();
+        Report::factory()->count(5)->for($venue, 'venue')->daysAgo(10)->rejected()->create();
+
+        $response = $this->getJson(route('api.analytics.temporal'));
+
+        $response->assertOk()->assertJsonPath('data.meta.total_reports', 10);
+    });
+
+    it('does not count unpublished reports towards the minimum', function (): void {
+        $venue = Venue::factory()->create();
+        Report::factory()->count(5)->for($venue, 'venue')->daysAgo(10)->create();
+        Report::factory()->count(5)->for($venue, 'venue')->daysAgo(10)->pending()->create();
+        Report::factory()->count(5)->for($venue, 'venue')->daysAgo(10)->rejected()->create();
+
+        $response = $this->getJson(route('api.analytics.temporal'));
+
+        $response->assertUnprocessable()->assertJsonPath('actual_count', 5);
+    });
+});

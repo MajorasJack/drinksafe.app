@@ -27,7 +27,7 @@ const howToUseSteps: HowToUseStep[] = [
         icon: AlertTriangle,
         title: 'Report Incidents',
         description:
-            "Submit anonymous reports about incidents you've experienced or witnessed.",
+            "Submit anonymous reports about incidents you've experienced or witnessed. Every report is reviewed before it appears.",
     },
 ];
 

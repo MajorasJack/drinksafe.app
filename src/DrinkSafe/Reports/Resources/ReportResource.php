@@ -34,6 +34,8 @@ final class ReportResource extends JsonResource
             'time_of_day' => $this->time_of_day->value,
             'description' => $this->description,
             'formatted_date' => $this->formatted_date,
+            'status' => $this->status->value,
+            'reviewed_at' => $this->reviewed_at?->toISOString(),
             'venue' => $this->when(
                 $this->relationLoaded('venue'),
                 fn () => (new VenueResource($this->venue))->resolve()

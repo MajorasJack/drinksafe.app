@@ -104,3 +104,30 @@ describe('VenueDetailController', function (): void {
         $response->assertNotFound();
     });
 });
+
+describe('VenueDetailController review queue', function (): void {
+    it('shows only published reports for the venue', function (): void {
+        $venue = Venue::factory()->create();
+        $published = Report::factory()->for($venue, 'venue')->create();
+        Report::factory()->for($venue, 'venue')->pending()->create();
+        Report::factory()->for($venue, 'venue')->rejected()->create();
+
+        $response = $this->get(route('venues.show', $venue->slug));
+
+        $response->assertInertia(fn ($page) => $page
+            ->has('venue.reports', 1)
+            ->where('venue.reports.0.uuid', $published->uuid)
+        );
+    });
+
+    it('counts only published reports for the venue', function (): void {
+        $venue = Venue::factory()->create();
+        Report::factory()->for($venue, 'venue')->create();
+        Report::factory()->for($venue, 'venue')->pending()->create();
+        Report::factory()->for($venue, 'venue')->rejected()->create();
+
+        $response = $this->get(route('venues.show', $venue->slug));
+
+        $response->assertInertia(fn ($page) => $page->where('venue.reports_count', 1));
+    });
+});

@@ -18,6 +18,15 @@ export enum TimeOfDay {
 }
 
 /**
+ * Review status enum matching backend DrinkSafe\Reports\Enums\ReportStatus
+ */
+export enum ReportStatus {
+    Pending = 'pending',
+    Published = 'published',
+    Rejected = 'rejected',
+}
+
+/**
  * Report interface matching backend ReportResource
  */
 export interface Report {
@@ -28,6 +37,8 @@ export interface Report {
     time_of_day: TimeOfDay;
     description: string;
     formatted_date: string;
+    status: ReportStatus;
+    reviewed_at: string | null;
     venue?: Venue;
     created_at: string;
 }

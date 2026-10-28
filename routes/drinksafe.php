@@ -5,6 +5,8 @@ declare(strict_types=1);
 use DrinkSafe\Analytics\Controllers\TemporalAnalyticsController;
 use DrinkSafe\Heatmap\Controllers\HeatmapController;
 use DrinkSafe\Reports\Controllers\ReportController;
+use DrinkSafe\Reports\Controllers\ReportModerationController;
+use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Venues\Controllers\VenueController;
 use DrinkSafe\Venues\Controllers\VenueSafetyScoreController;
 use DrinkSafe\Venues\Controllers\VenueSearchController;
@@ -15,8 +17,8 @@ use Illuminate\Support\Facades\Route;
 | DrinkSafe API Routes
 |--------------------------------------------------------------------------
 |
-| API routes for the DrinkSafe application, organized by module.
-| All routes are prefixed with 'api/'.
+| API routes for the DrinkSafe application, organised by module, prefixed
+| with 'api/'. The admin review queue sits at the end under 'admin/'.
 |
 */
 
@@ -71,3 +73,17 @@ Route::prefix('api')->group(function (): void {
         ->middleware('throttle:60,1')
         ->name('api.heatmap');
 });
+
+// Reports Module Admin Routes
+Route::prefix('admin/reports')
+    ->middleware(['auth', 'verified'])
+    ->name('admin.reports.')
+    ->group(function (): void {
+        Route::get('/', [ReportModerationController::class, 'index'])
+            ->can('moderate', Report::class)
+            ->name('index');
+
+        Route::patch('/{uuid}', [ReportModerationController::class, 'update'])
+            ->can('moderate', Report::class)
+            ->name('update');
+    });

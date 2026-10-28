@@ -63,8 +63,8 @@ final class SubmitReportController extends Controller
     /**
      * Store a newly submitted report.
      *
-     * Creates the report and redirects to the venue detail page.
-     * Displays success message on successful submission.
+     * Creates the report and redirects to the venue detail page. The report
+     * is pending, so the message says it will appear once it's been reviewed.
      *
      * @param  StoreReportRequest  $request  Validated report data
      * @return RedirectResponse Redirects to venue detail page
@@ -76,7 +76,7 @@ final class SubmitReportController extends Controller
 
             return redirect()
                 ->route('venues.show', $report->venue_uuid)
-                ->with('success', 'Report submitted successfully');
+                ->with('success', 'Thank you. Your report will appear once it has been reviewed.');
         } catch (ReportValidationException $e) {
             return redirect()
                 ->back()
