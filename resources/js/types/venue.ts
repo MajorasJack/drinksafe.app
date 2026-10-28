@@ -17,6 +17,7 @@ export interface Venue {
     address: string | null;
     latitude: number;
     longitude: number;
+    published_at?: string | null;
     reports_count?: number;
     reports?: Report[];
     created_at: string;

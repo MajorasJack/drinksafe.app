@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Venues\Models\Venue;
+use DrinkSafe\Venues\Scopes\PublishedVenueScope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
 use Tests\TestCase;
@@ -117,20 +118,10 @@ describe('VenueController', function (): void {
             $response = $this->postJson(route('api.venues.store'), $data);
 
             $response->assertCreated()
-                ->assertJsonStructure([
+                ->assertExactJsonStructure([
                     'message',
-                    'data' => [
-                        'uuid',
-                        'name',
-                        'city',
-                        'address',
-                        'latitude',
-                        'longitude',
-                        'created_at',
-                    ],
-                ])
-                ->assertJsonPath('data.name', $data['name'])
-                ->assertJsonPath('data.city', $data['city']);
+                    'data' => ['uuid'],
+                ]);
 
             $this->assertDatabaseHas('venues', [
                 'name' => $data['name'],
@@ -285,5 +276,40 @@ describe('VenueController unpublished venues', function (): void {
 
         $response->assertCreated();
         $this->assertDatabaseHas('venues', ['name' => $name, 'published_at' => null]);
+    });
+
+    it('returns the existing unpublished venue instead of creating a copy', function (): void {
+        $venue = Venue::factory()->unpublished()->create();
+
+        $response = $this->postJson(route('api.venues.store'), [
+            'name' => $venue->name,
+            'city' => $venue->city,
+            'latitude' => fake()->latitude(),
+            'longitude' => fake()->longitude(),
+        ]);
+
+        $response->assertCreated()->assertJsonPath('data.uuid', $venue->uuid);
+        expect(Venue::withoutGlobalScope(PublishedVenueScope::class)->count())->toBe(1);
+    });
+
+    it('leaves the slug out so it cannot reveal a hidden venue with the same name', function (): void {
+        $venue = Venue::factory()->unpublished()->create();
+
+        $response = $this->postJson(route('api.venues.store'), [
+            'name' => $venue->name,
+            'city' => sprintf('%s North', $venue->city),
+            'latitude' => fake()->latitude(),
+            'longitude' => fake()->longitude(),
+        ]);
+
+        $response->assertCreated()->assertJsonMissingPath('data.slug');
+    });
+
+    it('leaves published_at out of the venue for anyone who is not an admin', function (): void {
+        $venue = Venue::factory()->create();
+
+        $response = $this->getJson(route('api.venues.show', $venue->uuid));
+
+        $response->assertOk()->assertJsonMissingPath('published_at');
     });
 });

@@ -64,6 +64,19 @@ const formatDateTime = (isoDate: string | null): string =>
                     <CardTitle>
                         {{ report.venue.name }}, {{ report.venue.city }}
                     </CardTitle>
+                    <p
+                        v-if="report.venue.address"
+                        class="text-sm text-muted-foreground"
+                    >
+                        {{ report.venue.address }}
+                    </p>
+                    <p
+                        v-if="report.venue.published_at === null"
+                        class="text-sm font-medium"
+                    >
+                        New venue: publishing this report also publishes this
+                        venue's name and address.
+                    </p>
                     <CardDescription>
                         Incident on {{ report.incident_date }},
                         {{ report.incident_time ?? report.time_of_day }}.

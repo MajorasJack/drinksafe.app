@@ -166,6 +166,19 @@ describe('ReportModerationController unpublished venues', function (): void {
         $response->assertOk()->assertInertia(fn ($page) => $page->where('pending_reports.0.venue.name', $venue->name));
     });
 
+    it('shows the address of an unpublished venue and marks it as new', function (): void {
+        $this->actingAs(User::factory()->admin()->create());
+        $venue = Venue::factory()->unpublished()->create(['address' => fake()->address()]);
+        Report::factory()->for($venue, 'venue')->pending()->create();
+
+        $response = $this->get(route('admin.reports.index'));
+
+        $response->assertOk()->assertInertia(fn ($page) => $page
+            ->where('pending_reports.0.venue.address', $venue->address)
+            ->where('pending_reports.0.venue.published_at', null)
+        );
+    });
+
     it('makes the venue page available once its first report is published', function (): void {
         $this->actingAs(User::factory()->admin()->create());
         $venue = Venue::factory()->unpublished()->create();
