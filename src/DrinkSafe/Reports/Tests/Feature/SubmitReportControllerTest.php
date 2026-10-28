@@ -77,7 +77,7 @@ describe('SubmitReportController', function (): void {
     });
 
     describe('store', function (): void {
-        it('submits report and redirects to venue detail', function (): void {
+        it('submits report and redirects to the home page', function (): void {
             Turnstile::fake();
             $venue = Venue::factory()->create();
             $data = [
@@ -90,7 +90,7 @@ describe('SubmitReportController', function (): void {
 
             $response = $this->post(route('reports.store'), $data);
 
-            $response->assertRedirect(route('venues.show', $venue->uuid));
+            $response->assertRedirect(route('home'));
             $response->assertSessionHas('success', 'Thank you. Your report will appear once it has been reviewed.');
 
             $this->assertDatabaseHas('reports', [
@@ -172,7 +172,7 @@ describe('SubmitReportController', function (): void {
 
             $response = $this->post(route('reports.store'), $data);
 
-            $response->assertRedirect(route('venues.show', $venue->uuid));
+            $response->assertRedirect(route('home'));
 
             $this->assertDatabaseHas('reports', [
                 'venue_uuid' => $venue->uuid,

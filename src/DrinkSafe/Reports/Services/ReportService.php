@@ -18,6 +18,7 @@ use DrinkSafe\Venues\Services\VenueService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
 /**
@@ -154,7 +155,8 @@ final class ReportService
      * Publish or reject a report, whatever its current status.
      *
      * Publishing a report also publishes its venue, if this is the first
-     * report about it.
+     * report about it. Both happen in one transaction, so a venue never goes
+     * public without the report that was approved alongside it.
      *
      * @param  string  $uuid  The report UUID
      * @param  ReportStatus  $status  The admin's decision
@@ -167,19 +169,19 @@ final class ReportService
             ->where('uuid', $uuid)
             ->firstOrFail();
 
-        if ($status === ReportStatus::Published) {
-            Venue::withoutGlobalScope(PublishedVenueScope::class)
-                ->whereKey($report->venue_uuid)
-                ->whereNull('published_at')
-                ->update(['published_at' => now()]);
-        }
+        return DB::transaction(function () use ($report, $status): Report {
+            if ($status === ReportStatus::Published) {
+                Venue::withoutGlobalScope(PublishedVenueScope::class)
+                    ->whereKey($report->venue_uuid)
+                    ->whereNull('published_at')
+                    ->update(['published_at' => now()]);
+            }
 
-        $report->forceFill([
-            'status' => $status,
-            'reviewed_at' => now(),
-        ])->save();
-
-        return $report;
+            return tap($report->forceFill([
+                'status' => $status,
+                'reviewed_at' => now(),
+            ]))->save();
+        });
     }
 
     /**

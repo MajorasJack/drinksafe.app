@@ -23,8 +23,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Without a status, rejected reports would be public again, so take them down first.
-        DB::table('reports')->where('status', 'rejected')->update(['deleted_at' => now()]);
+        // Without a status, pending and rejected reports would be public again, so take them down first.
+        DB::table('reports')->whereIn('status', ['pending', 'rejected'])->update(['deleted_at' => now()]);
 
         Schema::table('reports', function (Blueprint $table): void {
             $table->dropIndex('idx_reports_status_created');
