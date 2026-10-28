@@ -23,7 +23,7 @@ describe('ReportAwaitingReviewNotification', function (): void {
             ->and($mail->outroLines)->toBe([]);
     });
 
-    it('is queued rather than sent during the request', function (): void {
-        expect(new ReportAwaitingReviewNotification)->toBeInstanceOf(ShouldQueue::class);
+    it('is sent during the request rather than queued', function (): void {
+        expect(new ReportAwaitingReviewNotification)->not->toBeInstanceOf(ShouldQueue::class);
     });
 });

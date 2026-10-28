@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace DrinkSafe\Reports\Notifications;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -14,11 +12,10 @@ use Illuminate\Notifications\Notification;
  *
  * Tells the moderators that a new report is in the review queue. The email
  * carries no report text and no venue, so nothing sensitive sits in an inbox.
+ * It sends during the request, so it doesn't depend on a queue worker running.
  */
-final class ReportAwaitingReviewNotification extends Notification implements ShouldQueue
+final class ReportAwaitingReviewNotification extends Notification
 {
-    use Queueable;
-
     /**
      * Get the notification's delivery channels.
      *
