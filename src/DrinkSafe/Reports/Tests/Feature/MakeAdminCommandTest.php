@@ -17,6 +17,16 @@ describe('drinksafe:make-admin', function (): void {
         expect($user->fresh()->is_admin)->toBeTrue();
     });
 
+    it('removes the admin flag with --revoke', function (): void {
+        $user = User::factory()->admin()->create();
+
+        $this->artisan('drinksafe:make-admin', ['email' => $user->email, '--revoke' => true])
+            ->expectsOutput(sprintf('%s can no longer review reports.', $user->email))
+            ->assertSuccessful();
+
+        expect($user->fresh()->is_admin)->toBeFalse();
+    });
+
     it('fails when no user has the email', function (): void {
         $email = fake()->safeEmail();
 

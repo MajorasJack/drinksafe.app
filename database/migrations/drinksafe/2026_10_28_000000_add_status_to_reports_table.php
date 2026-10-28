@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -22,6 +23,9 @@ return new class extends Migration
 
     public function down(): void
     {
+        // Without a status, rejected reports would be public again, so take them down first.
+        DB::table('reports')->where('status', 'rejected')->update(['deleted_at' => now()]);
+
         Schema::table('reports', function (Blueprint $table): void {
             $table->dropIndex('idx_reports_status_created');
             $table->dropColumn(['status', 'reviewed_at']);

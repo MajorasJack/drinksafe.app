@@ -12,6 +12,7 @@ use Illuminate\Console\Command;
  *
  * Flags an existing user as an admin so they can work the report review
  * queue. Admins can't be created through the site, only with this command.
+ * --revoke takes the flag away again.
  */
 final class MakeAdminCommand extends Command
 {
@@ -20,7 +21,9 @@ final class MakeAdminCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'drinksafe:make-admin {email : Email address of an existing user}';
+    protected $signature = 'drinksafe:make-admin
+        {email : Email address of an existing user}
+        {--revoke : Remove the admin flag instead of setting it}';
 
     /**
      * The console command description.
@@ -42,9 +45,11 @@ final class MakeAdminCommand extends Command
             return self::FAILURE;
         }
 
-        $user->forceFill(['is_admin' => true])->save();
+        $user->forceFill(['is_admin' => ! $this->option('revoke')])->save();
 
-        $this->info(sprintf('%s can now review reports at /admin/reports.', $user->email));
+        $this->info($this->option('revoke')
+            ? sprintf('%s can no longer review reports.', $user->email)
+            : sprintf('%s can now review reports at /admin/reports.', $user->email));
 
         return self::SUCCESS;
     }

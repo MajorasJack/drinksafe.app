@@ -7,9 +7,11 @@ use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Enums\TimeOfDay;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Scopes\PublishedScope;
+use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -191,5 +193,23 @@ describe('Report review status', function (): void {
 
     it('does not allow status to be mass assigned', function (): void {
         expect((new Report)->isFillable('status'))->toBeFalse();
+    });
+});
+
+describe('Report status column', function (): void {
+    it('reads a report inserted without a status back as pending', function (): void {
+        $venue = Venue::factory()->create();
+        $uuid = fake()->uuid();
+        DB::table('reports')->insert([
+            'uuid' => $uuid,
+            'venue_uuid' => $venue->uuid,
+            'incident_date' => now()->subDay()->toDateString(),
+            'time_of_day' => TimeOfDay::Evening->value,
+            'description' => fake()->sentence(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        expect(Report::withoutGlobalScope(PublishedScope::class)->find($uuid)->status)->toBe(ReportStatus::Pending);
     });
 });
