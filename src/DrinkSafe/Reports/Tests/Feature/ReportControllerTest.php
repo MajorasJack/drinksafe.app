@@ -519,3 +519,32 @@ describe('ReportController review queue', function (): void {
         $response->assertNotFound();
     });
 });
+
+describe('ReportController moderation fields', function (): void {
+    it('leaves the moderation fields out of public responses', function (): void {
+        $report = Report::factory()->create();
+
+        $response = $this->getJson(route('api.reports.show', $report->uuid));
+
+        $response->assertOk()
+            ->assertJsonMissingPath('data.status')
+            ->assertJsonMissingPath('data.reviewed_at');
+    });
+});
+
+describe('ReportController unpublished venues', function (): void {
+    it('leaves an unpublished venue out of the response to a submission', function (): void {
+        Turnstile::fake();
+
+        $response = $this->postJson(route('api.reports.store'), [
+            'venue_name' => fake()->company(),
+            'venue_city' => fake()->city(),
+            'incident_date' => now()->subDays(2)->toDateString(),
+            'time_of_day' => 'Evening',
+            'description' => fake()->sentence(),
+            'cf-turnstile-response' => 'test-token',
+        ]);
+
+        $response->assertCreated()->assertJsonMissingPath('data.venue');
+    });
+});

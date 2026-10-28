@@ -178,3 +178,13 @@ describe('VenueSafetyScoreController review queue', function (): void {
             ->assertJsonPath('data.tier', 'insufficient_data');
     });
 });
+
+describe('VenueSafetyScoreController unpublished venues', function (): void {
+    it('returns not found for a venue that has not been published', function (): void {
+        $venue = Venue::factory()->unpublished()->create();
+
+        $response = $this->getJson(route('api.venues.safety-score', $venue->uuid));
+
+        $response->assertNotFound();
+    });
+});

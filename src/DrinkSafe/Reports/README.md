@@ -37,10 +37,10 @@ This module manages:
 - **ReportPolicy** - `moderate` lets users flagged `is_admin` work the review queue
 
 ### Notifications
-- **ReportAwaitingReviewNotification** - Queued email telling the moderators a report is waiting
+- **ReportAwaitingReviewNotification** - Email telling the moderators a report is waiting
 
 ### Commands
-- **drinksafe:make-admin {email}** - Flags an existing user as an admin
+- **drinksafe:make-admin {email} {--revoke}** - Flags an existing user as an admin, or removes the flag with `--revoke`
 
 ### Resources
 - **ReportResource** - JSON response formatting for single report
@@ -81,8 +81,9 @@ New reports are saved as `pending` and stay off the site until an admin publishe
 - `PublishedScope` is a global scope on `Report`, so every Eloquent query, relationship, `withCount` and `has('reports')` only sees published reports. Anything that needs the others (the review queue) has to opt out with `Report::withoutGlobalScope(PublishedScope::class)`. Note that `$report->fresh()` ignores global scopes.
 - `HeatmapService` queries `DB::table('reports')` directly, which skips the scope, so it filters on `status` itself. Any new raw query on `reports` must do the same.
 - `status` is not mass assignable. `ReportService::reviewReport()` sets it with `forceFill`.
-- When a report is created, `ReportService` queues `ReportAwaitingReviewNotification` to `services.reports.alert_email` (`REPORT_ALERT_EMAIL`, default `drinksafe@protonmail.com`). The email has no report text and no venue name. If it can't be queued, the report is still saved.
+- When a report is created, `ReportService` sends `ReportAwaitingReviewNotification` to `services.reports.alert_email` (`REPORT_ALERT_EMAIL`, default `drinksafe@protonmail.com`). The email has no report text and no venue name. It sends during the request rather than through the queue. If it can't be sent, the report is still saved.
 - Admins work the queue at `/admin/reports`. It needs a logged-in user with `is_admin` set, which only `php artisan drinksafe:make-admin {email}` can do. Publishing or rejecting sets `reviewed_at`. A published report can be taken down by rejecting it.
+- A venue named for the first time in a submission is unpublished (`published_at` is null) and hidden by `PublishedVenueScope` until a report about it is published. Venues created through `POST /api/venues` start unpublished too.
 - The migration that added `status` made every existing report pending, on purpose, so they all get reviewed.
 - Heatmap and analytics results are cached (15 minutes and 6 hours), so a newly published report can take that long to show there. Venue safety scores are cleared straight away by `ReportObserver`.
 

@@ -12,12 +12,12 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { ReportStatus } from '@/types/report';
-import type { PopulatedReport } from '@/types/report';
+import type { ModeratedReport } from '@/types/report';
 
 type Props = {
-    pending_reports: PopulatedReport[];
+    pending_reports: ModeratedReport[];
     pending_count: number;
-    reviewed_reports: PopulatedReport[];
+    reviewed_reports: ModeratedReport[];
 };
 
 defineProps<Props>();

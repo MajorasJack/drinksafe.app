@@ -13,8 +13,10 @@ use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Notifications\ReportAwaitingReviewNotification;
 use DrinkSafe\Reports\Scopes\PublishedScope;
 use DrinkSafe\Venues\Models\Venue;
+use DrinkSafe\Venues\Scopes\PublishedVenueScope;
 use DrinkSafe\Venues\Services\VenueService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 
@@ -44,6 +46,9 @@ final class ReportService
      *
      * The report is saved as pending and stays hidden until an admin
      * publishes it. The moderators get an email saying one is waiting.
+     * A venue created here is unpublished until that happens too. The lookup
+     * includes unpublished venues, so a second report naming the same new
+     * venue joins the first rather than creating a copy.
      *
      * @param  array<string, mixed>  $data  Report data
      *
@@ -56,7 +61,8 @@ final class ReportService
             $venue = $this->venueService->getVenueById($data['venue_uuid']);
         } else {
             // Check if venue exists by name+city
-            $venue = Venue::where('name', $data['venue_name'])
+            $venue = Venue::withoutGlobalScope(PublishedVenueScope::class)
+                ->where('name', $data['venue_name'])
                 ->where('city', $data['venue_city'])
                 ->first();
 
@@ -92,10 +98,10 @@ final class ReportService
             'incident_time' => $data['incident_time'] ?? null,
             'time_of_day' => $data['time_of_day'],
             'description' => $description,
-        ]);
+        ])->setRelation('venue', $venue);
 
-        // The report is already saved, so a mail or queue outage must not fail the submission.
-        rescue(fn () => Notification::route('mail', config('services.reports.alert_email'))
+        // The report is already saved, so a mail outage must not fail the submission.
+        rescue(fn (): mixed => Notification::route('mail', config('services.reports.alert_email'))
             ->notify(new ReportAwaitingReviewNotification));
 
         return $report;
@@ -110,7 +116,7 @@ final class ReportService
     public function getPendingReports(int $limit = 50): Collection
     {
         return Report::withoutGlobalScope(PublishedScope::class)
-            ->with('venue')
+            ->with(['venue' => fn (BelongsTo $query): BelongsTo => $query->withoutGlobalScope(PublishedVenueScope::class)])
             ->where('status', ReportStatus::Pending)
             ->oldest()
             ->limit($limit)
@@ -136,7 +142,7 @@ final class ReportService
     public function getRecentlyReviewedReports(int $limit = 20): Collection
     {
         return Report::withoutGlobalScope(PublishedScope::class)
-            ->with('venue')
+            ->with(['venue' => fn (BelongsTo $query): BelongsTo => $query->withoutGlobalScope(PublishedVenueScope::class)])
             ->whereIn('status', [ReportStatus::Published, ReportStatus::Rejected])
             ->whereNotNull('reviewed_at')
             ->latest('reviewed_at')
@@ -146,6 +152,9 @@ final class ReportService
 
     /**
      * Publish or reject a report, whatever its current status.
+     *
+     * Publishing a report also publishes its venue, if this is the first
+     * report about it.
      *
      * @param  string  $uuid  The report UUID
      * @param  ReportStatus  $status  The admin's decision
@@ -157,6 +166,13 @@ final class ReportService
         $report = Report::withoutGlobalScope(PublishedScope::class)
             ->where('uuid', $uuid)
             ->firstOrFail();
+
+        if ($status === ReportStatus::Published) {
+            Venue::withoutGlobalScope(PublishedVenueScope::class)
+                ->whereKey($report->venue_uuid)
+                ->whereNull('published_at')
+                ->update(['published_at' => now()]);
+        }
 
         $report->forceFill([
             'status' => $status,

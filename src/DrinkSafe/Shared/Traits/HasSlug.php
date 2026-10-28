@@ -113,13 +113,15 @@ trait HasSlug
     /**
      * Check if a slug already exists in the database.
      *
+     * Global scopes are ignored, as a row hidden by one still holds its slug.
+     *
      * @param  Model  $model  The model instance
      * @param  string  $slug  The slug to check
      * @param  mixed  $excludeKey  The primary key value to exclude from the check
      */
     protected static function slugExists(Model $model, string $slug, mixed $excludeKey = null): bool
     {
-        $query = $model->newQuery()->where('slug', $slug);
+        $query = $model->newQueryWithoutScopes()->where('slug', $slug);
 
         if ($excludeKey !== null) {
             $query->where($model->getKeyName(), '!=', $excludeKey);

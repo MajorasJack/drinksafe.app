@@ -161,3 +161,16 @@ describe('VenueSearchController review queue', function (): void {
         $response->assertOk()->assertJsonPath('data.0.reports_count', 1);
     });
 });
+
+describe('VenueSearchController unpublished venues', function (): void {
+    it('leaves unpublished venues out of search results', function (): void {
+        $published = Venue::factory()->create(['name' => 'The Neon Arms']);
+        Venue::factory()->unpublished()->create(['name' => 'The Neon Tavern']);
+
+        $response = $this->getJson(route('api.venues.search', ['q' => 'neon']));
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.uuid', $published->uuid);
+    });
+});

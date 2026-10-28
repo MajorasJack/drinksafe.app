@@ -37,8 +37,10 @@ export interface Report {
     time_of_day: TimeOfDay;
     description: string;
     formatted_date: string;
-    status: ReportStatus;
-    reviewed_at: string | null;
+    /** Only sent to admins */
+    status?: ReportStatus;
+    /** Only sent to admins */
+    reviewed_at?: string | null;
     venue?: Venue;
     created_at: string;
 }
@@ -75,3 +77,11 @@ export interface ReportSubmitData {
  * Report with venue relationship loaded
  */
 export type PopulatedReport = Required<Pick<Report, 'venue'>> & Report;
+
+/**
+ * Report as the admin review queue sees it, with its moderation fields
+ */
+export type ModeratedReport = Required<
+    Pick<Report, 'venue' | 'status' | 'reviewed_at'>
+> &
+    Report;

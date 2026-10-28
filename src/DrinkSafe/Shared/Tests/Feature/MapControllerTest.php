@@ -147,3 +147,29 @@ describe('MapController review queue', function (): void {
         $response->assertInertia(fn ($page) => $page->has('venues', 0));
     });
 });
+
+describe('MapController unpublished venues', function (): void {
+    it('leaves unpublished venues out of map search results', function (): void {
+        $published = Venue::factory()->create(['name' => 'The Neon Arms']);
+        Venue::factory()->unpublished()->create(['name' => 'The Neon Tavern']);
+
+        $response = $this->get(route('map', ['search' => 'Neon']));
+
+        $response->assertInertia(fn ($page) => $page
+            ->has('venues', 1)
+            ->where('venues.0.uuid', $published->uuid)
+        );
+    });
+
+    it('leaves unpublished venues out of the map for a city', function (): void {
+        $published = Venue::factory()->create();
+        Venue::factory()->unpublished()->create(['city' => $published->city]);
+
+        $response = $this->get(route('map', ['city' => $published->city]));
+
+        $response->assertInertia(fn ($page) => $page
+            ->has('venues', 1)
+            ->where('venues.0.uuid', $published->uuid)
+        );
+    });
+});

@@ -241,3 +241,49 @@ describe('VenueController review queue', function (): void {
             ->assertJsonCount(1, 'reports');
     });
 });
+
+describe('VenueController unpublished venues', function (): void {
+    it('leaves unpublished venues out of the venue list', function (): void {
+        $published = Venue::factory()->create();
+        Venue::factory()->unpublished()->create();
+
+        $response = $this->getJson(route('api.venues.index'));
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.uuid', $published->uuid);
+    });
+
+    it('leaves unpublished venues out of the venue list for a city', function (): void {
+        $published = Venue::factory()->create();
+        Venue::factory()->unpublished()->create(['city' => $published->city]);
+
+        $response = $this->getJson(route('api.venues.index', ['city' => $published->city]));
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.uuid', $published->uuid);
+    });
+
+    it('returns not found for a venue that has not been published', function (): void {
+        $venue = Venue::factory()->unpublished()->create();
+
+        $response = $this->getJson(route('api.venues.show', $venue->uuid));
+
+        $response->assertNotFound();
+    });
+
+    it('creates venues unpublished', function (): void {
+        $name = fake()->company();
+
+        $response = $this->postJson(route('api.venues.store'), [
+            'name' => $name,
+            'city' => fake()->city(),
+            'latitude' => fake()->latitude(),
+            'longitude' => fake()->longitude(),
+        ]);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('venues', ['name' => $name, 'published_at' => null]);
+    });
+});

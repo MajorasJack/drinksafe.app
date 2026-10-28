@@ -131,3 +131,13 @@ describe('VenueDetailController review queue', function (): void {
         $response->assertInertia(fn ($page) => $page->where('venue.reports_count', 1));
     });
 });
+
+describe('VenueDetailController unpublished venues', function (): void {
+    it('returns not found for a venue that has not been published', function (): void {
+        $venue = Venue::factory()->unpublished()->create();
+
+        $response = $this->getJson(route('venues.show', $venue->slug));
+
+        $response->assertNotFound();
+    });
+});

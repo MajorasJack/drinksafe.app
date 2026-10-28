@@ -90,6 +90,10 @@ final class VenueService
      * Create a new venue.
      *
      * Validates that a venue with the same name doesn't already exist in the same city.
+     * The venue is created unpublished, because its details come from the public
+     * and nobody has reviewed them yet. Publishing a report about it publishes it.
+     * The duplicate check only looks at published venues, so it can't reveal that
+     * a submission is waiting for review.
      *
      * @param  array<string, mixed>  $data  Venue data
      *
@@ -105,7 +109,7 @@ final class VenueService
             throw new VenueDuplicateException($data['name'], $data['city']);
         }
 
-        return Venue::create($data);
+        return tap(new Venue($data), fn (Venue $venue): bool => $venue->forceFill(['published_at' => null])->save());
     }
 
     /**

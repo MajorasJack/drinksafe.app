@@ -446,3 +446,80 @@ describe('ReportService', function (): void {
         });
     });
 });
+
+describe('ReportService unpublished venues', function (): void {
+    it('leaves a venue named for the first time in a submission unpublished', function (): void {
+        $venueName = fake()->company();
+
+        $this->service->createReport([
+            'venue_name' => $venueName,
+            'venue_city' => fake()->city(),
+            'incident_date' => Carbon::yesterday()->toDateString(),
+            'time_of_day' => TimeOfDay::Night,
+            'description' => fake()->sentence(),
+        ]);
+
+        $this->assertDatabaseHas('venues', ['name' => $venueName, 'published_at' => null]);
+    });
+
+    it('adds a second submission about the same new venue to that venue', function (): void {
+        $venue = Venue::factory()->unpublished()->create();
+
+        $report = $this->service->createReport([
+            'venue_name' => $venue->name,
+            'venue_city' => $venue->city,
+            'incident_date' => Carbon::yesterday()->toDateString(),
+            'time_of_day' => TimeOfDay::Night,
+            'description' => fake()->sentence(),
+        ]);
+
+        expect($report->venue_uuid)->toBe($venue->uuid);
+    });
+
+    it('publishes the venue when it publishes the first report about it', function (): void {
+        $this->freezeSecond();
+        $venue = Venue::factory()->unpublished()->create();
+        $report = Report::factory()->for($venue, 'venue')->pending()->create();
+
+        $this->service->reviewReport(uuid: $report->uuid, status: ReportStatus::Published);
+
+        expect(Venue::find($venue->uuid)?->published_at?->equalTo(now()))->toBeTrue();
+    });
+
+    it('keeps the date an already published venue was published', function (): void {
+        $publishedAt = now()->subMonth()->startOfSecond();
+        $venue = Venue::factory()->create(['published_at' => $publishedAt]);
+        $report = Report::factory()->for($venue, 'venue')->pending()->create();
+
+        $this->service->reviewReport(uuid: $report->uuid, status: ReportStatus::Published);
+
+        expect(Venue::find($venue->uuid)->published_at->equalTo($publishedAt))->toBeTrue();
+    });
+
+    it('leaves the venue unpublished when it rejects the report', function (): void {
+        $venue = Venue::factory()->unpublished()->create();
+        $report = Report::factory()->for($venue, 'venue')->pending()->create();
+
+        $this->service->reviewReport(uuid: $report->uuid, status: ReportStatus::Rejected);
+
+        $this->assertDatabaseHas('venues', ['uuid' => $venue->uuid, 'published_at' => null]);
+    });
+
+    it('loads unpublished venues for the pending reports', function (): void {
+        $venue = Venue::factory()->unpublished()->create();
+        Report::factory()->for($venue, 'venue')->pending()->create();
+
+        $reports = $this->service->getPendingReports();
+
+        expect($reports->first()->venue?->uuid)->toBe($venue->uuid);
+    });
+
+    it('loads unpublished venues for the recently reviewed reports', function (): void {
+        $venue = Venue::factory()->unpublished()->create();
+        Report::factory()->for($venue, 'venue')->rejected()->create(['reviewed_at' => now()]);
+
+        $reports = $this->service->getRecentlyReviewedReports();
+
+        expect($reports->first()->venue?->uuid)->toBe($venue->uuid);
+    });
+});

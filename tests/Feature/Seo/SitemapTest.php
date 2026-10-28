@@ -47,3 +47,13 @@ describe('robots.txt', function (): void {
         expect(file_get_contents(public_path('robots.txt')))->toContain('Sitemap:');
     });
 });
+
+describe('sitemap.xml unpublished venues', function (): void {
+    it('leaves out a venue that has not been published', function (): void {
+        $venue = Venue::factory()->unpublished()->create();
+
+        $response = $this->get('/sitemap.xml');
+
+        expect($response->getContent())->not->toContain(route('venues.show', $venue->slug));
+    });
+});

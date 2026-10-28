@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\User;
 use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -151,5 +152,40 @@ describe('ReportModerationController', function (): void {
 
             $response->assertNotFound();
         });
+    });
+});
+
+describe('ReportModerationController unpublished venues', function (): void {
+    it('shows the venue name for a pending report about an unpublished venue', function (): void {
+        $this->actingAs(User::factory()->admin()->create());
+        $venue = Venue::factory()->unpublished()->create();
+        Report::factory()->for($venue, 'venue')->pending()->create();
+
+        $response = $this->get(route('admin.reports.index'));
+
+        $response->assertOk()->assertInertia(fn ($page) => $page->where('pending_reports.0.venue.name', $venue->name));
+    });
+
+    it('makes the venue page available once its first report is published', function (): void {
+        $this->actingAs(User::factory()->admin()->create());
+        $venue = Venue::factory()->unpublished()->create();
+        $report = Report::factory()->for($venue, 'venue')->pending()->create();
+
+        $this->patchJson(route('admin.reports.update', $report->uuid), ['status' => ReportStatus::Published->value]);
+
+        $this->get(route('venues.show', $venue->slug))->assertOk();
+    });
+});
+
+describe('ReportModerationController safety score cache', function (): void {
+    it('updates a cached safety score when a report is published', function (): void {
+        $this->actingAs(User::factory()->admin()->create());
+        $venue = Venue::factory()->create();
+        $report = Report::factory()->for($venue, 'venue')->daysAgo(15)->pending()->create();
+        $this->getJson(route('api.venues.safety-score', $venue->uuid))->assertJsonPath('data.report_count_30d', 0);
+
+        $this->patchJson(route('admin.reports.update', $report->uuid), ['status' => ReportStatus::Published->value]);
+
+        $this->getJson(route('api.venues.safety-score', $venue->uuid))->assertOk()->assertJsonPath('data.report_count_30d', 1);
     });
 });

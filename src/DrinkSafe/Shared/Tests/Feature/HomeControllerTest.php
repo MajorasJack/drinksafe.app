@@ -110,3 +110,14 @@ describe('HomeController review queue', function (): void {
         $response->assertInertia(fn ($page) => $page->where('stats.total_reports', 1));
     });
 });
+
+describe('HomeController unpublished venues', function (): void {
+    it('counts only published venues in the stats', function (): void {
+        Venue::factory()->create();
+        Venue::factory()->unpublished()->create();
+
+        $response = $this->get(route('home'));
+
+        $response->assertInertia(fn ($page) => $page->where('stats.total_venues', 1));
+    });
+});
