@@ -197,6 +197,86 @@ handed over in conversation has one action on it.
 3mm bleed and 3mm safe margin, as the stickers. Ordered and set up like the flyer, on 350gsm
 matt or silk stock.
 
+## Poster
+
+One design, A4 and A3, single sided, for partners to print themselves. Most of those prints
+come off an office laser printer in black and white, where a navy flood prints streaky and
+uses a lot of toner, so the poster is the one piece on a white ground.
+
+Navy type on white throughout. Teal appears only in the mark, the "Safe" of the wordmark and
+the rules, and never carries anything the type does not already say, so a greyscale print
+loses nothing. The supporting greys are darker than on the other pieces (`#334155` rather
+than `#94A3B8`) because a laser printer renders light greys as a visible dot pattern.
+
+The copy is sticker A's headline, signs line and three steps, the flyer back's Who Can Help
+numbers, and the site footer's disclaimer, all word for word.
+
+```
+▣  DRINK SAFE                         mark 16mm, wordmark 20pt / 600
+
+Think your drink                      38pt / 600 / navy
+has been spiked?
+
+Often the only sign is feeling far    14pt / 400 / navy
+drunker than you should for what you
+have had. Dizziness or confusion can
+also be signs.
+
+1  Tell bar staff now. They can help  15pt / 500 / navy
+   you get somewhere safe.            numerals navy / 600
+2  Stay with people you trust. Do
+   not leave on your own.
+3  If you feel very unwell, ask staff
+   to call for help.
+
+WHO CAN HELP ───────────────          12pt / 600 navy, teal rule
+
+Emergency          999   Non-emergency     101     label 12pt #334155
+Crimestoppers  0800 555 111   Victim Support ...   number 15pt / 600
+Rape Crisis  0808 500 2222   The Survivors Trust   two columns, ruled
+Samaritans      116 123   Mind     0300 123 3393
+
+                                      1pt rule, #0D9488
+┌────────────┐                        QR 106mm on A4
+│            │  Report it            16pt / 400 / navy
+│     QR     │  anonymously.
+│            │  No names,
+│   106mm    │  no sign-up.
+│            │  drinksafe.app        20pt / 600 / navy
+│            │
+│            │  Drink Safe is an     9pt / #334155, the
+└────────────┘  informational ...    foot of the QR column
+```
+
+The disclaimer sits in the column beside the QR rather than below it. At a 106mm QR there is
+no height left on A4 for a line of its own.
+
+QR target: `https://drinksafe.app/submit-report`, or `https://drinksafe.app/go/<code>` on a
+partner's copy.
+
+The PDFs are trim size with no bleed, because office printers cannot print to the edge.
+Everything sits 12mm inside the trim, clear of the 10mm most printers leave unprinted. Trade
+print versions with bleed are not produced; a partner ordering from a print shop can send the
+A4 or A3 file as it is, since the white ground needs no bleed.
+
+The A3 is the A4 page enlarged by the A-series ratio (420 / 297, about 1.414), exactly as a
+photocopier enlarges it. The two sizes therefore cannot drift apart, and the A3 type and QR
+are 1.414 times their A4 size.
+
+### QR size
+
+QR codes are usually sized at one tenth of the reading distance, so a code read from 1m
+should be at least 100mm across, quiet zone included.
+
+| | Reading distance | Minimum | Placed at | Module |
+|---|---|---|---|---|
+| A4 | about 1m | 100mm | 106mm | 2865 micron |
+| A3 | about 1.5m | 150mm | 150mm (106mm x 1.414) | 4051 micron |
+
+106mm is the smallest A4 size whose enlargement still meets the A3 minimum. The symbol is
+3-M (37 modules including the quiet zone), so each module is 106 / 37 = 2.865mm on A4, against
+the 400 micron minimum.
+
 ## QR codes
 
 Generated as vector at final size and committed to `print/qr/`.
@@ -206,9 +286,25 @@ Generated as vector at final size and committed to `print/qr/`.
 | `qr-report-22mm.svg` | `/submit-report` | 3-M | 22mm | 595 micron |
 | `qr-home-34mm.svg` | home | 2-M | 34mm | 1030 micron, placed at 30mm |
 | `qr-report-25mm.svg` | `/submit-report` | 3-M | 25mm | 676 micron |
+| `qr-report-106mm.svg` | `/submit-report` | 3-M | 106mm | 2865 micron, 4051 micron on the A3 poster |
 
 Each file already contains its four module quiet zone, so the stated size is the full square
 to place in the artwork and no extra clearance is needed. Modules are `#0B1220` on white.
+
+The files are made with [segno](https://segno.readthedocs.io/) 1.6.6, which is not a project
+dependency and runs without installing anything through `uvx`:
+
+```
+uvx --with segno==1.6.6 python -c "
+import segno
+qr = segno.make('https://drinksafe.app/submit-report', error='m', micro=False, boost_error=False)
+qr.save('print/qr/qr-report-106mm.svg', scale=106 / qr.symbol_size()[0], unit='mm',
+        dark='#0b1220', light='#fff', svgclass=None, lineclass=None, nl=False)
+"
+```
+
+Each committed file ends with a newline added after saving. `boost_error=False` keeps the
+error correction at M; without it segno raises the level whenever the data leaves room.
 
 Every module is comfortably above the 400 micron mark where print QR codes start failing on
 older phone cameras. Error correction is M, which tolerates around 15% damage, so a scuffed
@@ -273,10 +369,19 @@ site uses and the files can be rebuilt whenever the copy changes.
 node print/artwork/render.mjs
 ```
 
-That writes PDFs and 300dpi PNG proofs to `print/output/`. Sources are in `print/artwork/`,
+That writes PDFs and 300dpi PNG proofs to `print/output/`. The A3 poster has no proof of its
+own, because it is the A4 proof enlarged.
+
+```
+node print/artwork/render.mjs <code>
+```
+
+With a partner code, only the A4 poster is rendered, as `print/output/poster-a4-<code>.pdf`,
+with the QR from `print/qr/partners/<code>.svg`. The code may only contain lowercase letters,
+digits and hyphens, and the render stops if that partner's QR file does not exist. Sources are in `print/artwork/`,
 with the fonts copied alongside them so nothing depends on what is installed locally.
 
-Each page is rendered 0.2mm larger than trim plus bleed. Chromium rounds the PDF media box
+Each page is rendered 0.2mm larger than trim plus bleed The poster is rendered at exact trim instead. Chromium sizes PDF pages in steps of 0.96pt, so the A4 comes out at 210.2 x 297.0mm and the A3 at 297.0 x 420.2mm, a white edge of a fifth of a millimetre that no printer will notice. Chromium rounds the PDF media box
 down to whole points, and without the margin a 106mm page comes out at 105.83mm, which would
 leave the bleed a hair under 3mm and could trip a preflight check.
 
