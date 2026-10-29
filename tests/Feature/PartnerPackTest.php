@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Illuminate\Support\Str;
 
 describe('Partner pack', function (): void {
-    it('contains each file the README describes and nothing else', function (): void {
+    it('contains exactly the nine pack files', function (): void {
         $zip = new ZipArchive;
         $zip->open(public_path('downloads/drink-safe-partner-pack.zip'));
 
@@ -26,19 +26,33 @@ describe('Partner pack', function (): void {
         ]);
     });
 
-    it('holds the same PDF as the partners page links to', function (string $fileName): void {
+    it('names every other packed file in the README', function (): void {
+        $zip = new ZipArchive;
+        $zip->open(public_path('downloads/drink-safe-partner-pack.zip'));
+
+        $readme = $zip->getFromName('README.txt');
+
+        $entries = collect(range(0, $zip->numFiles - 1))
+            ->map(fn (int $index): string => $zip->getNameIndex($index))
+            ->reject(fn (string $entry): bool => $entry === 'README.txt');
+
+        expect($entries)->each(fn ($entry) => expect($readme)->toContain($entry->value));
+    });
+
+    it('holds the same PDF as the one it was built from', function (string $fileName, string $sourcePath): void {
         $zip = new ZipArchive;
         $zip->open(public_path('downloads/drink-safe-partner-pack.zip'));
 
         $packed = $zip->getFromName($fileName);
 
-        expect($packed)->toBe(file_get_contents(public_path(sprintf('downloads/%s', $fileName))));
+        expect($packed)->toBe(file_get_contents(base_path($sourcePath)));
     })->with([
-        'drink-safe-poster-a4.pdf',
-        'drink-safe-poster-a3.pdf',
-        'drink-safe-flyer.pdf',
-        'drink-safe-sticker-a.pdf',
-        'drink-safe-sticker-b.pdf',
+        ['drink-safe-poster-a4.pdf', 'public/downloads/drink-safe-poster-a4.pdf'],
+        ['drink-safe-poster-a3.pdf', 'public/downloads/drink-safe-poster-a3.pdf'],
+        ['drink-safe-flyer.pdf', 'public/downloads/drink-safe-flyer.pdf'],
+        ['drink-safe-sticker-a.pdf', 'public/downloads/drink-safe-sticker-a.pdf'],
+        ['drink-safe-sticker-b.pdf', 'public/downloads/drink-safe-sticker-b.pdf'],
+        ['drink-safe-about.pdf', 'print/output/about.pdf'],
     ]);
 
     it('uses the same words in the About Drink Safe PDF as on the site', function (string $sourceFile, string $sentence): void {
@@ -50,7 +64,7 @@ describe('Partner pack', function (): void {
             ->and($site)->toContain($sentence);
     })->with([
         ['pages/Partners.vue', 'Drink Safe is a website where people can share and read anonymous reports of drink spiking at venues.'],
-        ['pages/Partners.vue', 'Drink Safe will always be free to use, with no ads on the site, no paywalls, and no data collection. Nobody needs an account or has to give their name to read or submit a report.'],
+        ['pages/Partners.vue', 'Drink Safe will always be free to use, with no ads on the site and no paywalls. Nobody needs an account or has to give their name to read or submit a report.'],
         ['pages/Partners.vue', 'It is not a substitute for reporting crimes to the police.'],
         ['pages/Partners.vue', "A report is one person's account of what happened to them, or what they saw, at a venue. It is not a finding against the venue or its staff."],
         ['pages/Partners.vue', 'Every report is reviewed by a person before it is published. Information provided may not be verified or accurate. This is what happens to a report:'],

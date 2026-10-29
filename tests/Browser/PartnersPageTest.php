@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Number;
+
 it('displays the partners page title', function (): void {
     $page = visit('/partners');
 
@@ -14,7 +16,7 @@ it('explains what Drink Safe is', function (): void {
     $page = visit('/partners');
 
     $page->assertSee('What Drink Safe is')
-        ->assertSee('no ads on the site, no paywalls, and no data collection')
+        ->assertSee('no ads on the site and no paywalls')
         ->assertSee('not a substitute for reporting crimes to the police');
 });
 
@@ -98,7 +100,7 @@ it('gives the format and size in each download link', function (): void {
 it('gives the format and size of the partner pack', function (): void {
     $page = visit('/partners');
 
-    $page->assertSeeIn('a[href="/downloads/drink-safe-partner-pack.zip"]', 'Partner pack (ZIP, 5 MB)');
+    $page->assertSeeIn('a[href="/downloads/drink-safe-partner-pack.zip"]', sprintf('Partner pack (ZIP, %s)', Number::fileSize(filesize(public_path('downloads/drink-safe-partner-pack.zip')))));
 });
 
 it('says what the partner pack adds to the individual files', function (): void {

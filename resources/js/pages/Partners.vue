@@ -102,9 +102,9 @@ const downloads: PrintDownload[] = [
                         </p>
                         <p>
                             Drink Safe will always be free to use, with no ads
-                            on the site, no paywalls, and no data collection.
-                            Nobody needs an account or has to give their name to
-                            read or submit a report.
+                            on the site and no paywalls. Nobody needs an account
+                            or has to give their name to read or submit a
+                            report.
                         </p>
                         <p>
                             Drink Safe is an
