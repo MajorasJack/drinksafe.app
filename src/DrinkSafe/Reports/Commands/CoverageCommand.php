@@ -81,6 +81,8 @@ final class CoverageCommand extends Command
             array_map(fn (string $city): array => $this->countsFor($city), $cities),
         );
 
+        $this->line("Counts use the venue's stored city, so venues in central Salford may be stored as Manchester.");
+
         return self::SUCCESS;
     }
 

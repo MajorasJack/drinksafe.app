@@ -40,6 +40,12 @@ describe('drinksafe:coverage', function (): void {
             ->assertSuccessful();
     });
 
+    it('notes that counts use the stored city', function (): void {
+        $this->artisan('drinksafe:coverage', ['--city' => [fake()->city()]])
+            ->expectsOutputToContain("Counts use the venue's stored city, so venues in central Salford may be stored as Manchester.")
+            ->assertSuccessful();
+    });
+
     it('runs only select queries', function (): void {
         Venue::factory()->has(Report::factory()->pending())->create(['city' => 'Leeds']);
         $statements = collect();
