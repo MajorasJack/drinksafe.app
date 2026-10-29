@@ -4,11 +4,12 @@
 # files and the Reel, and copies the individual PDFs into public/downloads, so
 # /partners and the zip always hold the same files.
 #
-# Run it with `npm run partner-pack`, which renders the artwork first.
+# Run it with `npm run partner-pack`. It packs the PDFs already in print/output
+# and does not re-render them, so run `npm run print:render` first if the
+# artwork has changed. With the same inputs, it always builds the same zip.
 #
-# The Reel and its share copy are not in git. They are read from
-# brag-output-2026-10-09-133822/ unless a folder is given as the first
-# argument or as PARTNER_PACK_MEDIA.
+# The Reel is not in git. It is read from brag-output-2026-10-09-133822/ unless
+# a folder is given as the first argument or as PARTNER_PACK_MEDIA.
 
 set -eu
 
@@ -21,16 +22,19 @@ zip=$downloads/drink-safe-partner-pack.zip
 # 25MB, the largest attachment most email providers accept.
 max_bytes=26214400
 
-for file in "$media/brag.mp4" "$media/share-copy.txt"; do
-    if [ ! -f "$file" ]; then
-        echo "Missing $file." >&2
-        echo "Pass the folder that holds brag.mp4 and share-copy.txt as the first argument, or set PARTNER_PACK_MEDIA." >&2
-        exit 1
-    fi
-done
+if ! command -v zip >/dev/null; then
+    echo "zip is not installed." >&2
+    exit 1
+fi
+
+if [ ! -f "$media/brag.mp4" ]; then
+    echo "Missing $media/brag.mp4." >&2
+    echo "Pass the folder that holds brag.mp4 as the first argument, or set PARTNER_PACK_MEDIA." >&2
+    exit 1
+fi
 
 staging=$(mktemp -d)
-trap 'rm -r "$staging"' EXIT
+trap 'rm -r "$staging"' EXIT INT TERM
 
 for piece in poster-a4 poster-a3 flyer sticker-a sticker-b about; do
     cp "$output/$piece.pdf" "$staging/drink-safe-$piece.pdf"
@@ -41,16 +45,17 @@ for piece in poster-a4 poster-a3 flyer sticker-a sticker-b; do
 done
 
 cp "$media/brag.mp4" "$staging/drink-safe-reel.mp4"
-cp "$media/share-copy.txt" "$staging/share-copy.txt"
+cp "$root/print/partner-pack/share-copy.txt" "$staging/share-copy.txt"
 cp "$root/print/partner-pack/README.txt" "$staging/README.txt"
 
-# A fixed date means the same files always produce the same zip.
+# Fixed permissions and a fixed date mean the same files always produce the
+# same zip, whatever the umask or the time it was built.
+chmod 644 "$staging"/*
 touch -t 202601010000 "$staging"/*
 
-rm -f "$zip"
 (
     cd "$staging"
-    zip -X -j -q "$zip" \
+    zip -X -j -q pack.zip \
         README.txt \
         drink-safe-about.pdf \
         drink-safe-poster-a4.pdf \
@@ -62,12 +67,13 @@ rm -f "$zip"
         share-copy.txt
 )
 
-size=$(wc -c < "$zip" | tr -d ' ')
+size=$(wc -c < "$staging/pack.zip" | tr -d ' ')
 
 if [ "$size" -gt "$max_bytes" ]; then
-    rm -f "$zip"
     echo "The partner pack came to $size bytes, over the 25MB limit. Leave the Reel out and link to it from /partners instead." >&2
     exit 1
 fi
+
+mv "$staging/pack.zip" "$zip"
 
 echo "Built $zip ($size bytes)."
