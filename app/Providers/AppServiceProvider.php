@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
+use DrinkSafe\Partners\Commands\AddPartnerLinkCommand;
+use DrinkSafe\Partners\Commands\GeneratePartnerQrCommand;
+use DrinkSafe\Partners\Commands\PartnerReportCommand;
 use DrinkSafe\Reports\Commands\CoverageCommand;
 use DrinkSafe\Reports\Commands\MakeAdminCommand;
 use DrinkSafe\Reports\Models\Report;
@@ -64,6 +67,9 @@ class AppServiceProvider extends ServiceProvider
                 FetchVenuesCommand::class,
                 MakeAdminCommand::class,
                 CoverageCommand::class,
+                AddPartnerLinkCommand::class,
+                GeneratePartnerQrCommand::class,
+                PartnerReportCommand::class,
             ]);
         }
     }

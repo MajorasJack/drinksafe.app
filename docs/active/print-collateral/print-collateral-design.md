@@ -313,6 +313,41 @@ or partly peeled sticker still scans.
 The codes sit on white, not on the navy. An inverted QR scans on most modern phones but not
 all, and a sticker that fails for one person in ten is not worth the aesthetic.
 
+### Partner codes
+
+Each partner's poster carries its own QR code, pointing at `https://drinksafe.app/go/<code>`
+instead of `/submit-report`. The files are in `print/qr/partners/<code>.svg`, made to the same
+spec as `qr-report-106mm.svg` (3-M, 106mm, 2865 micron modules, four module quiet zone). The
+first 28 codes are created by a migration, so `php artisan migrate` adds them on deploy.
+
+`/go/<code>` redirects to that code's destination, which is `/submit-report` unless set
+otherwise, and adds one to the partner's total for the day. An unknown or inactive code
+redirects to the home page, so a printed code never ends on an error page. Nothing else is
+stored: no IP address, user agent, referrer, cookie or session. Requests from obvious bots and
+link preview fetchers are redirected but not counted.
+
+```
+php artisan drinksafe:partners:add <code> "<label>" [--destination=/submit-report]
+```
+
+Adds a link and writes its QR file. The code may only contain lowercase letters, digits and
+hyphens, and the destination must be a path on this site. If `uvx` is not installed, the link
+is still added and the segno command to run by hand is printed instead.
+
+```
+php artisan drinksafe:partners:qr [<code>]
+```
+
+Regenerates the QR file for one code, or for every code. It runs the segno command above with
+the partner URL and output path passed as arguments, and appends the trailing newline.
+
+```
+php artisan drinksafe:partners:report [--since=YYYY-MM-DD] [--until=YYYY-MM-DD]
+```
+
+Lists every code with its label, whether it is active and its total scans for the period, most
+scans first. Codes with no scans are included.
+
 ## Production
 
 Two separate orders. The stickers and the flyer share no material or quantity, so they do not
