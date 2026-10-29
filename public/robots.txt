@@ -3,6 +3,7 @@ Allow: /
 Disallow: /dashboard
 Disallow: /settings
 Disallow: /api
+Disallow: /go/
 
 # /submit-report is intentionally crawlable so bots can read its
 # `noindex` meta tag and reliably keep it out of the index.

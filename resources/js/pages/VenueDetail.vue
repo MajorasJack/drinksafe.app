@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/vue3';
 import { MapPin, AlertTriangle, ChevronRight } from 'lucide-vue-next';
 import { computed, onMounted } from 'vue';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import NothingReportedYet from '@/components/report/NothingReportedYet.vue';
 import ReportList from '@/components/report/ReportList.vue';
 import {
     Breadcrumb,
@@ -17,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import LeafletMap from '@/components/ui/LeafletMap.vue';
 import SafetyBadge from '@/components/venue/SafetyBadge.vue';
 import { useSafetyScore } from '@/composables/useSafetyScore';
+import { create as createReport } from '@/routes/reports';
 import type { Venue } from '@/types/venue';
 
 interface Props {
@@ -38,6 +40,10 @@ const venueReports = computed(() => {
 const hasReports = computed((): boolean => {
     return venueReports.value.length > 0;
 });
+
+const reportHref = computed(
+    (): string => createReport({ query: { venue: props.venue.uuid } }).url,
+);
 
 onMounted(() => {
     fetchScore(props.venue.uuid);
@@ -159,7 +165,7 @@ onMounted(() => {
                         </CardContent>
                     </Card>
 
-                    <Card class="bg-brand-teal text-white">
+                    <Card v-if="hasReports" class="bg-brand-teal text-white">
                         <CardContent class="py-1">
                             <div class="space-y-3">
                                 <div>
@@ -176,9 +182,7 @@ onMounted(() => {
                                     variant="secondary"
                                     class="w-full"
                                 >
-                                    <Link
-                                        :href="`/submit-report?venue=${venue.uuid}`"
-                                    >
+                                    <Link :href="reportHref">
                                         Submit Report
                                     </Link>
                                 </Button>
@@ -188,7 +192,11 @@ onMounted(() => {
                 </div>
 
                 <div>
-                    <ReportList :reports="venueReports" />
+                    <ReportList v-if="hasReports" :reports="venueReports" />
+                    <NothingReportedYet
+                        v-else
+                        :report-href="reportHref"
+                    />
                 </div>
             </div>
         </div>

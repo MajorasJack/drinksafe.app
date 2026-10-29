@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                         protect your anonymity.
                     </p>
                     <p class="text-sm text-slate-500 dark:text-gray-400">
-                        Last updated: January 2025
+                        Last updated: October 2026
                     </p>
                 </div>
 
@@ -82,6 +82,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                                     usage statistics to improve the platform
                                     (page views, browser type). No individual
                                     tracking.
+                                </li>
+                                <li>
+                                    <strong>Partner QR Codes:</strong> If you
+                                    scan a QR code from one of our partners, we
+                                    add one to that partner's total for the
+                                    day. That's all we count: nothing about you,
+                                    your device or where you came from is
+                                    stored.
                                 </li>
                             </ul>
                         </CardContent>

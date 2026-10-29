@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
   tests:
     uses: ./.github/workflows/tests.yml
@@ -12,10 +16,10 @@ jobs:
     needs: tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
           php-version: '8.4'
 
@@ -23,7 +27,7 @@ jobs:
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
 
@@ -35,37 +39,25 @@ jobs:
           npm install
           npm run build
 
+      - name: Record the revision being deployed
+        run: git rev-parse HEAD > REVISION
+
       - name: Deploy to server
-        uses: easingthemes/ssh-deploy@main
+        uses: easingthemes/ssh-deploy@5d8aeab1a56041e269567e67a08ce00df324a617 # v6.0.1
         with:
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
           REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
           REMOTE_USER: ${{ secrets.DEPLOY_USER }}
           TARGET: ${{ secrets.DEPLOY_PATH }}
-          ARGS: "--no-group --no-owner"
-          EXCLUDE: ".git, .github, node_modules, .env, storage/app/*, storage/logs/*, storage/framework/*, bootstrap/cache/*, tests"
+          ARGS: "-rltz --delete"
+          EXCLUDE: "/.git, /.github, /node_modules, /vendor, /.env, /tests"
 
       - name: Run post-deploy commands
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
+          command_timeout: 30m
           script: |
-            cd ${{ secrets.DEPLOY_PATH }}
-
-            # Two-user pattern: the deploy user OWNS the writable dirs (so
-            # composer/artisan can write cache & logs during deploy), www-data is
-            # the GROUP with group-write, and the setgid bit (the leading 2 in
-            # 2775) makes files created by EITHER user inherit the www-data group
-            # so the other can always write them at runtime. Uses only chown/chmod
-            # (the deploy user's sudoers may not permit `find`). Must run BEFORE
-            # the artisan commands below; the recursive chown also self-heals the
-            # ownership of any files the web server created at runtime.
-            sudo chown -R ${{ secrets.DEPLOY_USER }}:www-data storage bootstrap/cache
-            sudo chmod -R 2775 storage bootstrap/cache
-
-            composer install --no-dev --optimize-autoloader --no-interaction
-            php artisan migrate --force
-            php artisan cache:clear
-            php artisan optimize
+            sudo ${{ secrets.DEPLOY_SCRIPT }}
