@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>About Drink Safe</title>
+<link rel="stylesheet" href="artwork.css">
+<style>
+    /*
+     * A4 210 x 297mm trim, no bleed, for the person at a venue or union who
+     * decides whether the poster goes up. Like the poster, it is white with
+     * navy type, sits 12mm inside the trim and leaves the paper size to
+     * render.mjs.
+     *
+     * The copy is the /partners page and the Privacy page word for word, so
+     * the two can't say different things. tests/Feature/PartnerPackTest.php
+     * checks that.
+     */
+    @page { margin: 0; }
+    :root { --bleed: 0mm; }
+    .piece { width: 210mm; height: 297mm; }
+    .safe { inset: 12mm; gap: 3.4mm; }
+    .safe > * { flex-shrink: 0; }
+
+    .mark { width: 12mm; height: 12mm; }
+    .wordmark { font-size: 16pt; }
+
+    h1 { font-size: 24pt; }
+    .rule-label { font-size: 10pt; color: var(--navy); margin-top: 1.4mm; }
+
+    p, li { font-size: 11.5pt; line-height: 1.4; color: var(--navy); }
+    strong { font-weight: 600; }
+
+    .steps { gap: 1.2mm; }
+    .steps li { font-size: 11.5pt; font-weight: 400; line-height: 1.4; grid-template-columns: 6mm 1fr; }
+    .piece--light .steps .n { color: var(--navy); }
+
+    .email { font-size: 13pt; font-weight: 600; }
+    .small-print { font-size: 8.5pt; color: #334155; }
+</style>
+</head>
+<body>
+<div class="piece piece--light">
+    <div class="safe">
+        <div class="masthead">
+            <svg class="mark" width="12mm" height="12mm" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="dsTealAbout" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#2dd4bf"/>
+                        <stop offset="1" stop-color="#0d9488"/>
+                    </linearGradient>
+                </defs>
+                <rect width="64" height="64" rx="16" fill="url(#dsTealAbout)"/>
+                <g transform="translate(8 8) scale(2)" fill="none" stroke="#0b1220" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </g>
+            </svg>
+            <span class="wordmark">Drink&nbsp;<em>Safe</em></span>
+        </div>
+
+        <h1>About Drink Safe</h1>
+
+        <p class="rule-label">What Drink Safe is</p>
+
+        <p>Drink Safe is a website where people can share and read anonymous reports of drink spiking at venues.</p>
+        <p>Drink Safe will always be free to use, with no ads on the site, no paywalls, and no data collection. Nobody needs an account or has to give their name to read or submit a report.</p>
+        <p>If you scan a QR code from one of our partners, we add one to that partner's total for the day. That's all we count: nothing about you, your device or where you came from is stored.</p>
+        <p>Drink Safe is an <strong>informational platform only</strong>. It is not a substitute for reporting crimes to the police.</p>
+
+        <p class="rule-label">A report is not an accusation</p>
+
+        <p>A report is one person's account of what happened to them, or what they saw, at a venue. It is not a finding against the venue or its staff.</p>
+        <p>Every report is reviewed by a person before it is published. Information provided may not be verified or accurate. This is what happens to a report:</p>
+
+        <ol class="steps">
+            <li><span class="n">1</span><span>Someone submits a report without an account and without giving their name.</span></li>
+            <li><span class="n">2</span><span>If our check finds an email address or phone number in the description, the report is turned away and the person is asked to take it out.</span></li>
+            <li><span class="n">3</span><span>The report is saved as waiting for review. It does not appear anywhere on the site yet.</span></li>
+            <li><span class="n">4</span><span>A person reads it and either publishes it or rejects it.</span></li>
+            <li><span class="n">5</span><span>If the report names a venue that is not on Drink Safe yet, the venue stays hidden as well until its first report is published.</span></li>
+            <li><span class="n">6</span><span>A published report can still be taken down later.</span></li>
+        </ol>
+
+        <p>If your venue disagrees with a published report, email drinksafe@protonmail.com with a link to your venue's page on Drink Safe and the date shown on the report. We'll look at it and remove anything that breaks our rules or names a person. Our rules are at drinksafe.app/terms.</p>
+
+        <p class="rule-label">Contact</p>
+
+        <p>For questions about putting material up, or about a report on the site, email us at:</p>
+        <p class="email">drinksafe@protonmail.com</p>
+
+        <div class="spacer"></div>
+
+        <hr class="rule">
+
+        <p class="small-print">
+            Drink Safe is an informational platform only. Information provided may not be
+            verified or accurate. This does not replace reporting to authorities. If you
+            have experienced a crime, please contact the police directly.
+        </p>
+    </div>
+</div>
+</body>
+</html>
