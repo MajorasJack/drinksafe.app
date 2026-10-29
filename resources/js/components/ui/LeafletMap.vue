@@ -52,6 +52,7 @@ const cartoTileUrl = `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/
 // These will be set after dynamic import
 let L: LeafletModule | null = null;
 let map: Map | null = null;
+let resizeObserver: ResizeObserver | null = null;
 let markerClusterGroup: MarkerClusterGroup | null = null;
 let markerIcon: Icon | null = null;
 let heatLayer: HeatLayer | null = null;
@@ -244,6 +245,10 @@ onMounted(async () => {
 
     map = L.map(mapContainer.value).setView(props.center, props.zoom);
 
+    // leaflet only listens for window resizes, so it misses being shown after starting hidden
+    resizeObserver = new ResizeObserver(() => map?.invalidateSize());
+    resizeObserver.observe(mapContainer.value);
+
     // Use CartoDB's Voyager tiles - faster CDN, cleaner design, better caching
     L.tileLayer(cartoTileUrl, {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -287,6 +292,8 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+    resizeObserver?.disconnect();
+
     if (map) {
         map.off('moveend', emitBoundsChange);
     }

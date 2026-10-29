@@ -70,7 +70,6 @@ it('shows the empty state when the search matches nothing', function (): void {
         ->assertSee('Nothing reported here yet')
         ->assertSee('Never leave your drink unattended, even for a moment.')
         ->assertPresent('[data-testid="nothing-reported-yet"] a[href="/submit-report"]')
-        ->assertSee('Clear filters')
         ->assertNoJavaScriptErrors();
 });
 
@@ -174,7 +173,7 @@ it('filters section is sticky on scroll', function (): void {
     $page = visit('/map');
 
     $page->wait(1)
-        ->assertPresent('.sticky')
+        ->assertPresent('.md\\:sticky')
         ->assertNoJavaScriptErrors();
 });
 
@@ -207,7 +206,7 @@ it('sidebar scrolls independently of map', function (): void {
     $page = visit('/map')->resize(1920, 1080);
 
     $page->wait(1)
-        ->assertPresent('.overflow-y-auto')
+        ->assertPresent('.md\\:overflow-y-auto')
         ->assertNoJavaScriptErrors();
 });
 
@@ -285,11 +284,83 @@ it('runs the search passed from the home page', function (): void {
         ->assertNoJavaScriptErrors();
 });
 
-it('shows the empty state on a mobile viewport once the list is opened', function (): void {
-    $page = visit('/map?search=Bolton')->on()->iPhone14Pro();
+it('fits the whole empty state on a phone screen once scrolled to', function (): void {
+    $page = visit(sprintf('/map?search=%s', fake()->lexify('zzqx????')))->on()->iPhone14Pro()->wait(1);
+
+    $headingAndLinkOnScreen = $page->script(<<<'JS'
+        (() => {
+            const card = document.querySelector('[data-testid="nothing-reported-yet"]');
+            card.scrollIntoView({ block: 'center' });
+            const isOnTop = (element) => {
+                const box = element.getBoundingClientRect();
+
+                return element.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
+            };
+
+            return [isOnTop(card.querySelector('h3')), isOnTop(card.querySelector('a'))];
+        })()
+        JS);
+
+    expect($headingAndLinkOnScreen)->toBe([true, true]);
+});
+
+it('opens the venue list on a phone when the page is opened with a search', function (): void {
+    $page = visit(sprintf('/map?search=%s', fake()->lexify('zzqx????')))->on()->iPhone14Pro();
 
     $page->wait(1)
-        ->click('View 0 Venues')
-        ->assertSee('Nothing reported here yet')
+        ->assertVisible('[data-testid="nothing-reported-yet"]')
         ->assertNoJavaScriptErrors();
+});
+
+it('fills the map with tiles on a phone after going from the opened list to the map', function (): void {
+    $page = visit(sprintf('/map?search=%s', fake()->lexify('zzqx????')))->on()->iPhone14Pro()->wait(1);
+
+    $tileAtRightEdge = $page->click('Show Map')
+        ->wait(1.5)
+        ->script(<<<'JS'
+            (() => {
+                const map = document.querySelector('.leaflet-container').getBoundingClientRect();
+                const [x, y] = [map.right - 10, map.top + map.height / 2];
+
+                return [...document.querySelectorAll('.leaflet-tile')].some((tile) => {
+                    const box = tile.getBoundingClientRect();
+
+                    return box.left <= x && x <= box.right && box.top <= y && y <= box.bottom;
+                });
+            })()
+            JS);
+
+    expect($tileAtRightEdge)->toBeTrue();
+});
+
+it('keeps the map in front on a phone when there is no search', function (): void {
+    $page = visit('/map')->on()->iPhone14Pro();
+
+    $page->wait(1)
+        ->assertVisible('.leaflet-container')
+        ->assertMissing('[data-testid="nothing-reported-yet"]');
+});
+
+it('says when no venue matches the search', function (): void {
+    $search = fake()->lexify('zzqx????');
+
+    $page = visit(sprintf('/map?search=%s', $search));
+
+    $page->wait(1)
+        ->assertSee(sprintf('No venues match "%s".', $search));
+});
+
+it('hides clear filters when no date filter is set', function (): void {
+    $page = visit(sprintf('/map?search=%s', fake()->lexify('zzqx????')));
+
+    $page->wait(1)
+        ->assertSee('Nothing reported here yet')
+        ->assertDontSee('Clear filters');
+});
+
+it('lists the safety tips in order with their numbers hidden from screen readers', function (): void {
+    $page = visit(sprintf('/map?search=%s', fake()->lexify('zzqx????')));
+
+    $page->wait(1)
+        ->assertCount('[data-testid="nothing-reported-yet"] ol > li > span[aria-hidden="true"]', 6);
 });
