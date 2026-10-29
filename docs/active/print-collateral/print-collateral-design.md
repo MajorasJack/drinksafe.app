@@ -457,20 +457,32 @@ stops if a QR image fails to load, so a missing or broken SVG can't produce a po
 blank square where the QR should be. A partner render writes only the PDF, with no PNG proof.
 
 ```
+npm run print:render
 npm run partner-pack
 ```
 
-That renders everything, copies the poster, flyer and sticker PDFs into `public/downloads/`
-for the /partners page, and builds `public/downloads/drink-safe-partner-pack.zip` from the same
-files plus the About Drink Safe PDF, `print/partner-pack/README.txt`, the Reel and its share
-copy. The Reel is not in git. The script reads `brag.mp4` and `share-copy.txt` from
-`brag-output-2026-10-09-133822/`, or from the folder given as `npm run partner-pack -- <folder>`
-or as `PARTNER_PACK_MEDIA`, and stops if either file is missing. It also stops if the zip comes
-to more than 25MB, the largest attachment most email providers accept.
+`npm run print:render` runs the renderer above. `npm run partner-pack` does not render
+anything. It copies the poster, flyer and sticker PDFs already in `print/output/` into
+`public/downloads/` for the /partners page, and builds
+`public/downloads/drink-safe-partner-pack.zip` from the same files plus the About Drink Safe PDF,
+the Reel, and `README.txt` and `share-copy.txt` from `print/partner-pack/`.
 
-The PDFs carry a fixed creation date and the zip entries a fixed modified date, so running it
-again with nothing changed produces the same bytes and no git diff. Commit the zip and the
-refreshed PDFs together.
+**After any change to `print/artwork/`, run `npm run print:render`, then `npm run partner-pack`,
+and commit the PDFs and the zip together.** Running `partner-pack` on its own packs whatever is
+in `print/output/`, so a zip built after an artwork change without a render still holds the old
+PDFs, and the tests will not catch it.
+
+The Reel is not in git. The script reads `brag.mp4` from `brag-output-2026-10-09-133822/`, or
+from the folder given as `npm run partner-pack -- <folder>` or as `PARTNER_PACK_MEDIA`, and stops
+if it is missing. That is the only file it needs from the media folder. It also stops if the zip
+comes to more than 25MB, the largest attachment most email providers accept, and leaves the
+files in `public/downloads/` untouched when it stops.
+
+The PDFs carry a fixed creation date and the zip entries a fixed modified date and fixed
+permissions, so running `partner-pack` again with nothing changed produces the same zip and no
+git diff. Rendering again gives the same PDF bytes only on the same Chromium build (Skia m147,
+from Playwright 1.59.1). A different Playwright version may produce PDFs that look the same but
+differ byte for byte, which shows up as a diff in every PDF and in the zip.
 
 Sources are in `print/artwork/`, with the fonts copied alongside them so nothing depends on what
 is installed locally. `print/` is git-ignored, so add new artwork, QR and output files with
