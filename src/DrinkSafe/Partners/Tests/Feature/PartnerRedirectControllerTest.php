@@ -165,6 +165,10 @@ describe('GET /go/{code}', function (): void {
         'node-fetch' => 'node-fetch/1.0 (+https://github.com/bitinn/node-fetch)',
         'axios' => 'axios/1.7.7',
         'OkHttp' => 'okhttp/4.12.0',
+        'Apache HttpClient' => 'Apache-HttpClient/4.5.14 (Java/17.0.12)',
+        'Python urllib' => 'Python-urllib/3.11',
+        'ChatGPT-User' => 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot',
+        'Perplexity-User' => 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Perplexity-User/1.0; +https://perplexity.ai/perplexity-user)',
         'no user agent' => '',
     ]);
 

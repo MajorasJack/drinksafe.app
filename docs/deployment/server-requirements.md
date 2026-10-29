@@ -254,7 +254,7 @@ sudo chmod -R 775 /var/www/drinksafe/bootstrap/cache
 
 ### Complete Nginx Virtual Host
 
-Both server blocks use `access_log ... if=$drinksafe_loggable`, so a partner QR scan never writes the visitor's IP address or user agent to the access log. A `location /go/ { access_log off; }` block does not work for this. `try_files` passes the request on internally to the `\.php$` location, and nginx writes the log line from there, so the `/go/` location never has the last say.
+Both server blocks use `access_log ... if=$drinksafe_loggable`, so a partner QR scan never writes the visitor's IP address or user agent to the access log. A `location /go/ { access_log off; }` block does not work for this. `try_files` passes the request on internally to the `\.php$` location, and nginx writes the log line from there, so the `/go/` location never has the last say. The error log is not covered by this; while PHP-FPM is down, nginx can still write the client IP and request line of a `/go` request to `drinksafe-error.log`.
 
 ```nginx
 # /etc/nginx/sites-available/drinksafe
