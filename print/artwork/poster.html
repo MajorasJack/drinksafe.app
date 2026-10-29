@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Drink Safe poster</title>
+<link rel="stylesheet" href="artwork.css">
+<style>
+    /*
+     * A4 210 x 297mm trim, no bleed, for office printers that can't print to
+     * the edge. Everything sits 12mm in, clear of the 10mm most of them lose.
+     *
+     * There's no @page size here on purpose. render.mjs sets the paper size,
+     * and the A3 is this page enlarged by the A-series ratio, exactly as a
+     * photocopier would, so the two sizes can't drift apart.
+     *
+     * White ground and navy type throughout, so a black and white laser print
+     * loses nothing. Teal only ever repeats something the type already says.
+     */
+    @page { margin: 0; }
+    :root { --bleed: 0mm; }
+    .piece { width: 210mm; height: 297mm; }
+    .safe { inset: 12mm; gap: 4.5mm; }
+    .safe > * { flex-shrink: 0; }
+
+    .mark { width: 16mm; height: 16mm; }
+    .wordmark { font-size: 20pt; }
+
+    h1 { font-size: 38pt; line-height: 1.06; }
+    .piece--light .lede { font-size: 14pt; line-height: 1.38; color: var(--navy); }
+
+    .steps { gap: 3mm; }
+    .steps li { font-size: 15pt; line-height: 1.3; grid-template-columns: 8mm 1fr; }
+    .piece--light .steps .n { color: var(--navy); }
+
+    .rule-label { font-size: 12pt; color: var(--navy); }
+
+    .contacts {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.8mm 10mm;
+    }
+
+    .contacts div {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 3mm;
+        padding-bottom: 1.2mm;
+        border-bottom: 0.25mm solid #cbd5e1;
+    }
+
+    .contacts div span { font-size: 12pt; color: #334155; }
+    .contacts div strong { font-size: 15pt; font-weight: 600; white-space: nowrap; }
+
+    /* The disclaimer shares the QR's column, as there is no height left beneath it. */
+    .qr-row { gap: 7mm; align-items: stretch; }
+    .qr-row > div { display: flex; flex-direction: column; justify-content: center; }
+    .qr-row .qr-copy, .qr-row .small-print { margin-top: auto; }
+    .qr--106 { width: 106mm; height: 106mm; }
+    .piece--light .qr-copy { font-size: 16pt; line-height: 1.35; color: var(--navy); }
+    .piece--light .url { font-size: 20pt; margin-top: 3mm; color: var(--navy); }
+    .small-print { font-size: 9pt; color: #334155; }
+</style>
+</head>
+<body>
+<div class="piece piece--light">
+    <div class="safe">
+        <div class="masthead">
+            <svg class="mark" width="16mm" height="16mm" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="dsTealP" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#2dd4bf"/>
+                        <stop offset="1" stop-color="#0d9488"/>
+                    </linearGradient>
+                </defs>
+                <rect width="64" height="64" rx="16" fill="url(#dsTealP)"/>
+                <g transform="translate(8 8) scale(2)" fill="none" stroke="#0b1220" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </g>
+            </svg>
+            <span class="wordmark">Drink&nbsp;<em>Safe</em></span>
+        </div>
+
+        <h1>Think your drink<br>has been spiked?</h1>
+
+        <p class="lede">Often the only sign is feeling far drunker than you should for what you have had. Dizziness or confusion can also be signs.</p>
+
+        <ol class="steps">
+            <li><span class="n">1</span><span>Tell bar staff now. They can help you get somewhere safe.</span></li>
+            <li><span class="n">2</span><span>Stay with people you trust. Do not leave on your own.</span></li>
+            <li><span class="n">3</span><span>If you feel very unwell, ask staff to call for help.</span></li>
+        </ol>
+
+        <p class="rule-label">Who can help</p>
+
+        <div class="contacts">
+            <div><span>Emergency</span><strong>999</strong></div>
+            <div><span>Non-emergency</span><strong>101</strong></div>
+            <div><span>Crimestoppers</span><strong>0800 555 111</strong></div>
+            <div><span>Victim Support</span><strong>08 08 16 89 111</strong></div>
+            <div><span>Rape Crisis</span><strong>0808 500 2222</strong></div>
+            <div><span>The Survivors Trust</span><strong>08088 010 818</strong></div>
+            <div><span>Samaritans</span><strong>116 123</strong></div>
+            <div><span>Mind</span><strong>0300 123 3393</strong></div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <hr class="rule">
+
+        <div class="qr-row">
+            <img class="qr qr--106" src="../qr/qr-report-106mm.svg" alt="">
+            <div>
+                <p class="qr-copy">Report it anonymously.<br>No names, no sign-up.</p>
+                <p class="url">drinksafe.app</p>
+                <p class="small-print">
+                    Drink Safe is an informational platform only. Information provided may not be
+                    verified or accurate. This does not replace reporting to authorities. If you
+                    have experienced a crime, please contact the police directly.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -29,6 +29,12 @@ describe('sitemap.xml', function (): void {
         expect($response->getContent())->toContain(sprintf('<loc>%s</loc>', route('home')));
     });
 
+    it('includes the partners url', function (): void {
+        $response = $this->get('/sitemap.xml');
+
+        expect($response->getContent())->toContain(sprintf('<loc>%s</loc>', route('partners')));
+    });
+
     it('includes a seeded venue url', function (): void {
         $venue = Venue::factory()->create();
 

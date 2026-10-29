@@ -56,7 +56,7 @@ Route::prefix('api/reports')->group(function (): void {
         ->name('api.reports.show');
 
     Route::post('/', [ReportController::class, 'store'])
-        ->middleware('throttle:5,1')
+        ->middleware('throttle:reports')
         ->name('api.reports.store');
 });
 

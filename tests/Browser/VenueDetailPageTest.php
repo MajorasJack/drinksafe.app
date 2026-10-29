@@ -94,7 +94,7 @@ it('does not display report alert when venue has no reports', function (): void 
 });
 
 it('displays Submit Report call to action card', function (): void {
-    $venue = Venue::factory()->create();
+    $venue = Venue::factory()->has(Report::factory())->create();
 
     $page = visit(sprintf('/venues/%s', $venue->slug));
 
@@ -104,7 +104,7 @@ it('displays Submit Report call to action card', function (): void {
 });
 
 it('Submit Report button navigates with venue pre-selected', function (): void {
-    $venue = Venue::factory()->create();
+    $venue = Venue::factory()->has(Report::factory())->create();
 
     $page = visit(sprintf('/venues/%s', $venue->slug));
 
@@ -213,4 +213,32 @@ it('reports section displays all venue reports', function (): void {
 
     $page->assertSee('First report content')
         ->assertSee('Second report content');
+});
+
+it('shows the safety tips and a report link for this venue when it has no published reports', function (): void {
+    $venue = Venue::factory()->has(Report::factory()->pending())->create();
+
+    $page = visit(sprintf('/venues/%s', $venue->slug));
+
+    $page->assertSee('Nothing reported here yet')
+        ->assertSee('Never leave your drink unattended, even for a moment.')
+        ->assertPresent(sprintf('[data-testid="nothing-reported-yet"] a[href="/submit-report?venue=%s"]', $venue->uuid))
+        ->assertNoJavaScriptErrors();
+});
+
+it('hides the safety tips when the venue has a published report', function (): void {
+    $venue = Venue::factory()->has(Report::factory())->create();
+
+    $page = visit(sprintf('/venues/%s', $venue->slug));
+
+    $page->assertDontSee('Nothing reported here yet');
+});
+
+it('leaves the report link to the safety tips when the venue has no published reports', function (): void {
+    $venue = Venue::factory()->has(Report::factory()->pending())->create();
+
+    $page = visit(sprintf('/venues/%s', $venue->slug));
+
+    $page->assertSee('Nothing reported here yet')
+        ->assertDontSee('Experienced something here?');
 });

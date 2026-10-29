@@ -60,14 +60,17 @@ it('displays venue with report count badge', function (): void {
         ->assertSee('3 reports');
 });
 
-it('displays no venues message when the search matches nothing', function (): void {
+it('shows the empty state when the search matches nothing', function (): void {
     Venue::factory()->create(['name' => 'Bishops Tavern', 'city' => 'Bristol']);
 
     $page = visit('/map');
 
     $page->fill('input[placeholder*="Search"]', 'satan')
         ->wait(1)
-        ->assertSee('No venues found');
+        ->assertSee('Nothing reported here yet')
+        ->assertSee('Never leave your drink unattended, even for a moment.')
+        ->assertPresent('[data-testid="nothing-reported-yet"] a[href="/submit-report"]')
+        ->assertNoJavaScriptErrors();
 });
 
 it('shows loading state while fetching venues', function (): void {
@@ -170,7 +173,7 @@ it('filters section is sticky on scroll', function (): void {
     $page = visit('/map');
 
     $page->wait(1)
-        ->assertPresent('.sticky')
+        ->assertPresent('.md\\:sticky')
         ->assertNoJavaScriptErrors();
 });
 
@@ -179,7 +182,7 @@ it('handles an empty venue list gracefully', function (): void {
 
     $page->fill('input[placeholder*="Search"]', 'nothing matches this')
         ->wait(1)
-        ->assertSee('No venues found')
+        ->assertSee('Nothing reported here yet')
         ->assertNoJavaScriptErrors();
 });
 
@@ -203,7 +206,7 @@ it('sidebar scrolls independently of map', function (): void {
     $page = visit('/map')->resize(1920, 1080);
 
     $page->wait(1)
-        ->assertPresent('.overflow-y-auto')
+        ->assertPresent('.md\\:overflow-y-auto')
         ->assertNoJavaScriptErrors();
 });
 
@@ -243,4 +246,183 @@ it('only lists venues matching a partial search term', function (): void {
         ->wait(1)
         ->assertSee('Bishops Tavern')
         ->assertDontSee('Tobacco Factory');
+});
+
+it('shows the empty state above venues that have no published reports', function (): void {
+    Venue::factory()->has(Report::factory()->pending())->create(['name' => 'Quiet Corner Bar', 'city' => 'Bolton']);
+
+    $page = visit('/map');
+
+    $page->fill('input[placeholder*="Search"]', 'Bolton')
+        ->wait(1)
+        ->assertSee('Quiet Corner Bar')
+        ->assertSee('Nothing reported here yet')
+        ->assertSee('Never leave your drink unattended, even for a moment.')
+        ->assertPresent('[data-testid="nothing-reported-yet"] a[href="/submit-report"]')
+        ->assertNoJavaScriptErrors();
+});
+
+it('hides the empty state when a listed venue has a published report', function (): void {
+    Venue::factory()->has(Report::factory())->create(['name' => 'Reported Venue', 'city' => 'Bolton']);
+
+    $page = visit('/map');
+
+    $page->fill('input[placeholder*="Search"]', 'Bolton')
+        ->wait(1)
+        ->assertSee('Reported Venue')
+        ->assertDontSee('Nothing reported here yet');
+});
+
+it('runs the search passed from the home page', function (): void {
+    Venue::factory()->create(['name' => 'Home Search Venue', 'city' => 'Salford']);
+
+    $page = visit('/map?search=Salford');
+
+    $page->wait(1)
+        ->assertValue('input[placeholder*="Search"]', 'Salford')
+        ->assertSee('Home Search Venue')
+        ->assertNoJavaScriptErrors();
+});
+
+it('fits the whole empty state on a phone screen once scrolled to', function (): void {
+    $page = visit(sprintf('/map?search=%s', fake()->lexify('zzqx????')))->on()->iPhone14Pro()->wait(1);
+
+    $headingAndLinkOnScreen = $page->script(<<<'JS'
+        (() => {
+            const card = document.querySelector('[data-testid="nothing-reported-yet"]');
+            card.scrollIntoView({ block: 'center' });
+            const isOnTop = (element) => {
+                const box = element.getBoundingClientRect();
+
+                return element.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
+            };
+
+            return [isOnTop(card.querySelector('h3')), isOnTop(card.querySelector('a'))];
+        })()
+        JS);
+
+    expect($headingAndLinkOnScreen)->toBe([true, true]);
+});
+
+it('opens the venue list on a phone when the page is opened with a search', function (): void {
+    $page = visit(sprintf('/map?search=%s', fake()->lexify('zzqx????')))->on()->iPhone14Pro();
+
+    $page->wait(1)
+        ->assertVisible('[data-testid="nothing-reported-yet"]')
+        ->assertNoJavaScriptErrors();
+});
+
+it('fills the map with tiles on a phone after going from the opened list to the map', function (): void {
+    $page = visit(sprintf('/map?search=%s', fake()->lexify('zzqx????')))->on()->iPhone14Pro()->wait(1);
+
+    $tileAtRightEdge = $page->click('Show Map')
+        ->wait(1.5)
+        ->script(<<<'JS'
+            (() => {
+                const map = document.querySelector('.leaflet-container').getBoundingClientRect();
+                const [x, y] = [map.right - 10, map.top + map.height / 2];
+
+                return [...document.querySelectorAll('.leaflet-tile')].some((tile) => {
+                    const box = tile.getBoundingClientRect();
+
+                    return box.left <= x && x <= box.right && box.top <= y && y <= box.bottom;
+                });
+            })()
+            JS);
+
+    expect($tileAtRightEdge)->toBeTrue();
+});
+
+it('keeps the map in front on a phone when there is no search', function (): void {
+    $page = visit('/map')->on()->iPhone14Pro();
+
+    $page->wait(1)
+        ->assertVisible('.leaflet-container')
+        ->assertMissing('[data-testid="nothing-reported-yet"]');
+});
+
+it('says when no venue matches the search', function (): void {
+    $search = fake()->lexify('zzqx????');
+
+    $page = visit(sprintf('/map?search=%s', $search));
+
+    $page->wait(1)
+        ->assertSee(sprintf('No venues match "%s".', $search));
+});
+
+it('hides clear filters when no date filter is set', function (): void {
+    $page = visit(sprintf('/map?search=%s', fake()->lexify('zzqx????')));
+
+    $page->wait(1)
+        ->assertSee('Nothing reported here yet')
+        ->assertDontSee('Clear filters');
+});
+
+it('lists the safety tips in order with their numbers hidden from screen readers', function (): void {
+    $page = visit(sprintf('/map?search=%s', fake()->lexify('zzqx????')));
+
+    $page->wait(1)
+        ->assertCount('[data-testid="nothing-reported-yet"] ol > li > span[aria-hidden="true"]', 6);
+});
+
+it('lists the reported venues on a phone after zooming in and opening the list', function (): void {
+    $venueName = fake()->unique()->company();
+    Venue::factory()->has(Report::factory())->create(['name' => $venueName, 'latitude' => 51.5074, 'longitude' => -0.1278]);
+    Venue::factory()->count(2)->has(Report::factory())->sequence(
+        ['latitude' => 51.5080, 'longitude' => -0.1270],
+        ['latitude' => 51.5068, 'longitude' => -0.1285],
+    )->create();
+
+    $page = visit('/map')->on()->iPhone14Pro()->wait(1);
+
+    $page->click('.leaflet-control-zoom-in')
+        ->wait(1)
+        ->click('.leaflet-control-zoom-in')
+        ->wait(2)
+        ->click('View 3 Venues')
+        ->wait(1.5)
+        ->assertSee($venueName)
+        ->assertMissing('[data-testid="nothing-reported-yet"]');
+});
+
+it('stops fetching venues on a desktop once the map settles after zooming in', function (): void {
+    Venue::factory()->count(3)->has(Report::factory())->sequence(
+        ['latitude' => 51.5074, 'longitude' => -0.1278],
+        ['latitude' => 51.5080, 'longitude' => -0.1270],
+        ['latitude' => 51.5068, 'longitude' => -0.1285],
+    )->create();
+
+    $page = visit('/map')->resize(1440, 900)->wait(1);
+
+    $venueRequestCount = $page->click('.leaflet-control-zoom-in')
+        ->wait(1)
+        ->click('.leaflet-control-zoom-in')
+        ->wait(5)
+        ->script(<<<'JS'
+            performance.getEntriesByType('resource').filter((entry) => entry.name.includes('/api/venues?')).length
+            JS);
+
+    expect($venueRequestCount)->toBeLessThanOrEqual(4);
+});
+
+it('keeps the search suggestions closed when the page is opened with a search', function (): void {
+    $venueName = fake()->unique()->company();
+    Venue::factory()->create(['name' => $venueName]);
+
+    $page = visit(sprintf('/map?search=%s', urlencode($venueName)))->on()->iPhone14Pro();
+
+    $page->wait(1)
+        ->assertSee($venueName)
+        ->assertMissing('[data-testid="venue-search-suggestions"]');
+});
+
+it('opens the search suggestions when typing a search', function (): void {
+    $venueName = fake()->unique()->company();
+    Venue::factory()->create(['name' => $venueName]);
+
+    $page = visit('/map');
+
+    $page->fill('input[placeholder*="Search"]', $venueName)
+        ->wait(1)
+        ->assertVisible('[data-testid="venue-search-suggestions"]');
 });

@@ -156,3 +156,25 @@ it('all navigation links work correctly', function (): void {
 
     $page->assertNoJavaScriptErrors();
 });
+
+it('shows safety tips and a way to report when nothing has been published', function (): void {
+    Venue::factory()->has(Report::factory()->pending())->create();
+
+    $page = visit('/')->on()->iPhone14Pro();
+
+    $page->assertSee('Nothing reported here yet')
+        ->assertSee('Never leave your drink unattended, even for a moment.')
+        ->assertSee("If you feel unwell or suspect you've been spiked, tell someone immediately and seek help.")
+        ->assertPresent('[data-testid="nothing-reported-yet"] a[href="/submit-report"]')
+        ->assertSeeLink('Report it')
+        ->assertNoJavaScriptErrors();
+});
+
+it('lists recent reports instead of the empty state once one is published', function (): void {
+    Venue::factory()->has(Report::factory()->recent())->create(['name' => 'Published Report Venue']);
+
+    $page = visit('/');
+
+    $page->assertSee('Published Report Venue')
+        ->assertDontSee('Nothing reported here yet');
+});
