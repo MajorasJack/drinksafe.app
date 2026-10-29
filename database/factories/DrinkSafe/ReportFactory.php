@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories\DrinkSafe;
 
+use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Enums\TimeOfDay;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Venues\Models\Venue;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  * ReportFactory
  *
  * Generates realistic spiking incident reports for testing and seeding.
+ * Reports are published by default; use pending() or rejected() for the
+ * review queue.
  *
  * @extends Factory<Report>
  */
@@ -38,7 +41,31 @@ final class ReportFactory extends Factory
             'incident_time' => fake()->optional()->time('H:i'),
             'time_of_day' => fake()->randomElement(TimeOfDay::cases()),
             'description' => $this->generateRealisticDescription(),
+            'status' => ReportStatus::Published,
+            'reviewed_at' => now(),
         ];
+    }
+
+    /**
+     * Factory state for a report waiting for review.
+     */
+    public function pending(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => ReportStatus::Pending,
+            'reviewed_at' => null,
+        ]);
+    }
+
+    /**
+     * Factory state for a report an admin has rejected.
+     */
+    public function rejected(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => ReportStatus::Rejected,
+            'reviewed_at' => now(),
+        ]);
     }
 
     /**

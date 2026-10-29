@@ -18,6 +18,15 @@ export enum TimeOfDay {
 }
 
 /**
+ * Review status enum matching backend DrinkSafe\Reports\Enums\ReportStatus
+ */
+export enum ReportStatus {
+    Pending = 'pending',
+    Published = 'published',
+    Rejected = 'rejected',
+}
+
+/**
  * Report interface matching backend ReportResource
  */
 export interface Report {
@@ -28,6 +37,10 @@ export interface Report {
     time_of_day: TimeOfDay;
     description: string;
     formatted_date: string;
+    /** Only sent to admins */
+    status?: ReportStatus;
+    /** Only sent to admins */
+    reviewed_at?: string | null;
     venue?: Venue;
     created_at: string;
 }
@@ -64,3 +77,11 @@ export interface ReportSubmitData {
  * Report with venue relationship loaded
  */
 export type PopulatedReport = Required<Pick<Report, 'venue'>> & Report;
+
+/**
+ * Report as the admin review queue sees it, with its moderation fields
+ */
+export type ModeratedReport = Required<
+    Pick<Report, 'venue' | 'status' | 'reviewed_at'>
+> &
+    Report;

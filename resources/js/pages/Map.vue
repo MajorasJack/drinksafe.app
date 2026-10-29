@@ -3,6 +3,7 @@ import { router } from '@inertiajs/vue3';
 import { Filter } from 'lucide-vue-next';
 import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import NothingReportedYet from '@/components/report/NothingReportedYet.vue';
 import Button from '@/components/ui/button/Button.vue';
 import DateFilter from '@/components/ui/DateFilter.vue';
 import VenueMap from '@/components/venue/VenueMap.vue';
@@ -39,7 +40,8 @@ const {
 const selectedVenue = ref<Venue | null>(null);
 const startDate = ref<string>('');
 const endDate = ref<string>('');
-const isMobileListOpen = ref(false);
+// a search from the home page opens the list, so a phone shows the results rather than the map
+const isMobileListOpen = ref(Boolean(props.filters.search));
 const currentBounds = ref<string | null>(null);
 const currentZoom = ref(10); // Default zoom level
 
@@ -63,6 +65,10 @@ const filteredVenues = computed(() => {
 
     return venuesFromStore.length > 0 ? venuesFromStore : props.venues;
 });
+
+const hasNoReports = computed(() =>
+    filteredVenues.value.every((venue) => !venue.reports_count),
+);
 
 // Combined loading state for search and bounds fetching
 const isLoading = computed(() => loading.value || isSearching.value);
@@ -115,8 +121,8 @@ const handleZoomChange = (zoom: number): void => {
 };
 
 onMounted(() => {
-    // Venues will be loaded via bounds-change event from the map
-    // No need to fetch all venues on mount - this is now viewport-based
+    // the home page search links here with ?search=; the search input runs it
+    searchQuery.value = props.filters.search ?? '';
 });
 </script>
 
@@ -128,13 +134,13 @@ onMounted(() => {
             <!-- Sidebar / List View -->
             <div
                 :class="[
-                    'absolute top-0 left-0 z-10 flex h-full w-full flex-col border-r border-slate-200 bg-white md:relative md:w-96 lg:w-[400px] dark:border-gray-700 dark:bg-gray-900',
+                    'relative z-10 flex w-full flex-col border-r border-slate-200 bg-white md:h-full md:w-96 lg:w-[400px] dark:border-gray-700 dark:bg-gray-900',
                     isMobileListOpen ? 'flex' : 'hidden md:flex',
                 ]"
             >
                 <!-- Filters Header -->
                 <div
-                    class="sticky top-0 z-20 border-b border-slate-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900"
+                    class="z-20 border-b border-slate-200 bg-white p-4 md:sticky md:top-0 dark:border-gray-700 dark:bg-gray-900"
                 >
                     <div
                         class="mb-4 flex items-center justify-between md:hidden"
@@ -168,7 +174,7 @@ onMounted(() => {
 
                 <!-- Venues List -->
                 <div
-                    class="flex-grow overflow-y-auto bg-slate-50 p-4 dark:bg-gray-900"
+                    class="flex-grow bg-slate-50 p-4 md:overflow-y-auto dark:bg-gray-900"
                 >
                     <!-- Zoom in prompt when not searching and zoomed out -->
                     <div
@@ -192,8 +198,15 @@ onMounted(() => {
                         v-else-if="filteredVenues.length === 0"
                         class="py-10 text-center text-slate-500 dark:text-gray-400"
                     >
-                        <p>No venues found matching your filters.</p>
+                        <p
+                            v-if="searchQuery.trim()"
+                            class="mb-4 text-slate-700 dark:text-gray-300"
+                        >
+                            No venues match "{{ searchQuery.trim() }}".
+                        </p>
+                        <NothingReportedYet class="mb-4" />
                         <button
+                            v-if="startDate || endDate"
                             @click="clearFilters"
                             class="mt-2 font-medium text-brand-teal hover:underline"
                         >
@@ -202,6 +215,7 @@ onMounted(() => {
                     </div>
 
                     <div v-else class="space-y-3">
+                        <NothingReportedYet v-if="hasNoReports" />
                         <button
                             v-for="venue in filteredVenues"
                             :key="venue.uuid"

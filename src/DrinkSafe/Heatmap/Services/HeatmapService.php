@@ -6,6 +6,7 @@ namespace DrinkSafe\Heatmap\Services;
 
 use DrinkSafe\Heatmap\DataTransferObjects\HeatmapPointDTO;
 use DrinkSafe\Heatmap\Exceptions\InvalidBoundingBoxException;
+use DrinkSafe\Reports\Enums\ReportStatus;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -236,6 +237,7 @@ final class HeatmapService
             ->join('venues', 'reports.venue_uuid', '=', 'venues.uuid')
             ->where('reports.incident_date', '>=', now()->subDays($periodDays))
             ->whereNull('reports.deleted_at')
+            ->where('reports.status', ReportStatus::Published->value)
             ->whereBetween('venues.latitude', [$south, $north])
             ->whereBetween('venues.longitude', [$west, $east])
             ->selectRaw(

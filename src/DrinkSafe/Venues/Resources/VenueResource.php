@@ -33,6 +33,7 @@ final class VenueResource extends JsonResource
             'address' => $this->address,
             'latitude' => (float) $this->latitude,
             'longitude' => (float) $this->longitude,
+            'published_at' => $this->when($request->user()?->is_admin === true, fn (): ?string => $this->published_at?->toISOString()),
             'reports_count' => $this->whenCounted('reports'),
             'reports' => $this->when(
                 $this->relationLoaded('reports'),

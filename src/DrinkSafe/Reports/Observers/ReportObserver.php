@@ -42,13 +42,13 @@ final class ReportObserver
      * Handle the Report "updated" event.
      *
      * Invalidates the venue's safety score cache if the report's
-     * venue or incident date has changed.
+     * venue, incident date or review status has changed.
      *
      * @param  Report  $report  The updated report
      */
     public function updated(Report $report): void
     {
-        if ($report->wasChanged(['venue_uuid', 'incident_date'])) {
+        if ($report->wasChanged(['venue_uuid', 'incident_date', 'status'])) {
             $this->invalidateVenueScore($report);
 
             $originalVenueUuid = $report->getOriginal('venue_uuid');

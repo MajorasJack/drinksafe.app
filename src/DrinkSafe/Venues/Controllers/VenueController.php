@@ -90,7 +90,11 @@ final class VenueController extends Controller
     /**
      * Store a newly created venue.
      *
-     * Returns 422 if duplicate venue exists (same name + city).
+     * The venue is unpublished until a report about it is published, so the
+     * response only carries its UUID. Its slug, stored details and timestamps
+     * would show whether an unpublished venue with that name already existed.
+     *
+     * Returns 422 if a published venue with the same name and city exists.
      */
     public function store(StoreVenueRequest $request): JsonResponse
     {
@@ -107,8 +111,8 @@ final class VenueController extends Controller
             ]);
 
             return response()->json([
-                'message' => sprintf('Venue %s created successfully', $venue->name),
-                'data' => new VenueResource($venue),
+                'message' => sprintf('Venue %s created successfully', $request->validated('name')),
+                'data' => ['uuid' => $venue->uuid],
             ], Response::HTTP_CREATED);
         } catch (VenueDuplicateException $e) {
             Log::warning('Duplicate venue creation attempt', [

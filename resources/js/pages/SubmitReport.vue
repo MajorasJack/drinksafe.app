@@ -27,8 +27,9 @@ const handleSubmit = async (data: ReportSubmitData): Promise<void> => {
     try {
         const report = await submitReport(data);
 
-        toast.success('Report submitted successfully', {
-            description: 'Thank you for helping keep our community safe.',
+        toast.success('Report submitted', {
+            description:
+                'Thank you. Your report will appear once it has been reviewed.',
         });
 
         // Redirect to venue detail page using slug from the response
@@ -105,8 +106,8 @@ const handleSubmit = async (data: ReportSubmitData): Promise<void> => {
                                 identify you or others.
                             </li>
                             <li>
-                                Reports are reviewed for personal information
-                                before being published.
+                                Every report is reviewed by a person before it
+                                appears on the site.
                             </li>
                             <li>
                                 Drink Safe is for informational purposes only -

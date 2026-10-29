@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Drink Safe sticker A</title>
+<link rel="stylesheet" href="artwork.css">
+<style>
+    /*
+     * 100 x 100mm trim, 3mm bleed all round, leaving a 94mm content square.
+     * The type is scaled to fit that square with the steps at their longest
+     * wrap, so nothing reflows off the sticker if a line breaks differently.
+     */
+    @page { size: 106.2mm 106.2mm; margin: 0; }
+    .piece { width: 106.2mm; height: 106.2mm; }
+    .safe { gap: 2.6mm; }
+    .mark { width: 11mm; height: 11mm; }
+    .wordmark { font-size: 11pt; }
+    h1 { font-size: 16pt; line-height: 1.1; }
+    .lede { font-size: 8.5pt; }
+    .steps { gap: 2mm; }
+    .steps li { font-size: 9.5pt; line-height: 1.25; grid-template-columns: 4.6mm 1fr; }
+    .qr-copy { font-size: 8pt; }
+    .url { font-size: 9.5pt; }
+</style>
+</head>
+<body>
+<div class="piece piece--sticker">
+    <div class="safe">
+        <div class="masthead">
+            <svg class="mark" width="14mm" height="14mm" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="dsTealA" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#2dd4bf"/>
+                        <stop offset="1" stop-color="#0d9488"/>
+                    </linearGradient>
+                </defs>
+                <rect width="64" height="64" rx="16" fill="url(#dsTealA)"/>
+                <g transform="translate(8 8) scale(2)" fill="none" stroke="#0b1220" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </g>
+            </svg>
+            <span class="wordmark">Drink&nbsp;<em>Safe</em></span>
+        </div>
+
+        <h1>Think your drink<br>has been spiked?</h1>
+
+        <p class="lede">Often the only sign is feeling far drunker than you should for what you have had. Dizziness or confusion can also be signs.</p>
+
+        <ol class="steps">
+            <li><span class="n">1</span><span>Tell bar staff now. They can help you get somewhere safe.</span></li>
+            <li><span class="n">2</span><span>Stay with people you trust. Do not leave on your own.</span></li>
+            <li><span class="n">3</span><span>If you feel very unwell, ask staff to call for help.</span></li>
+        </ol>
+
+        <div class="spacer"></div>
+
+        <hr class="rule">
+
+        <div class="qr-row">
+            <img class="qr qr--22" src="../qr/qr-report-22mm.svg" alt="">
+            <div>
+                <p class="qr-copy">Report it afterwards, anonymously.<br>No names, no sign-up.</p>
+                <p class="url">drinksafe.app</p>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

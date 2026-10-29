@@ -163,3 +163,28 @@ describe('VenueSafetyScoreController', function (): void {
         });
     });
 });
+
+describe('VenueSafetyScoreController review queue', function (): void {
+    it('scores a venue on its published reports only', function (): void {
+        $venue = Venue::factory()->create();
+        Report::factory()->for($venue, 'venue')->daysAgo(15)->create();
+        Report::factory()->count(3)->for($venue, 'venue')->daysAgo(15)->pending()->create();
+        Report::factory()->count(3)->for($venue, 'venue')->daysAgo(15)->rejected()->create();
+
+        $response = $this->getJson(route('api.venues.safety-score', $venue->uuid));
+
+        $response->assertOk()
+            ->assertJsonPath('data.report_count_30d', 1)
+            ->assertJsonPath('data.tier', 'insufficient_data');
+    });
+});
+
+describe('VenueSafetyScoreController unpublished venues', function (): void {
+    it('returns not found for a venue that has not been published', function (): void {
+        $venue = Venue::factory()->unpublished()->create();
+
+        $response = $this->getJson(route('api.venues.safety-score', $venue->uuid));
+
+        $response->assertNotFound();
+    });
+});

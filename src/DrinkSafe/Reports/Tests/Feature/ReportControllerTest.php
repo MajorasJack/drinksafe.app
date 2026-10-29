@@ -456,3 +456,95 @@ describe('ReportController store', function (): void {
             ->assertJsonValidationErrors(['longitude']);
     });
 });
+
+describe('ReportController review queue', function (): void {
+    it('lists only published reports by default', function (): void {
+        $published = Report::factory()->create();
+        Report::factory()->pending()->create();
+        Report::factory()->rejected()->create();
+
+        $response = $this->getJson(route('api.reports.index'));
+
+        $response->assertOk();
+        expect($response->json('data.*.uuid'))->toBe([$published->uuid]);
+    });
+
+    it('lists only published reports for a venue', function (): void {
+        $venue = Venue::factory()->create();
+        $published = Report::factory()->for($venue, 'venue')->create();
+        Report::factory()->for($venue, 'venue')->pending()->create();
+        Report::factory()->for($venue, 'venue')->rejected()->create();
+
+        $response = $this->getJson(route('api.reports.index', ['venue_uuid' => $venue->uuid]));
+
+        $response->assertOk();
+        expect($response->json('data.*.uuid'))->toBe([$published->uuid]);
+    });
+
+    it('lists only published reports in a date range', function (): void {
+        $published = Report::factory()->create(['incident_date' => '2024-01-15']);
+        Report::factory()->pending()->create(['incident_date' => '2024-01-15']);
+        Report::factory()->rejected()->create(['incident_date' => '2024-01-15']);
+
+        $response = $this->getJson(route('api.reports.index', ['start_date' => '2024-01-01', 'end_date' => '2024-01-31']));
+
+        $response->assertOk();
+        expect($response->json('data.*.uuid'))->toBe([$published->uuid]);
+    });
+
+    it('lists only published reports for a time of day', function (): void {
+        $published = Report::factory()->night()->create();
+        Report::factory()->night()->pending()->create();
+        Report::factory()->night()->rejected()->create();
+
+        $response = $this->getJson(route('api.reports.index', ['time_of_day' => 'Night']));
+
+        $response->assertOk();
+        expect($response->json('data.*.uuid'))->toBe([$published->uuid]);
+    });
+
+    it('returns 404 for a pending report', function (): void {
+        $report = Report::factory()->pending()->create();
+
+        $response = $this->getJson(route('api.reports.show', $report->uuid));
+
+        $response->assertNotFound();
+    });
+
+    it('returns 404 for a rejected report', function (): void {
+        $report = Report::factory()->rejected()->create();
+
+        $response = $this->getJson(route('api.reports.show', $report->uuid));
+
+        $response->assertNotFound();
+    });
+});
+
+describe('ReportController moderation fields', function (): void {
+    it('leaves the moderation fields out of public responses', function (): void {
+        $report = Report::factory()->create();
+
+        $response = $this->getJson(route('api.reports.show', $report->uuid));
+
+        $response->assertOk()
+            ->assertJsonMissingPath('data.status')
+            ->assertJsonMissingPath('data.reviewed_at');
+    });
+});
+
+describe('ReportController unpublished venues', function (): void {
+    it('leaves an unpublished venue out of the response to a submission', function (): void {
+        Turnstile::fake();
+
+        $response = $this->postJson(route('api.reports.store'), [
+            'venue_name' => fake()->company(),
+            'venue_city' => fake()->city(),
+            'incident_date' => now()->subDays(2)->toDateString(),
+            'time_of_day' => 'Evening',
+            'description' => fake()->sentence(),
+            'cf-turnstile-response' => 'test-token',
+        ]);
+
+        $response->assertCreated()->assertJsonMissingPath('data.venue');
+    });
+});

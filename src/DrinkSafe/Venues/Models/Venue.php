@@ -8,6 +8,8 @@ use Database\Factories\DrinkSafe\VenueFactory;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Shared\Traits\HasSlug;
 use DrinkSafe\Shared\Traits\HasUuid;
+use DrinkSafe\Venues\Scopes\PublishedVenueScope;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,6 +21,7 @@ use Illuminate\Support\Carbon;
  * Venue Model
  *
  * Represents a physical venue where incidents can be reported.
+ * Only published venues are visible by default: see PublishedVenueScope.
  *
  * @property string $uuid Primary key (UUID)
  * @property string $name Venue name
@@ -27,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $address Full street address (optional)
  * @property float $latitude Latitude coordinate
  * @property float $longitude Longitude coordinate
+ * @property Carbon|null $published_at When the venue became visible on the site
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property-read Collection<int, Report> $reports
@@ -38,6 +42,7 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Venue inBounds(float $swLat, float $swLng, float $neLat, float $neLng)
  * @method static Builder|Venue search(string $term)
  */
+#[ScopedBy(PublishedVenueScope::class)]
 final class Venue extends Model
 {
     use HasFactory;
@@ -82,7 +87,24 @@ final class Venue extends Model
         return [
             'latitude' => 'decimal:8',
             'longitude' => 'decimal:8',
+            'published_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Publish new venues unless they were created with an explicit published_at.
+     *
+     * Seeded and imported venues are real places, so they go live straight
+     * away. Venues from public submissions are created with a null
+     * published_at and wait for review.
+     */
+    protected static function booted(): void
+    {
+        self::creating(function (Venue $venue): void {
+            if (! $venue->isDirty('published_at')) {
+                $venue->published_at = now();
+            }
+        });
     }
 
     /**

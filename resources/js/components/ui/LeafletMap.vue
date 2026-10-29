@@ -52,6 +52,7 @@ const cartoTileUrl = `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/
 // These will be set after dynamic import
 let L: LeafletModule | null = null;
 let map: Map | null = null;
+let resizeObserver: ResizeObserver | null = null;
 let markerClusterGroup: MarkerClusterGroup | null = null;
 let markerIcon: Icon | null = null;
 let heatLayer: HeatLayer | null = null;
@@ -80,7 +81,8 @@ const heatmapOptions = {
  * Skips emission during programmatic view changes to prevent loops.
  */
 const emitBoundsChange = (): void => {
-    if (!map || isProgrammaticMove) return;
+    // a hidden map has no size, so its bounds are a single point
+    if (!map || isProgrammaticMove || !map.getSize().x) return;
 
     const bounds = map.getBounds();
     const sw = bounds.getSouthWest();
@@ -244,6 +246,16 @@ onMounted(async () => {
 
     map = L.map(mapContainer.value).setView(props.center, props.zoom);
 
+    // leaflet only listens for window resizes, so it misses being shown after starting hidden.
+    // only act on hidden to shown, as on desktop the map follows the list height and each refetch would resize it again
+    let wasHidden = false;
+    resizeObserver = new ResizeObserver(([entry]) => {
+        const isHidden = !entry.contentRect.width;
+        if (wasHidden && !isHidden) map?.invalidateSize();
+        wasHidden = isHidden;
+    });
+    resizeObserver.observe(mapContainer.value);
+
     // Use CartoDB's Voyager tiles - faster CDN, cleaner design, better caching
     L.tileLayer(cartoTileUrl, {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -287,6 +299,8 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+    resizeObserver?.disconnect();
+
     if (map) {
         map.off('moveend', emitBoundsChange);
     }

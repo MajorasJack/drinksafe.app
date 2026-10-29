@@ -121,7 +121,18 @@ final class VenueFactory extends Factory
             'address' => fake()->streetAddress(),
             'latitude' => fake()->randomFloat(8, 50.0, 56.0), // UK latitude bounds
             'longitude' => fake()->randomFloat(8, -6.0, 2.0), // UK longitude bounds
+            'published_at' => now(),
         ];
+    }
+
+    /**
+     * State for a venue that was named in a submission and hasn't been reviewed.
+     */
+    public function unpublished(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'published_at' => null,
+        ]);
     }
 
     /**

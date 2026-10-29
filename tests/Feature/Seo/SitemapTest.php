@@ -29,6 +29,12 @@ describe('sitemap.xml', function (): void {
         expect($response->getContent())->toContain(sprintf('<loc>%s</loc>', route('home')));
     });
 
+    it('includes the partners url', function (): void {
+        $response = $this->get('/sitemap.xml');
+
+        expect($response->getContent())->toContain(sprintf('<loc>%s</loc>', route('partners')));
+    });
+
     it('includes a seeded venue url', function (): void {
         $venue = Venue::factory()->create();
 
@@ -45,5 +51,15 @@ describe('robots.txt', function (): void {
 
     it('references the sitemap', function (): void {
         expect(file_get_contents(public_path('robots.txt')))->toContain('Sitemap:');
+    });
+});
+
+describe('sitemap.xml unpublished venues', function (): void {
+    it('leaves out a venue that has not been published', function (): void {
+        $venue = Venue::factory()->unpublished()->create();
+
+        $response = $this->get('/sitemap.xml');
+
+        expect($response->getContent())->not->toContain(route('venues.show', $venue->slug));
     });
 });

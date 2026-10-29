@@ -8,6 +8,7 @@ use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Venues\Exceptions\VenueDuplicateException;
 use DrinkSafe\Venues\Exceptions\VenueNotFoundException;
 use DrinkSafe\Venues\Models\Venue;
+use DrinkSafe\Venues\Scopes\PublishedVenueScope;
 use Illuminate\Support\Collection;
 
 /**
@@ -90,22 +91,26 @@ final class VenueService
      * Create a new venue.
      *
      * Validates that a venue with the same name doesn't already exist in the same city.
+     * The venue is created unpublished, because its details come from the public
+     * and nobody has reviewed them yet. Publishing a report about it publishes it.
+     * An unpublished venue with the same name and city is returned as it is,
+     * rather than throwing, so the caller can't tell that a submission is
+     * waiting for review, and no second copy of the venue is created.
      *
      * @param  array<string, mixed>  $data  Venue data
      *
-     * @throws VenueDuplicateException If venue already exists
+     * @throws VenueDuplicateException If a published venue already exists
      */
     public function createVenue(array $data): Venue
     {
-        $existingVenue = Venue::where('name', $data['name'])
+        $existingVenue = Venue::withoutGlobalScope(PublishedVenueScope::class)
+            ->where('name', $data['name'])
             ->where('city', $data['city'])
             ->first();
 
-        if ($existingVenue !== null) {
-            throw new VenueDuplicateException($data['name'], $data['city']);
-        }
+        throw_if($existingVenue?->published_at !== null, VenueDuplicateException::class, $data['name'], $data['city']);
 
-        return Venue::create($data);
+        return $existingVenue ?? tap(new Venue($data), fn (Venue $venue): bool => $venue->forceFill(['published_at' => null])->save());
     }
 
     /**

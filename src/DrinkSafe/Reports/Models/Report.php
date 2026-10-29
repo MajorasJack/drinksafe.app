@@ -6,9 +6,14 @@ namespace DrinkSafe\Reports\Models;
 
 use Carbon\Carbon;
 use Database\Factories\DrinkSafe\ReportFactory;
+use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Enums\TimeOfDay;
+use DrinkSafe\Reports\Policies\ReportPolicy;
+use DrinkSafe\Reports\Scopes\PublishedScope;
 use DrinkSafe\Shared\Traits\HasUuid;
 use DrinkSafe\Venues\Models\Venue;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -22,6 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * Represents an anonymous spiking incident report submitted by users.
  * Reports are linked to venues and include incident date, time of day, and description.
+ * Only published reports are visible by default: see PublishedScope.
  *
  * @property string $uuid Primary key (UUID)
  * @property string $venue_uuid Foreign key to venues table
@@ -29,6 +35,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $incident_time Optional exact time of incident (HH:MM)
  * @property TimeOfDay $time_of_day Time of day when incident occurred
  * @property string $description User-provided incident description
+ * @property ReportStatus $status Where the report sits in the review queue
+ * @property Carbon|null $reviewed_at When an admin published or rejected the report
  * @property Carbon $created_at Timestamp when report was submitted
  * @property Carbon $updated_at Timestamp when report was last updated
  * @property Carbon|null $deleted_at Soft delete timestamp
@@ -37,6 +45,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static Builder recent(int $days = 30) Reports from last N days
  * @method static Builder byTimeOfDay(TimeOfDay $timeOfDay) Filter by time of day
  */
+#[ScopedBy(PublishedScope::class)]
+#[UsePolicy(ReportPolicy::class)]
 final class Report extends Model
 {
     use HasFactory;
@@ -56,6 +66,18 @@ final class Report extends Model
      * @var string
      */
     protected $primaryKey = 'uuid';
+
+    /**
+     * The model's default attribute values. New reports wait for review.
+     *
+     * Status is deliberately not mass assignable, so no public input can
+     * publish a report.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'status' => ReportStatus::Pending->value,
+    ];
 
     /**
      * The attributes that are mass assignable.
@@ -80,6 +102,8 @@ final class Report extends Model
         return [
             'incident_date' => 'date',
             'time_of_day' => TimeOfDay::class,
+            'status' => ReportStatus::class,
+            'reviewed_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
