@@ -27,6 +27,7 @@ Before deploying, ensure the following requirements are met:
 - [ ] Database server installed and configured
 - [ ] Redis server installed and configured
 - [ ] Firewall rules configured
+- [ ] Check the /go access log exclusion is present on the server (the `map $request_uri $drinksafe_loggable` block and `if=$drinksafe_loggable` on both `access_log` lines, see `server-requirements.md`)
 
 ### Application Requirements
 
@@ -828,5 +829,5 @@ Set these repository secrets:
 The deploy script is owned by root and kept on the server. `DEPLOY_USER` is allowed to run only that script through `sudo`. The script must:
 
 1. Copy the staging directory into the live site, leaving `.env` and the runtime directories under `storage/` and `bootstrap/cache/` alone.
-2. Run `composer install --no-dev --optimize-autoloader`, `php artisan migrate --force` and `php artisan optimize`.
+2. Run `composer install --no-dev --optimize-autoloader`, `php artisan migrate --force`, `php artisan cache:clear` and `php artisan optimize`.
 3. Restore ownership and permissions on the live site for the web server user.

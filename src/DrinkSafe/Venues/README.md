@@ -42,6 +42,7 @@ Venue {
     address: string (nullable)
     latitude: decimal(10,8)
     longitude: decimal(11,8)
+    published_at: timestamp (nullable, null until reviewed)
     created_at: timestamp
     updated_at: timestamp
 
@@ -57,6 +58,9 @@ The `VenueSearchService::nearby()` method finds venues within a specified radius
 
 ### Full-Text Search
 Venues can be searched by name or city with partial matching support.
+
+### Publishing
+`PublishedVenueScope` hides venues with no `published_at`. Seeded and imported venues are published when they're created. Venues created by `VenueService::createVenue()` (a report submission naming a new venue, or `POST /api/venues`) start unpublished, and `ReportService::reviewReport()` publishes one when it publishes a report about it. If an unpublished venue with the same name and city already exists, `createVenue()` returns it instead of creating a copy, and `POST /api/venues` only returns the venue's `uuid`, so neither shows whether a hidden venue existed. Code that needs every venue, such as the review queue, opts out with `withoutGlobalScope(PublishedVenueScope::class)`.
 
 ### Report Counts
 Venues automatically load report counts for display in lists and maps.

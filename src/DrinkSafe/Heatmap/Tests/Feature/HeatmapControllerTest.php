@@ -450,3 +450,26 @@ describe('HeatmapController', function (): void {
         });
     });
 });
+
+describe('HeatmapController review queue', function (): void {
+    it('counts only published reports', function (): void {
+        $venue = Venue::factory()->create(['latitude' => 51.5, 'longitude' => -0.1]);
+        Report::factory()->count(3)->for($venue, 'venue')->daysAgo(15)->create();
+        Report::factory()->count(3)->for($venue, 'venue')->daysAgo(15)->pending()->create();
+        Report::factory()->count(3)->for($venue, 'venue')->daysAgo(15)->rejected()->create();
+
+        $response = $this->getJson(route('api.heatmap', ['north' => 51.6, 'south' => 51.4, 'east' => 0.0, 'west' => -0.2]));
+
+        $response->assertOk()->assertJsonPath('data.total_reports', 3);
+    });
+
+    it('shows no points when a cell only has unpublished reports', function (): void {
+        $venue = Venue::factory()->create(['latitude' => 51.5, 'longitude' => -0.1]);
+        Report::factory()->count(3)->for($venue, 'venue')->daysAgo(15)->pending()->create();
+        Report::factory()->count(3)->for($venue, 'venue')->daysAgo(15)->rejected()->create();
+
+        $response = $this->getJson(route('api.heatmap', ['north' => 51.6, 'south' => 51.4, 'east' => 0.0, 'west' => -0.2]));
+
+        $response->assertOk()->assertJsonCount(0, 'data.points');
+    });
+});
