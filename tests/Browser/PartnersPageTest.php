@@ -69,12 +69,13 @@ it('explains where to put material up with permission', function (): void {
         ->assertSee("Please only put anything up with the venue's permission.");
 });
 
-it('links each printable download', function (string $fileName): void {
+it('links each download', function (string $fileName): void {
     $page = visit('/partners');
 
     $page->assertSee('Downloads')
         ->assertPresent(sprintf('a[href="/downloads/%s"]', $fileName));
 })->with([
+    'drink-safe-partner-pack.zip',
     'drink-safe-poster-a4.pdf',
     'drink-safe-poster-a3.pdf',
     'drink-safe-flyer.pdf',
@@ -92,6 +93,19 @@ it('gives the format and size in each download link', function (): void {
     $page = visit('/partners');
 
     $page->assertSeeIn('a[href="/downloads/drink-safe-poster-a4.pdf"]', 'Poster, A4 (PDF, 21 KB)');
+});
+
+it('gives the format and size of the partner pack', function (): void {
+    $page = visit('/partners');
+
+    $page->assertSeeIn('a[href="/downloads/drink-safe-partner-pack.zip"]', 'Partner pack (ZIP, 5 MB)');
+});
+
+it('says what the partner pack adds to the individual files', function (): void {
+    $page = visit('/partners');
+
+    $page->assertSee('a one-page About Drink Safe PDF')
+        ->assertSee('a short video for social media');
 });
 
 it('shows the contact email as a mailto link', function (): void {
