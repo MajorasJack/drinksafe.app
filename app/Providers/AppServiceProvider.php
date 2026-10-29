@@ -8,8 +8,11 @@ use DrinkSafe\Reports\Commands\MakeAdminCommand;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Observers\ReportObserver;
 use DrinkSafe\Venues\Commands\FetchVenuesCommand;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -32,6 +35,15 @@ class AppServiceProvider extends ServiceProvider
         $this->loadDrinkSafeMigrations();
         $this->registerCommands();
         $this->registerObservers();
+        $this->configureRateLimiting();
+    }
+
+    /**
+     * Give report submission its own counter, so browsing the map and venue pages does not use it up.
+     */
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('reports', fn (Request $request): Limit => Limit::perMinute(5)->by($request->ip()));
     }
 
     /**
