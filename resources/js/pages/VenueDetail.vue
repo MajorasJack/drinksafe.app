@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/vue3';
 import { MapPin, AlertTriangle, ChevronRight } from 'lucide-vue-next';
 import { computed, onMounted } from 'vue';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import NothingReportedYet from '@/components/report/NothingReportedYet.vue';
 import ReportList from '@/components/report/ReportList.vue';
 import {
     Breadcrumb,
@@ -188,7 +189,11 @@ onMounted(() => {
                 </div>
 
                 <div>
-                    <ReportList :reports="venueReports" />
+                    <ReportList v-if="hasReports" :reports="venueReports" />
+                    <NothingReportedYet
+                        v-else
+                        :report-href="`/submit-report?venue=${venue.uuid}`"
+                    />
                 </div>
             </div>
         </div>

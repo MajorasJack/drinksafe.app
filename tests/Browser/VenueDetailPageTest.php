@@ -214,3 +214,22 @@ it('reports section displays all venue reports', function (): void {
     $page->assertSee('First report content')
         ->assertSee('Second report content');
 });
+
+it('shows the safety tips and a report link for this venue when it has no published reports', function (): void {
+    $venue = Venue::factory()->has(Report::factory()->pending())->create();
+
+    $page = visit(sprintf('/venues/%s', $venue->slug));
+
+    $page->assertSee('Nothing reported here yet')
+        ->assertSee('Never leave your drink unattended, even for a moment.')
+        ->assertPresent(sprintf('[data-testid="nothing-reported-yet"] a[href="/submit-report?venue=%s"]', $venue->uuid))
+        ->assertNoJavaScriptErrors();
+});
+
+it('hides the safety tips when the venue has a published report', function (): void {
+    $venue = Venue::factory()->has(Report::factory())->create();
+
+    $page = visit(sprintf('/venues/%s', $venue->slug));
+
+    $page->assertDontSee('Nothing reported here yet');
+});
