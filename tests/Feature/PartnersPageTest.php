@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use DrinkSafe\Shared\Controllers\PartnersController;
+use Illuminate\Support\Collection;
 use Inertia\Testing\AssertableInertia as Assert;
 
 describe('Partners page', function (): void {
@@ -21,7 +23,7 @@ describe('Partners page', function (): void {
         );
     });
 
-    it('serves every download the page links to', function (string $fileName): void {
+    it('ships every download the page links to', function (string $fileName): void {
         expect(public_path(sprintf('downloads/%s', $fileName)))->toBeFile();
     })->with([
         'drink-safe-poster-a4.pdf',
@@ -30,4 +32,14 @@ describe('Partners page', function (): void {
         'drink-safe-sticker-a.pdf',
         'drink-safe-sticker-b.pdf',
     ]);
+
+    it('passes the size of each download', function (): void {
+        $response = $this->get(route('partners'));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->has('downloadSizes', count(PartnersController::DOWNLOADS))
+            ->where('downloadSizes', fn (Collection $sizes): bool => $sizes['/downloads/drink-safe-poster-a4.pdf'] === '21 KB'
+                && $sizes['/downloads/drink-safe-sticker-b.pdf'] === '14 KB')
+        );
+    });
 });

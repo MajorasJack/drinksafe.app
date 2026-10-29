@@ -1,7 +1,12 @@
 <script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
 import { Download, HandHeart, Mail, Scale, Shield } from 'lucide-vue-next';
 import AppLayout from '@/components/layout/AppLayout.vue';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+
+const props = defineProps<{
+    downloadSizes: Record<string, string>;
+}>();
 
 interface PrintDownload {
     href: string;
@@ -11,7 +16,7 @@ interface PrintDownload {
 
 const reviewSteps = [
     'Someone submits a report without an account and without giving their name.',
-    'Email addresses and phone numbers in the description are removed automatically. If any are still there afterwards, the report is turned away and the person is asked to take them out.',
+    'If the description includes an email address or phone number, the report is turned away and the person is asked to take it out.',
     'The report is saved as waiting for review. It does not appear anywhere on the site yet.',
     'A person reads it and either publishes it or rejects it.',
     'If the report names a venue that is not on Drink Safe yet, the venue stays hidden as well until its first report is published.',
@@ -46,13 +51,13 @@ const downloads: PrintDownload[] = [
         href: '/downloads/drink-safe-sticker-a.pdf',
         title: 'Sticker A',
         description:
-            '100mm square, for cubicle doors. What to do if a drink has been spiked.',
+            '100mm square, for cubicle doors. What to do if a drink has been spiked. Set up for a sticker or print shop, with 3mm bleed. Not for an office printer.',
     },
     {
         href: '/downloads/drink-safe-sticker-b.pdf',
         title: 'Sticker B',
         description:
-            '100mm square, for mirrors and hand dryers. A QR code to check a venue.',
+            '100mm square, for mirrors and hand dryers. A QR code to check a venue. Set up for a sticker or print shop, with 3mm bleed. Not for an office printer.',
     },
 ];
 </script>
@@ -79,7 +84,11 @@ const downloads: PrintDownload[] = [
                     <CardHeader>
                         <div class="flex items-center gap-3">
                             <Shield class="size-6 shrink-0 text-brand-teal" />
-                            <CardTitle>What Drink Safe is</CardTitle>
+                            <h2
+                                class="leading-none font-semibold text-slate-900 dark:text-white"
+                            >
+                                What Drink Safe is
+                            </h2>
                         </div>
                     </CardHeader>
                     <CardContent
@@ -115,7 +124,11 @@ const downloads: PrintDownload[] = [
                     <CardHeader>
                         <div class="flex items-center gap-3">
                             <Scale class="size-6 shrink-0 text-brand-teal" />
-                            <CardTitle>A report is not an accusation</CardTitle>
+                            <h2
+                                class="leading-none font-semibold text-slate-900 dark:text-white"
+                            >
+                                A report is not an accusation
+                            </h2>
                         </div>
                     </CardHeader>
                     <CardContent
@@ -128,7 +141,8 @@ const downloads: PrintDownload[] = [
                         </p>
                         <p>
                             Every report is reviewed by a person before it is
-                            published. This is what happens to a report:
+                            published. Information provided may not be verified
+                            or accurate. This is what happens to a report:
                         </p>
                         <ol class="space-y-3">
                             <li
@@ -152,9 +166,15 @@ const downloads: PrintDownload[] = [
                                 class="text-brand-teal hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                                 >drinksafe@protonmail.com</a
                             >
-                            with a link to the report. We'll look at it and
-                            remove anything that breaks our rules or names a
-                            person.
+                            with a link to your venue's page on Drink Safe and
+                            the date shown on the report. We'll look at it and
+                            remove anything that
+                            <Link
+                                href="/terms"
+                                class="text-brand-teal hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                                >breaks our rules</Link
+                            >
+                            or names a person.
                         </p>
                     </CardContent>
                 </Card>
@@ -165,7 +185,11 @@ const downloads: PrintDownload[] = [
                             <HandHeart
                                 class="size-6 shrink-0 text-brand-teal"
                             />
-                            <CardTitle>How to help</CardTitle>
+                            <h2
+                                class="leading-none font-semibold text-slate-900 dark:text-white"
+                            >
+                                How to help
+                            </h2>
                         </div>
                     </CardHeader>
                     <CardContent
@@ -214,7 +238,8 @@ const downloads: PrintDownload[] = [
                                     class="inline-flex items-center gap-2 font-semibold text-brand-teal hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                                 >
                                     <Download class="size-4" />
-                                    {{ file.title }}
+                                    {{ file.title }} (PDF,
+                                    {{ props.downloadSizes[file.href] }})
                                 </a>
                                 <p
                                     class="text-sm text-slate-600 dark:text-gray-300"
@@ -230,7 +255,11 @@ const downloads: PrintDownload[] = [
                     <CardHeader>
                         <div class="flex items-center gap-3">
                             <Mail class="size-6 shrink-0 text-brand-teal" />
-                            <CardTitle>Contact</CardTitle>
+                            <h2
+                                class="leading-none font-semibold text-slate-900 dark:text-white"
+                            >
+                                Contact
+                            </h2>
                         </div>
                     </CardHeader>
                     <CardContent

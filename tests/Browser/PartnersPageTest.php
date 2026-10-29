@@ -33,11 +33,17 @@ it('explains that a report is not an accusation', function (): void {
         ->assertSee('Every report is reviewed by a person before it is published.');
 });
 
+it('says that information provided may not be verified', function (): void {
+    $page = visit('/partners');
+
+    $page->assertSee('Information provided may not be verified or accurate.');
+});
+
 it('describes each step a report goes through', function (): void {
     $page = visit('/partners');
 
     $page->assertSee('without an account and without giving their name')
-        ->assertSee('Email addresses and phone numbers in the description are removed automatically')
+        ->assertSee('If the description includes an email address or phone number, the report is turned away')
         ->assertSee('It does not appear anywhere on the site yet.')
         ->assertSee('either publishes it or rejects it')
         ->assertSee('the venue stays hidden as well until its first report is published')
@@ -48,7 +54,9 @@ it('tells a venue what to do if it disagrees with a report', function (): void {
     $page = visit('/partners');
 
     $page->assertSee('If your venue disagrees with a published report')
-        ->assertSee('remove anything that breaks our rules or names a person');
+        ->assertSee("with a link to your venue's page on Drink Safe and the date shown on the report")
+        ->assertSee('remove anything that breaks our rules or names a person')
+        ->assertPresent('a[href="/terms"]');
 });
 
 it('explains where to put material up with permission', function (): void {
@@ -73,6 +81,18 @@ it('links each printable download', function (string $fileName): void {
     'drink-safe-sticker-a.pdf',
     'drink-safe-sticker-b.pdf',
 ]);
+
+it('warns that the stickers are not for an office printer', function (): void {
+    $page = visit('/partners');
+
+    $page->assertSee('Set up for a sticker or print shop, with 3mm bleed. Not for an office printer.');
+});
+
+it('gives the format and size in each download link', function (): void {
+    $page = visit('/partners');
+
+    $page->assertSeeIn('a[href="/downloads/drink-safe-poster-a4.pdf"]', 'Poster, A4 (PDF, 21 KB)');
+});
 
 it('shows the contact email as a mailto link', function (): void {
     $page = visit('/partners');
