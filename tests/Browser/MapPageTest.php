@@ -364,3 +364,45 @@ it('lists the safety tips in order with their numbers hidden from screen readers
     $page->wait(1)
         ->assertCount('[data-testid="nothing-reported-yet"] ol > li > span[aria-hidden="true"]', 6);
 });
+
+it('lists the reported venues on a phone after zooming in and opening the list', function (): void {
+    $venueName = fake()->unique()->company();
+    Venue::factory()->has(Report::factory())->create(['name' => $venueName, 'latitude' => 51.5074, 'longitude' => -0.1278]);
+    Venue::factory()->count(2)->has(Report::factory())->sequence(
+        ['latitude' => 51.5080, 'longitude' => -0.1270],
+        ['latitude' => 51.5068, 'longitude' => -0.1285],
+    )->create();
+
+    $page = visit('/map')->on()->iPhone14Pro()->wait(1);
+
+    $page->click('.leaflet-control-zoom-in')
+        ->wait(1)
+        ->click('.leaflet-control-zoom-in')
+        ->wait(2)
+        ->click('View 3 Venues')
+        ->wait(1.5)
+        ->assertSee($venueName)
+        ->assertMissing('[data-testid="nothing-reported-yet"]');
+});
+
+it('keeps the search suggestions closed when the page is opened with a search', function (): void {
+    $venueName = fake()->unique()->company();
+    Venue::factory()->create(['name' => $venueName]);
+
+    $page = visit(sprintf('/map?search=%s', urlencode($venueName)))->on()->iPhone14Pro();
+
+    $page->wait(1)
+        ->assertSee($venueName)
+        ->assertMissing('[data-testid="venue-search-suggestions"]');
+});
+
+it('opens the search suggestions when typing a search', function (): void {
+    $venueName = fake()->unique()->company();
+    Venue::factory()->create(['name' => $venueName]);
+
+    $page = visit('/map');
+
+    $page->fill('input[placeholder*="Search"]', $venueName)
+        ->wait(1)
+        ->assertVisible('[data-testid="venue-search-suggestions"]');
+});

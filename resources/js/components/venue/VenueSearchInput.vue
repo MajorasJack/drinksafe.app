@@ -24,12 +24,14 @@ const query = defineModel<string>({ default: '' });
 
 const { results, isSearching, search } = useSearch();
 const showDropdown = ref(false);
+const isFocused = ref(false);
 const inputRef = ref<HTMLInputElement | null>(null);
 
 watch(query, (newQuery) => {
     if (newQuery.trim()) {
         search(newQuery);
-        showDropdown.value = true;
+        // a query set by the parent, such as ?search= on load, shouldn't open the suggestions
+        showDropdown.value = isFocused.value;
     } else {
         showDropdown.value = false;
         emit('clear');
@@ -48,7 +50,13 @@ const handleClear = (): void => {
     emit('clear');
 };
 
+const handleFocus = (): void => {
+    isFocused.value = true;
+    showDropdown.value = !!query.value.trim();
+};
+
 const handleBlur = (): void => {
+    isFocused.value = false;
     setTimeout(() => {
         showDropdown.value = false;
     }, 200);
@@ -68,7 +76,7 @@ const handleBlur = (): void => {
                 type="text"
                 placeholder="Search by city, town, or venue name..."
                 class="w-full pr-9 pl-9"
-                @focus="showDropdown = !!query.trim()"
+                @focus="handleFocus"
                 @blur="handleBlur"
             />
             <button
@@ -84,6 +92,7 @@ const handleBlur = (): void => {
         <!-- Dropdown -->
         <div
             v-if="showDropdown && (isSearching || results.length > 0)"
+            data-testid="venue-search-suggestions"
             class="absolute z-50 mt-2 w-full rounded-md border border-slate-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
         >
             <div

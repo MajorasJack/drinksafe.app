@@ -81,7 +81,8 @@ const heatmapOptions = {
  * Skips emission during programmatic view changes to prevent loops.
  */
 const emitBoundsChange = (): void => {
-    if (!map || isProgrammaticMove) return;
+    // a hidden map has no size, so its bounds are a single point
+    if (!map || isProgrammaticMove || !map.getSize().x) return;
 
     const bounds = map.getBounds();
     const sw = bounds.getSouthWest();
