@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -145,5 +146,31 @@ describe('VenueSearchController', function (): void {
             $response->assertUnprocessable()
                 ->assertJsonValidationErrors(['lng']);
         });
+    });
+});
+
+describe('VenueSearchController review queue', function (): void {
+    it('counts only published reports in search results', function (): void {
+        $venue = Venue::factory()->create(['name' => 'The Neon Arms']);
+        Report::factory()->for($venue, 'venue')->create();
+        Report::factory()->for($venue, 'venue')->pending()->create();
+        Report::factory()->for($venue, 'venue')->rejected()->create();
+
+        $response = $this->getJson(route('api.venues.search', ['q' => 'neon']));
+
+        $response->assertOk()->assertJsonPath('data.0.reports_count', 1);
+    });
+});
+
+describe('VenueSearchController unpublished venues', function (): void {
+    it('leaves unpublished venues out of search results', function (): void {
+        $published = Venue::factory()->create(['name' => 'The Neon Arms']);
+        Venue::factory()->unpublished()->create(['name' => 'The Neon Tavern']);
+
+        $response = $this->getJson(route('api.venues.search', ['q' => 'neon']));
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.uuid', $published->uuid);
     });
 });

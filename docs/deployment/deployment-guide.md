@@ -27,6 +27,7 @@ Before deploying, ensure the following requirements are met:
 - [ ] Database server installed and configured
 - [ ] Redis server installed and configured
 - [ ] Firewall rules configured
+- [ ] Check the /go access log exclusion is present on the server (the `map $request_uri $drinksafe_loggable` block and `if=$drinksafe_loggable` on both `access_log` lines, see `server-requirements.md`)
 
 ### Application Requirements
 
@@ -810,3 +811,28 @@ After successful deployment:
 ---
 
 **End of Deployment Guide**
+
+## Automated Deploys (GitHub Actions)
+
+`.github/workflows/deploy.yml` builds the assets, copies the release to a staging directory over rsync, then runs one command on the server. Nothing about the server's users, groups, paths or PHP version is in the repository.
+
+Set these repository secrets:
+
+| Secret | Value |
+|---|---|
+| `DEPLOY_HOST` | Server host name or IP address |
+| `DEPLOY_USER` | Unprivileged SSH user the workflow connects as |
+| `DEPLOY_KEY` | Private SSH key for that user |
+| `DEPLOY_PATH` | Staging directory that user can write to |
+| `DEPLOY_SCRIPT` | Absolute path of the server's deploy script |
+
+The deploy script is owned by root and kept on the server. `DEPLOY_USER` is allowed to run only that script through `sudo`, with no arguments. Root does no file work itself: every step runs as the user the site runs as, so a release can only reach what the site can already reach. The script must:
+
+1. Take a lock, so two deploys can't run at once, and print the commit from the `REVISION` file the workflow writes.
+2. Put the site into maintenance mode with `php artisan down`.
+3. Copy the staging directory into the live site with `rsync --delete`, leaving `.env`, `vendor/`, `storage/`, `bootstrap/cache/`, `public/storage` and `public/.well-known/` alone.
+4. Run `composer install --no-dev --optimize-autoloader`, `php artisan optimize:clear`, `php artisan migrate --force`, `php artisan optimize` and `php artisan up`.
+
+If any step fails, the site stays in maintenance mode rather than running a half-updated release. Fix the cause, then run the deploy again or `php artisan up` by hand. A deploy that starts while the site is already down skips `artisan down`, because a half-updated release may not boot.
+
+`vendor/` is never copied from the CI runner, because the runner installs development dependencies. `composer install` on the server is the only thing that writes it.

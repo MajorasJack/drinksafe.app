@@ -52,6 +52,11 @@ return [
         'site_verification' => env('GOOGLE_SITE_VERIFICATION'),
     ],
 
+    // Where the "a report is waiting for review" email goes.
+    'reports' => [
+        'alert_email' => env('REPORT_ALERT_EMAIL', 'drinksafe@protonmail.com'),
+    ],
+
     // Donation links shown on /support. A link left empty is not shown.
     'donations' => [
         'kofi' => env('DONATION_KOFI_URL', 'https://ko-fi.com/parasyte'),

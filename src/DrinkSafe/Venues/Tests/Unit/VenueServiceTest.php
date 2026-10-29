@@ -192,3 +192,16 @@ describe('VenueService', function (): void {
         });
     });
 });
+
+describe('VenueService createVenue publishing', function (): void {
+    it('creates the venue unpublished', function (): void {
+        $venue = (new VenueService)->createVenue([
+            'name' => fake()->company(),
+            'city' => fake()->city(),
+            'latitude' => fake()->latitude(),
+            'longitude' => fake()->longitude(),
+        ]);
+
+        $this->assertDatabaseHas('venues', ['uuid' => $venue->uuid, 'published_at' => null]);
+    });
+});

@@ -7,6 +7,7 @@ dataset('public_pages', [
     'map' => ['map'],
     'about' => ['about'],
     'support' => ['support'],
+    'partners' => ['partners'],
     'analytics' => ['analytics'],
     'privacy' => ['privacy'],
     'terms' => ['terms'],
@@ -18,6 +19,7 @@ dataset('page_titles', [
     'map' => ['map', 'Safety Map'],
     'about' => ['about', 'About'],
     'support' => ['support', 'Support'],
+    'partners' => ['partners', 'Partners'],
     'analytics' => ['analytics', 'Analytics'],
     'privacy' => ['privacy', 'Privacy'],
     'terms' => ['terms', 'Terms'],
@@ -70,7 +72,7 @@ describe('public page SEO metadata', function (): void {
     })->with('public_pages');
 
     it('renders a unique title for every public page', function (): void {
-        $titles = collect(['home', 'map', 'about', 'support', 'analytics', 'privacy', 'terms', 'contact'])
+        $titles = collect(['home', 'map', 'about', 'support', 'partners', 'analytics', 'privacy', 'terms', 'contact'])
             ->map(fn (string $routeName): string => (string) preg_replace(
                 '#.*<title>(.+?)</title>.*#s',
                 '$1',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Venues\Models\Venue;
+use DrinkSafe\Venues\Scopes\PublishedVenueScope;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -267,5 +268,40 @@ describe('Venue Model', function (): void {
 
         expect($freshVenue->longitude)->toBeString()
             ->and($freshVenue->longitude)->toBe('-0.12780456');
+    });
+});
+
+describe('Venue publishing', function (): void {
+    it('publishes a venue created without a published_at', function (): void {
+        $venue = Venue::create([
+            'name' => fake()->company(),
+            'city' => fake()->city(),
+            'latitude' => fake()->latitude(),
+            'longitude' => fake()->longitude(),
+        ]);
+
+        expect($venue->published_at)->not->toBeNull();
+    });
+
+    it('hides unpublished venues from queries', function (): void {
+        $published = Venue::factory()->create();
+        Venue::factory()->unpublished()->create();
+
+        expect(Venue::pluck('uuid')->all())->toBe([$published->uuid]);
+    });
+
+    it('finds unpublished venues once the scope is removed', function (): void {
+        Venue::factory()->create();
+        Venue::factory()->unpublished()->create();
+
+        expect(Venue::withoutGlobalScope(PublishedVenueScope::class)->count())->toBe(2);
+    });
+
+    it('gives a new venue a unique slug when an unpublished venue has the same name', function (): void {
+        $unpublished = Venue::factory()->unpublished()->create();
+
+        $venue = Venue::factory()->create(['name' => $unpublished->name]);
+
+        expect($venue->slug)->not->toBe($unpublished->slug);
     });
 });

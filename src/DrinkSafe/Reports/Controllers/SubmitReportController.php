@@ -63,20 +63,22 @@ final class SubmitReportController extends Controller
     /**
      * Store a newly submitted report.
      *
-     * Creates the report and redirects to the venue detail page.
-     * Displays success message on successful submission.
+     * Creates the report and redirects to the home page. The report is
+     * pending, so the message says it will appear once it's been reviewed.
+     * The venue page isn't used, because a venue named for the first time
+     * has no page until the report is published.
      *
      * @param  StoreReportRequest  $request  Validated report data
-     * @return RedirectResponse Redirects to venue detail page
+     * @return RedirectResponse Redirects to the home page
      */
     public function store(StoreReportRequest $request): RedirectResponse
     {
         try {
-            $report = $this->reportService->createReport($request->validated());
+            $this->reportService->createReport($request->validated());
 
             return redirect()
-                ->route('venues.show', $report->venue_uuid)
-                ->with('success', 'Report submitted successfully');
+                ->route('home')
+                ->with('success', 'Thank you. Your report will appear once it has been reviewed.');
         } catch (ReportValidationException $e) {
             return redirect()
                 ->back()

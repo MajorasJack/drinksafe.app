@@ -10,6 +10,7 @@ import {
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import NothingReportedYet from '@/components/report/NothingReportedYet.vue';
 import Button from '@/components/ui/button/Button.vue';
 import DisclaimerBanner from '@/components/ui/DisclaimerBanner.vue';
 import type { PopulatedReport } from '@/types/report';
@@ -129,7 +130,9 @@ const handleSearch = (e: Event): void => {
                         </Link>
                     </div>
 
-                    <div class="space-y-6">
+                    <NothingReportedYet v-if="recent_reports.length === 0" />
+
+                    <div v-else class="space-y-6">
                         <Link
                             v-for="report in recent_reports"
                             :key="report.uuid"
