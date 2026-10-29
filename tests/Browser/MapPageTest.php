@@ -385,6 +385,26 @@ it('lists the reported venues on a phone after zooming in and opening the list',
         ->assertMissing('[data-testid="nothing-reported-yet"]');
 });
 
+it('stops fetching venues on a desktop once the map settles after zooming in', function (): void {
+    Venue::factory()->count(3)->has(Report::factory())->sequence(
+        ['latitude' => 51.5074, 'longitude' => -0.1278],
+        ['latitude' => 51.5080, 'longitude' => -0.1270],
+        ['latitude' => 51.5068, 'longitude' => -0.1285],
+    )->create();
+
+    $page = visit('/map')->resize(1440, 900)->wait(1);
+
+    $venueRequestCount = $page->click('.leaflet-control-zoom-in')
+        ->wait(1)
+        ->click('.leaflet-control-zoom-in')
+        ->wait(5)
+        ->script(<<<'JS'
+            performance.getEntriesByType('resource').filter((entry) => entry.name.includes('/api/venues?')).length
+            JS);
+
+    expect($venueRequestCount)->toBeLessThanOrEqual(4);
+});
+
 it('keeps the search suggestions closed when the page is opened with a search', function (): void {
     $venueName = fake()->unique()->company();
     Venue::factory()->create(['name' => $venueName]);

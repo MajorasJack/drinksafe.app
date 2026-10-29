@@ -246,8 +246,14 @@ onMounted(async () => {
 
     map = L.map(mapContainer.value).setView(props.center, props.zoom);
 
-    // leaflet only listens for window resizes, so it misses being shown after starting hidden
-    resizeObserver = new ResizeObserver(() => map?.invalidateSize());
+    // leaflet only listens for window resizes, so it misses being shown after starting hidden.
+    // only act on hidden to shown, as on desktop the map follows the list height and each refetch would resize it again
+    let wasHidden = false;
+    resizeObserver = new ResizeObserver(([entry]) => {
+        const isHidden = !entry.contentRect.width;
+        if (wasHidden && !isHidden) map?.invalidateSize();
+        wasHidden = isHidden;
+    });
     resizeObserver.observe(mapContainer.value);
 
     // Use CartoDB's Voyager tiles - faster CDN, cleaner design, better caching
