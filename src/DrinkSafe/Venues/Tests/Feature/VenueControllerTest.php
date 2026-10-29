@@ -7,6 +7,9 @@ use DrinkSafe\Venues\Models\Venue;
 use DrinkSafe\Venues\Scopes\PublishedVenueScope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
+use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -181,6 +184,30 @@ describe('VenueController', function (): void {
 
             $response->assertUnprocessable()
                 ->assertJsonValidationErrors(['longitude']);
+        });
+
+        it('logs nothing that identifies the person adding a venue', function (): void {
+            $ipAddress = fake()->ipv4();
+            $userAgent = sprintf('Mozilla/5.0 DistinctiveVenueAdder/%s', fake()->uuid());
+            $loggedEntries = collect();
+            Log::listen(fn (MessageLogged $entry): Collection => $loggedEntries->push(json_encode([$entry->message, $entry->context], JSON_UNESCAPED_SLASHES)));
+
+            $this->withServerVariables(['REMOTE_ADDR' => $ipAddress])
+                ->withHeader('User-Agent', $userAgent)
+                ->postJson(route('api.venues.store'), [
+                    'name' => fake()->company(),
+                    'city' => fake()->city(),
+                    'latitude' => fake()->latitude(),
+                    'longitude' => fake()->longitude(),
+                ])
+                ->assertCreated();
+
+            $everyLogLine = $loggedEntries->implode("\n");
+            expect($loggedEntries)->not->toBeEmpty()
+                ->and($everyLogLine)->not->toContain($ipAddress)
+                ->and($everyLogLine)->not->toContain(hash('sha256', $ipAddress))
+                ->and($everyLogLine)->not->toContain($userAgent)
+                ->and($everyLogLine)->not->toContain(hash('sha256', $userAgent));
         });
     });
 });

@@ -160,8 +160,6 @@ final class ReportController extends Controller
                 'venue_uuid' => $report->venue_uuid,
                 'incident_date' => $report->incident_date->toDateString(),
                 'time_of_day' => $report->time_of_day->value,
-                'ip_hash' => hash('sha256', $request->ip()),
-                'user_agent_hash' => hash('sha256', $request->userAgent() ?? 'unknown'),
                 'timestamp' => now()->toIso8601String(),
             ]);
 
@@ -172,7 +170,6 @@ final class ReportController extends Controller
         } catch (ReportValidationException $e) {
             Log::warning('Report validation failed', [
                 'error' => $e->getMessage(),
-                'ip_hash' => hash('sha256', $request->ip()),
                 'timestamp' => now()->toIso8601String(),
             ]);
 
@@ -182,7 +179,6 @@ final class ReportController extends Controller
         } catch (VenueNotFoundException $e) {
             Log::warning('Venue not found during report creation', [
                 'error' => $e->getMessage(),
-                'ip_hash' => hash('sha256', $request->ip()),
                 'timestamp' => now()->toIso8601String(),
             ]);
 
