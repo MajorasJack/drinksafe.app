@@ -481,8 +481,12 @@ describe('ReportController store', function (): void {
         $everyLogLine = $loggedEntries->implode("\n");
         expect($loggedEntries)->not->toBeEmpty()
             ->and($everyLogLine)->not->toContain($ipAddress)
+            ->and($everyLogLine)->not->toContain(md5($ipAddress))
+            ->and($everyLogLine)->not->toContain(sha1($ipAddress))
             ->and($everyLogLine)->not->toContain(hash('sha256', $ipAddress))
             ->and($everyLogLine)->not->toContain($userAgent)
+            ->and($everyLogLine)->not->toContain(md5($userAgent))
+            ->and($everyLogLine)->not->toContain(sha1($userAgent))
             ->and($everyLogLine)->not->toContain(hash('sha256', $userAgent));
     });
 });
