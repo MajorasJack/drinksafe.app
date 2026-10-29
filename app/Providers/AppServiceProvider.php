@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
+use DrinkSafe\Reports\Commands\CoverageCommand;
 use DrinkSafe\Reports\Commands\MakeAdminCommand;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Observers\ReportObserver;
@@ -50,6 +51,7 @@ class AppServiceProvider extends ServiceProvider
             $this->commands([
                 FetchVenuesCommand::class,
                 MakeAdminCommand::class,
+                CoverageCommand::class,
             ]);
         }
     }
