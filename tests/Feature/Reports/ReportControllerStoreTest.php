@@ -91,3 +91,23 @@ it('rejects a report whose description contains personal information', function 
 
     $response->assertUnprocessable()->assertJsonValidationErrors(['description']);
 });
+
+it('keeps report submission open after browsing uses up the venues allowance', function (): void {
+    foreach (range(1, 60) as $request) {
+        $this->getJson('/api/venues');
+    }
+
+    $response = $this->postJson('/api/reports');
+
+    $response->assertUnprocessable();
+});
+
+it('refuses a sixth report submission within a minute', function (): void {
+    foreach (range(1, 5) as $request) {
+        $this->postJson('/api/reports');
+    }
+
+    $response = $this->postJson('/api/reports');
+
+    $response->assertTooManyRequests();
+});

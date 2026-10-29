@@ -10,6 +10,8 @@
         "format:check": "prettier --check resources/",
         "lint": "eslint . --fix",
         "lint:check": "eslint .",
+        "partner-pack": "sh print/partner-pack/build.sh",
+        "print:render": "node print/artwork/render.mjs",
         "types:check": "vue-tsc --noEmit"
     },
     "devDependencies": {

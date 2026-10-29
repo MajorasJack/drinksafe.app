@@ -8,6 +8,7 @@ const footerLinks = [
     { href: '/terms', label: 'Terms of Service' },
     { href: '/contact', label: 'Contact' },
     { href: '/support', label: 'Support Us' },
+    { href: '/partners', label: 'For venues and partners' },
 ];
 </script>
 
