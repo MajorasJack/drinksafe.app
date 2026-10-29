@@ -37,6 +37,7 @@ final class SitemapController extends Controller
         'map' => ['changefreq' => 'weekly', 'priority' => '0.9'],
         'about' => ['changefreq' => 'monthly', 'priority' => '0.5'],
         'support' => ['changefreq' => 'monthly', 'priority' => '0.5'],
+        'partners' => ['changefreq' => 'monthly', 'priority' => '0.5'],
         'analytics' => ['changefreq' => 'weekly', 'priority' => '0.6'],
         'privacy' => ['changefreq' => 'yearly', 'priority' => '0.3'],
         'terms' => ['changefreq' => 'yearly', 'priority' => '0.3'],
