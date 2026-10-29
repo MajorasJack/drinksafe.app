@@ -15,14 +15,15 @@ use Inertia\Response;
  *
  * Displays the page for venues and partners who are deciding whether to
  * put up Drink Safe material. The download sizes are read from the files on
- * each request, so the link text stays right when a PDF is re-rendered.
+ * each request, so the link text stays right when a file is rebuilt.
  */
 final class PartnersController extends Controller
 {
     /**
-     * Printable files linked from the page, in `public/downloads`.
+     * Files linked from the page, in `public/downloads`.
      */
     public const array DOWNLOADS = [
+        'drink-safe-partner-pack.zip',
         'drink-safe-poster-a4.pdf',
         'drink-safe-poster-a3.pdf',
         'drink-safe-flyer.pdf',

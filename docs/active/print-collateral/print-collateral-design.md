@@ -277,6 +277,45 @@ should be at least 100mm across, quiet zone included.
 3-M (37 modules including the quiet zone), so each module is 106 / 37 = 2.865mm on A4, against
 the 400 micron minimum.
 
+## About Drink Safe
+
+One A4 page, single sided, for whoever at a venue or union decides whether the poster goes up.
+It goes in the partner pack and is printed on the same office printers as the poster, so it is
+set up the same way: white ground, navy type, trim size with no bleed, everything 12mm inside
+the trim. There is no QR, as the page is read at a desk.
+
+The copy is the /partners page and the Privacy page word for word: what Drink Safe is, the
+partner QR sentence from Privacy, "A report is not an accusation" with the six review steps,
+what a venue can do if it disagrees with a report, the contact email and the site footer's
+disclaimer. `tests/Feature/PartnerPackTest.php` fails if a sentence on the page and the same
+sentence on the site stop matching, so a copy change has to be made in both places.
+
+```
+▣  DRINK SAFE                         mark 12mm, wordmark 16pt / 600
+
+About Drink Safe                      24pt / 600 / navy
+
+WHAT DRINK SAFE IS ─────────          10pt / 600 navy, teal rule
+Four paragraphs                       11.5pt / 400 / navy
+
+A REPORT IS NOT AN ACCUSATION ──
+Two paragraphs
+1  Someone submits a report ...       11.5pt / 400, numerals navy / 600
+...
+6  A published report can still ...
+If your venue disagrees ...
+
+CONTACT ────────────────────
+For questions about ...
+drinksafe@protonmail.com              13pt / 600 / navy
+
+                                      1pt rule, #0D9488
+Drink Safe is an informational ...    8.5pt / #334155
+```
+
+The page has room for about a fifth more copy before the disclaimer is pushed off it. Check
+the PNG proof after any change.
+
 ## QR codes
 
 Generated as vector at final size and committed to `print/qr/`.
@@ -416,6 +455,34 @@ with the QR from `print/qr/partners/<code>.svg`. The code may only contain lower
 digits and hyphens. The render stops if that partner's QR file does not exist, and any render
 stops if a QR image fails to load, so a missing or broken SVG can't produce a poster with a
 blank square where the QR should be. A partner render writes only the PDF, with no PNG proof.
+
+```
+npm run print:render
+npm run partner-pack
+```
+
+`npm run print:render` runs the renderer above. `npm run partner-pack` does not render
+anything. It copies the poster, flyer and sticker PDFs already in `print/output/` into
+`public/downloads/` for the /partners page, and builds
+`public/downloads/drink-safe-partner-pack.zip` from the same files plus the About Drink Safe PDF,
+the Reel, and `README.txt` and `share-copy.txt` from `print/partner-pack/`.
+
+**After any change to `print/artwork/`, run `npm run print:render`, then `npm run partner-pack`,
+and commit the PDFs and the zip together.** Running `partner-pack` on its own packs whatever is
+in `print/output/`, so a zip built after an artwork change without a render still holds the old
+PDFs, and the tests will not catch it.
+
+The Reel is not in git. The script reads `brag.mp4` from `brag-output-2026-10-09-133822/`, or
+from the folder given as `npm run partner-pack -- <folder>` or as `PARTNER_PACK_MEDIA`, and stops
+if it is missing. That is the only file it needs from the media folder. It also stops if the zip
+comes to more than 25MB, the largest attachment most email providers accept, and leaves the
+files in `public/downloads/` untouched when it stops.
+
+The PDFs carry a fixed creation date and the zip entries a fixed modified date and fixed
+permissions, so running `partner-pack` again with nothing changed produces the same zip and no
+git diff. Rendering again gives the same PDF bytes only on the same Chromium build (Skia m147,
+from Playwright 1.59.1). A different Playwright version may produce PDFs that look the same but
+differ byte for byte, which shows up as a diff in every PDF and in the zip.
 
 Sources are in `print/artwork/`, with the fonts copied alongside them so nothing depends on what
 is installed locally. `print/` is git-ignored, so add new artwork, QR and output files with

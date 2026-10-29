@@ -29,6 +29,8 @@ const placements = [
     'Halls of residence and students’ union buildings',
 ];
 
+const partnerPackHref = '/downloads/drink-safe-partner-pack.zip';
+
 const downloads: PrintDownload[] = [
     {
         href: '/downloads/drink-safe-poster-a4.pdf',
@@ -100,9 +102,9 @@ const downloads: PrintDownload[] = [
                         </p>
                         <p>
                             Drink Safe will always be free to use, with no ads
-                            on the site, no paywalls, and no data collection.
-                            Nobody needs an account or has to give their name to
-                            read or submit a report.
+                            on the site and no paywalls. Nobody needs an account
+                            or has to give their name to read or submit a
+                            report.
                         </p>
                         <p>
                             Drink Safe is an
@@ -225,9 +227,30 @@ const downloads: PrintDownload[] = [
                         </h2>
                     </div>
                     <p class="text-slate-700 dark:text-gray-300">
-                        Each file is a PDF and free to print as many times as
-                        you like.
+                        Everything here is free to print and share as many
+                        times as you like.
                     </p>
+
+                    <Card>
+                        <CardContent class="space-y-2 p-4 sm:p-6">
+                            <a
+                                :href="partnerPackHref"
+                                download
+                                class="inline-flex items-center gap-2 font-semibold text-brand-teal hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                                <Download class="size-4" />
+                                Partner pack (ZIP,
+                                {{ props.downloadSizes[partnerPackHref] }})
+                            </a>
+                            <p class="text-sm text-slate-600 dark:text-gray-300">
+                                Everything below in one file, plus a one-page
+                                About Drink Safe PDF for whoever decides whether
+                                the posters go up, a short video for social
+                                media with text to post alongside it, and a
+                                README saying what each file is for.
+                            </p>
+                        </CardContent>
+                    </Card>
 
                     <div class="grid gap-4 sm:grid-cols-2">
                         <Card v-for="file in downloads" :key="file.href">
