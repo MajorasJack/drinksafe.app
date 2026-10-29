@@ -105,8 +105,6 @@ final class VenueController extends Controller
                 'venue_uuid' => $venue->uuid,
                 'venue_name' => $venue->name,
                 'venue_city' => $venue->city,
-                'ip_hash' => hash('sha256', $request->ip()),
-                'user_agent_hash' => hash('sha256', $request->userAgent() ?? 'unknown'),
                 'timestamp' => now()->toIso8601String(),
             ]);
 
@@ -119,7 +117,6 @@ final class VenueController extends Controller
                 'venue_name' => $request->input('name'),
                 'venue_city' => $request->input('city'),
                 'error' => $e->getMessage(),
-                'ip_hash' => hash('sha256', $request->ip()),
                 'timestamp' => now()->toIso8601String(),
             ]);
 
