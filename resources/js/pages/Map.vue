@@ -3,6 +3,7 @@ import { router } from '@inertiajs/vue3';
 import { Filter } from 'lucide-vue-next';
 import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import NothingReportedYet from '@/components/report/NothingReportedYet.vue';
 import Button from '@/components/ui/button/Button.vue';
 import DateFilter from '@/components/ui/DateFilter.vue';
 import VenueMap from '@/components/venue/VenueMap.vue';
@@ -64,6 +65,10 @@ const filteredVenues = computed(() => {
     return venuesFromStore.length > 0 ? venuesFromStore : props.venues;
 });
 
+const hasNoReports = computed(() =>
+    filteredVenues.value.every((venue) => !venue.reports_count),
+);
+
 // Combined loading state for search and bounds fetching
 const isLoading = computed(() => loading.value || isSearching.value);
 
@@ -115,8 +120,8 @@ const handleZoomChange = (zoom: number): void => {
 };
 
 onMounted(() => {
-    // Venues will be loaded via bounds-change event from the map
-    // No need to fetch all venues on mount - this is now viewport-based
+    // the home page search links here with ?search=; the search input runs it
+    searchQuery.value = props.filters.search ?? '';
 });
 </script>
 
@@ -192,7 +197,7 @@ onMounted(() => {
                         v-else-if="filteredVenues.length === 0"
                         class="py-10 text-center text-slate-500 dark:text-gray-400"
                     >
-                        <p>No venues found matching your filters.</p>
+                        <NothingReportedYet class="mb-4" />
                         <button
                             @click="clearFilters"
                             class="mt-2 font-medium text-brand-teal hover:underline"
@@ -202,6 +207,7 @@ onMounted(() => {
                     </div>
 
                     <div v-else class="space-y-3">
+                        <NothingReportedYet v-if="hasNoReports" />
                         <button
                             v-for="venue in filteredVenues"
                             :key="venue.uuid"

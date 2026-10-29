@@ -60,14 +60,18 @@ it('displays venue with report count badge', function (): void {
         ->assertSee('3 reports');
 });
 
-it('displays no venues message when the search matches nothing', function (): void {
+it('shows the empty state when the search matches nothing', function (): void {
     Venue::factory()->create(['name' => 'Bishops Tavern', 'city' => 'Bristol']);
 
     $page = visit('/map');
 
     $page->fill('input[placeholder*="Search"]', 'satan')
         ->wait(1)
-        ->assertSee('No venues found');
+        ->assertSee('Nothing reported here yet')
+        ->assertSee('Never leave your drink unattended, even for a moment.')
+        ->assertPresent('[data-testid="nothing-reported-yet"] a[href="/submit-report"]')
+        ->assertSee('Clear filters')
+        ->assertNoJavaScriptErrors();
 });
 
 it('shows loading state while fetching venues', function (): void {
@@ -179,7 +183,7 @@ it('handles an empty venue list gracefully', function (): void {
 
     $page->fill('input[placeholder*="Search"]', 'nothing matches this')
         ->wait(1)
-        ->assertSee('No venues found')
+        ->assertSee('Nothing reported here yet')
         ->assertNoJavaScriptErrors();
 });
 
@@ -243,4 +247,49 @@ it('only lists venues matching a partial search term', function (): void {
         ->wait(1)
         ->assertSee('Bishops Tavern')
         ->assertDontSee('Tobacco Factory');
+});
+
+it('shows the empty state above venues that have no published reports', function (): void {
+    Venue::factory()->has(Report::factory()->pending())->create(['name' => 'Quiet Corner Bar', 'city' => 'Bolton']);
+
+    $page = visit('/map');
+
+    $page->fill('input[placeholder*="Search"]', 'Bolton')
+        ->wait(1)
+        ->assertSee('Quiet Corner Bar')
+        ->assertSee('Nothing reported here yet')
+        ->assertSee('Never leave your drink unattended, even for a moment.')
+        ->assertPresent('[data-testid="nothing-reported-yet"] a[href="/submit-report"]')
+        ->assertNoJavaScriptErrors();
+});
+
+it('hides the empty state when a listed venue has a published report', function (): void {
+    Venue::factory()->has(Report::factory())->create(['name' => 'Reported Venue', 'city' => 'Bolton']);
+
+    $page = visit('/map');
+
+    $page->fill('input[placeholder*="Search"]', 'Bolton')
+        ->wait(1)
+        ->assertSee('Reported Venue')
+        ->assertDontSee('Nothing reported here yet');
+});
+
+it('runs the search passed from the home page', function (): void {
+    Venue::factory()->create(['name' => 'Home Search Venue', 'city' => 'Salford']);
+
+    $page = visit('/map?search=Salford');
+
+    $page->wait(1)
+        ->assertValue('input[placeholder*="Search"]', 'Salford')
+        ->assertSee('Home Search Venue')
+        ->assertNoJavaScriptErrors();
+});
+
+it('shows the empty state on a mobile viewport once the list is opened', function (): void {
+    $page = visit('/map?search=Bolton')->on()->iPhone14Pro();
+
+    $page->wait(1)
+        ->click('View 0 Venues')
+        ->assertSee('Nothing reported here yet')
+        ->assertNoJavaScriptErrors();
 });
