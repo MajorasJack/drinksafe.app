@@ -826,8 +826,13 @@ Set these repository secrets:
 | `DEPLOY_PATH` | Staging directory that user can write to |
 | `DEPLOY_SCRIPT` | Absolute path of the server's deploy script |
 
-The deploy script is owned by root and kept on the server. `DEPLOY_USER` is allowed to run only that script through `sudo`. The script must:
+The deploy script is owned by root and kept on the server. `DEPLOY_USER` is allowed to run only that script through `sudo`, with no arguments. Root does no file work itself: every step runs as the user the site runs as, so a release can only reach what the site can already reach. The script must:
 
-1. Copy the staging directory into the live site, leaving `.env` and the runtime directories under `storage/` and `bootstrap/cache/` alone.
-2. Run `composer install --no-dev --optimize-autoloader`, `php artisan migrate --force`, `php artisan cache:clear` and `php artisan optimize`.
-3. Restore ownership and permissions on the live site for the web server user.
+1. Take a lock, so two deploys can't run at once, and print the commit from the `REVISION` file the workflow writes.
+2. Put the site into maintenance mode with `php artisan down`.
+3. Copy the staging directory into the live site with `rsync --delete`, leaving `.env`, `vendor/`, `storage/`, `bootstrap/cache/`, `public/storage` and `public/.well-known/` alone.
+4. Run `composer install --no-dev --optimize-autoloader`, `php artisan optimize:clear`, `php artisan migrate --force`, `php artisan optimize` and `php artisan up`.
+
+If any step fails, the site stays in maintenance mode rather than running a half-updated release. Fix the cause, then run the deploy again or `php artisan up` by hand.
+
+`vendor/` is never copied from the CI runner, because the runner installs development dependencies. `composer install` on the server is the only thing that writes it.

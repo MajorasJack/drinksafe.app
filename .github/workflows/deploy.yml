@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
   tests:
     uses: ./.github/workflows/tests.yml
@@ -28,23 +32,28 @@ jobs:
           node-version: '22'
 
       - name: Build assets
+        env:
+          VITE_APP_NAME: DrinkSafe
         run: |
           rm -rf node_modules package-lock.json
           npm install
           npm run build
 
+      - name: Record the revision being deployed
+        run: git rev-parse HEAD > REVISION
+
       - name: Deploy to server
-        uses: easingthemes/ssh-deploy@main
+        uses: easingthemes/ssh-deploy@5d8aeab1a56041e269567e67a08ce00df324a617 # v6.0.1
         with:
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
           REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
           REMOTE_USER: ${{ secrets.DEPLOY_USER }}
           TARGET: ${{ secrets.DEPLOY_PATH }}
-          ARGS: "--no-group --no-owner"
-          EXCLUDE: ".git, .github, node_modules, .env, tests"
+          ARGS: "--delete --no-group --no-owner"
+          EXCLUDE: ".git, .github, node_modules, vendor, .env, tests"
 
       - name: Run post-deploy commands
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
