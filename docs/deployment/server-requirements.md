@@ -254,12 +254,25 @@ sudo chmod -R 775 /var/www/drinksafe/bootstrap/cache
 
 ### Complete Nginx Virtual Host
 
+Both server blocks use `access_log ... if=$drinksafe_loggable`, so a partner QR scan never writes the visitor's IP address or user agent to the access log. A `location /go/ { access_log off; }` block does not work for this. `try_files` passes the request on internally to the `\.php$` location, and nginx writes the log line from there, so the `/go/` location never has the last say.
+
 ```nginx
 # /etc/nginx/sites-available/drinksafe
+
+# Sites in sites-enabled are included in the http context, which is where map belongs.
+# Partner QR scans (/go/...) are left out of the access log, because the Privacy page
+# says nothing about the person who scanned is stored.
+map $request_uri $drinksafe_loggable {
+    ~^/go(/|\?|$)  0;
+    default        1;
+}
+
 server {
     listen 80;
     listen [::]:80;
     server_name drinksafe.example.com;
+
+    access_log /var/log/nginx/drinksafe-access.log combined if=$drinksafe_loggable;
 
     # Redirect all HTTP to HTTPS
     return 301 https://$server_name$request_uri;
@@ -292,7 +305,7 @@ server {
     # add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
     # Logging
-    access_log /var/log/nginx/drinksafe-access.log;
+    access_log /var/log/nginx/drinksafe-access.log combined if=$drinksafe_loggable;
     error_log /var/log/nginx/drinksafe-error.log;
 
     # Gzip Compression

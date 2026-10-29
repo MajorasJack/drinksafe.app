@@ -27,6 +27,7 @@ Before deploying, ensure the following requirements are met:
 - [ ] Database server installed and configured
 - [ ] Redis server installed and configured
 - [ ] Firewall rules configured
+- [ ] Check the /go access log exclusion is present on the server (the `map $request_uri $drinksafe_loggable` block and `if=$drinksafe_loggable` on both `access_log` lines, see `server-requirements.md`)
 
 ### Application Requirements
 
