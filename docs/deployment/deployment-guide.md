@@ -833,6 +833,6 @@ The deploy script is owned by root and kept on the server. `DEPLOY_USER` is allo
 3. Copy the staging directory into the live site with `rsync --delete`, leaving `.env`, `vendor/`, `storage/`, `bootstrap/cache/`, `public/storage` and `public/.well-known/` alone.
 4. Run `composer install --no-dev --optimize-autoloader`, `php artisan optimize:clear`, `php artisan migrate --force`, `php artisan optimize` and `php artisan up`.
 
-If any step fails, the site stays in maintenance mode rather than running a half-updated release. Fix the cause, then run the deploy again or `php artisan up` by hand.
+If any step fails, the site stays in maintenance mode rather than running a half-updated release. Fix the cause, then run the deploy again or `php artisan up` by hand. A deploy that starts while the site is already down skips `artisan down`, because a half-updated release may not boot.
 
 `vendor/` is never copied from the CI runner, because the runner installs development dependencies. `composer install` on the server is the only thing that writes it.
