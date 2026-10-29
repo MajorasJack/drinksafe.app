@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Str;
+use Pest\Expectation;
 
 describe('Partner pack', function (): void {
     it('contains exactly the nine pack files', function (): void {
@@ -36,7 +37,7 @@ describe('Partner pack', function (): void {
             ->map(fn (int $index): string => $zip->getNameIndex($index))
             ->reject(fn (string $entry): bool => $entry === 'README.txt');
 
-        expect($entries)->each(fn ($entry) => expect($readme)->toContain($entry->value));
+        expect($entries)->each(fn (Expectation $entry): Expectation => expect($readme)->toContain($entry->value));
     });
 
     it('holds the same PDF as the one it was built from', function (string $fileName, string $sourcePath): void {

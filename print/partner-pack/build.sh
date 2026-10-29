@@ -34,14 +34,12 @@ if [ ! -f "$media/brag.mp4" ]; then
 fi
 
 staging=$(mktemp -d)
-trap 'rm -r "$staging"' EXIT INT TERM
+trap 'rm -rf "$staging"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 for piece in poster-a4 poster-a3 flyer sticker-a sticker-b about; do
     cp "$output/$piece.pdf" "$staging/drink-safe-$piece.pdf"
-done
-
-for piece in poster-a4 poster-a3 flyer sticker-a sticker-b; do
-    cp "$output/$piece.pdf" "$downloads/drink-safe-$piece.pdf"
 done
 
 cp "$media/brag.mp4" "$staging/drink-safe-reel.mp4"
@@ -75,5 +73,9 @@ if [ "$size" -gt "$max_bytes" ]; then
 fi
 
 mv "$staging/pack.zip" "$zip"
+
+for piece in poster-a4 poster-a3 flyer sticker-a sticker-b; do
+    cp "$output/$piece.pdf" "$downloads/drink-safe-$piece.pdf"
+done
 
 echo "Built $zip ($size bytes)."
