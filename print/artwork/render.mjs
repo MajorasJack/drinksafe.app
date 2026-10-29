@@ -6,15 +6,16 @@
  * PDFs come out at trim plus 3mm bleed. The poster is the exception: it has no
  * bleed, and its A3 is the A4 page scaled up by the A-series ratio.
  *
- * Pass a partner code to render only the A4 poster with that partner's QR:
+ * Pass a partner code to render only the A4 poster with that partner's QR, as a
+ * PDF with no proof:
  *
  *     node print/artwork/render.mjs uom   ->   print/output/poster-a4-uom.pdf
  */
 
-import { chromium } from 'playwright';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 import { access, mkdir } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, '..', 'output');
@@ -47,7 +48,7 @@ const allPieces = [
 ];
 
 const pieces = partnerCode
-    ? [{ ...allPieces.find((piece) => piece.name === 'poster-a4'), name: `poster-a4-${partnerCode}` }]
+    ? [{ ...allPieces.find((piece) => piece.name === 'poster-a4'), name: `poster-a4-${partnerCode}`, proof: false }]
     : allPieces;
 
 const MM_PER_INCH = 25.4;
@@ -56,6 +57,19 @@ const PROOF_DPI = 300;
 await mkdir(out, { recursive: true });
 
 const browser = await chromium.launch();
+
+// A QR that fails to load leaves a blank square and no error, so stop rather than write that file.
+const stopUnlessQrsLoaded = async (page, pieceName) => {
+    const brokenSources = await page
+        .locator('img.qr')
+        .evaluateAll((images) => images.filter((image) => !image.complete || image.naturalWidth === 0).map((image) => image.src));
+
+    if (brokenSources.length > 0) {
+        console.error(`${pieceName}: QR did not load from ${brokenSources.join(', ')}. Check the file exists and is a readable SVG.`);
+        await browser.close();
+        process.exit(1);
+    }
+};
 
 for (const piece of pieces) {
     const page = await browser.newPage({
@@ -68,13 +82,16 @@ for (const piece of pieces) {
 
     await page.goto(`file://${join(here, piece.file)}`, { waitUntil: 'networkidle' });
     await page.evaluate(() => document.fonts.ready);
+    await stopUnlessQrsLoaded(page, piece.name);
 
     if (partnerQr) {
+        // decode() rejects for an unreadable file, which the check below reports.
         await page.locator('.qr').evaluate((qr, src) => {
             qr.src = src;
 
-            return qr.decode();
+            return qr.decode().catch(() => {});
         }, `file://${partnerQr}`);
+        await stopUnlessQrsLoaded(page, piece.name);
     }
 
     await page.pdf({
@@ -87,6 +104,7 @@ for (const piece of pieces) {
     });
 
     const sides = piece.proof === false ? [] : await page.locator('.piece').all();
+
     for (const [index, side] of sides.entries()) {
         const suffix = sides.length > 1 ? `-${index === 0 ? 'front' : 'back'}` : '';
         await side.screenshot({ path: join(out, `${piece.name}${suffix}.png`) });

@@ -378,12 +378,21 @@ node print/artwork/render.mjs <code>
 
 With a partner code, only the A4 poster is rendered, as `print/output/poster-a4-<code>.pdf`,
 with the QR from `print/qr/partners/<code>.svg`. The code may only contain lowercase letters,
-digits and hyphens, and the render stops if that partner's QR file does not exist. Sources are in `print/artwork/`,
-with the fonts copied alongside them so nothing depends on what is installed locally.
+digits and hyphens. The render stops if that partner's QR file does not exist, and any render
+stops if a QR image fails to load, so a missing or broken SVG can't produce a poster with a
+blank square where the QR should be. A partner render writes only the PDF, with no PNG proof.
 
-Each page is rendered 0.2mm larger than trim plus bleed The poster is rendered at exact trim instead. Chromium sizes PDF pages in steps of 0.96pt, so the A4 comes out at 210.2 x 297.0mm and the A3 at 297.0 x 420.2mm, a white edge of a fifth of a millimetre that no printer will notice. Chromium rounds the PDF media box
+Sources are in `print/artwork/`, with the fonts copied alongside them so nothing depends on what
+is installed locally. `print/` is git-ignored, so add new artwork, QR and output files with
+`git add -f`.
+
+Each page is rendered 0.2mm larger than trim plus bleed. Chromium rounds the PDF media box
 down to whole points, and without the margin a 106mm page comes out at 105.83mm, which would
 leave the bleed a hair under 3mm and could trip a preflight check.
+
+The poster is rendered at exact trim instead. Chromium sizes PDF pages in steps of 0.96pt, so
+the A4 comes out at 210.2 x 297.0mm and the A3 at 297.0 x 420.2mm, a white edge of a fifth of a
+millimetre that no printer will notice.
 
 Two things the renderer cannot do, both of which Solopress handle as a matter of course:
 
