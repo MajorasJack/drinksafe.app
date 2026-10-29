@@ -5,14 +5,19 @@ declare(strict_types=1);
 use DrinkSafe\Partners\Models\PartnerLink;
 use DrinkSafe\Partners\Models\PartnerLinkDailyCount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-const PHONE_USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
-
 describe('GET /go/{code}', function (): void {
+    beforeEach(function (): void {
+        $this->phoneUserAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+    });
+
     it('redirects an active code to its destination', function (): void {
         $partnerLink = PartnerLink::factory()->create(['destination' => '/submit-report']);
 
@@ -65,13 +70,40 @@ describe('GET /go/{code}', function (): void {
         'scheme' => 'javascript:alert(1)',
     ]);
 
-    it('counts the first scan of the day as one', function (): void {
+    it('counts the first scan of the day as one', function (string $userAgent): void {
         $partnerLink = PartnerLink::factory()->create();
 
-        $this->withHeader('User-Agent', PHONE_USER_AGENT)->getJson(sprintf('/go/%s', $partnerLink->code));
+        $this->withHeader('User-Agent', $userAgent)->getJson(sprintf('/go/%s', $partnerLink->code));
 
         expect($partnerLink->dailyCounts()->get(['date', 'count'])->toArray())
-            ->toBe([['date' => today()->toDateString(), 'count' => 1]]);
+            ->toBe([['date' => today('Europe/London')->toDateString(), 'count' => 1]]);
+    })->with([
+        'iOS Safari' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+        'iOS Chrome' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/129.0.6668.69 Mobile/15E148 Safari/604.1',
+        'Android Chrome' => 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36',
+        'Samsung Internet' => 'Mozilla/5.0 (Linux; Android 14; SAMSUNG SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/26.0 Chrome/122.0.0.0 Mobile Safari/537.36',
+        'Google app' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) GSA/338.0.689074466 Mobile/15E148 Safari/604.1',
+        'Firefox Android' => 'Mozilla/5.0 (Android 14; Mobile; rv:131.0) Gecko/131.0 Firefox/131.0',
+        'Instagram in-app' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 350.0.0.20.95 (iPhone15,2; iOS 18_0; en_GB; en-GB; scale=3.00; 1179x2556; 652145187)',
+    ]);
+
+    it('counts a scan after midnight towards the UK date', function (): void {
+        $partnerLink = PartnerLink::factory()->create();
+        $this->travelTo(Carbon::parse('2026-07-05 00:30', 'Europe/London'));
+
+        $this->withHeader('User-Agent', $this->phoneUserAgent)->getJson(sprintf('/go/%s', $partnerLink->code));
+
+        expect($partnerLink->dailyCounts()->get(['date', 'count'])->toArray())
+            ->toBe([['date' => '2026-07-05', 'count' => 1]]);
+    });
+
+    it('still redirects if the scan cannot be counted', function (): void {
+        $partnerLink = PartnerLink::factory()->create(['destination' => '/submit-report']);
+        Schema::drop('partner_link_daily_counts');
+
+        $response = $this->withHeader('User-Agent', $this->phoneUserAgent)->getJson(sprintf('/go/%s', $partnerLink->code));
+
+        $response->assertFound()->assertRedirect('/submit-report');
     });
 
     it('adds every scan on the same day to one row', function (): void {
@@ -79,20 +111,20 @@ describe('GET /go/{code}', function (): void {
         $scans = fake()->numberBetween(2, 6);
 
         foreach (range(1, $scans) as $scan) {
-            $this->withHeader('User-Agent', PHONE_USER_AGENT)->getJson(sprintf('/go/%s', $partnerLink->code));
+            $this->withHeader('User-Agent', $this->phoneUserAgent)->getJson(sprintf('/go/%s', $partnerLink->code));
         }
 
         expect($partnerLink->dailyCounts()->get(['date', 'count'])->toArray())
-            ->toBe([['date' => today()->toDateString(), 'count' => $scans]]);
+            ->toBe([['date' => today('Europe/London')->toDateString(), 'count' => $scans]]);
     });
 
     it('starts a new row on a new day', function (): void {
         $partnerLink = PartnerLink::factory()->create();
         $this->travelTo(now()->setDate(2026, 11, 1)->setTime(23, 59));
-        $this->withHeader('User-Agent', PHONE_USER_AGENT)->getJson(sprintf('/go/%s', $partnerLink->code));
+        $this->withHeader('User-Agent', $this->phoneUserAgent)->getJson(sprintf('/go/%s', $partnerLink->code));
         $this->travelTo(now()->setDate(2026, 11, 2)->setTime(0, 1));
 
-        $this->withHeader('User-Agent', PHONE_USER_AGENT)->getJson(sprintf('/go/%s', $partnerLink->code));
+        $this->withHeader('User-Agent', $this->phoneUserAgent)->getJson(sprintf('/go/%s', $partnerLink->code));
 
         expect($partnerLink->dailyCounts()->orderBy('date')->get(['date', 'count'])->toArray())
             ->toBe([['date' => '2026-11-01', 'count' => 1], ['date' => '2026-11-02', 'count' => 1]]);
@@ -101,7 +133,7 @@ describe('GET /go/{code}', function (): void {
     it('does not count an inactive code', function (): void {
         $partnerLink = PartnerLink::factory()->inactive()->create();
 
-        $this->withHeader('User-Agent', PHONE_USER_AGENT)->getJson(sprintf('/go/%s', $partnerLink->code));
+        $this->withHeader('User-Agent', $this->phoneUserAgent)->getJson(sprintf('/go/%s', $partnerLink->code));
 
         expect(PartnerLinkDailyCount::query()->count())->toBe(0);
     });
@@ -126,21 +158,32 @@ describe('GET /go/{code}', function (): void {
         'wget' => 'Wget/1.21.4',
         'spider' => 'Mozilla/5.0 (compatible; Baiduspider/2.0)',
         'crawler' => 'SomeCrawler/1.0',
+        'Google Inspection Tool' => 'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.6668.70 Mobile Safari/537.36 (compatible; Google-InspectionTool/1.0;)',
+        'Embedly' => 'Mozilla/5.0 (compatible; Embedly/0.2; +http://support.embed.ly/)',
+        'Viber' => 'Viber/22.6.0',
+        'Go' => 'Go-http-client/2.0',
+        'node-fetch' => 'node-fetch/1.0 (+https://github.com/bitinn/node-fetch)',
+        'axios' => 'axios/1.7.7',
+        'OkHttp' => 'okhttp/4.12.0',
         'no user agent' => '',
     ]);
 
     it('does not count a HEAD request', function (): void {
         $partnerLink = PartnerLink::factory()->create();
 
-        $this->withHeader('User-Agent', PHONE_USER_AGENT)->call('HEAD', sprintf('/go/%s', $partnerLink->code));
+        $this->withHeader('User-Agent', $this->phoneUserAgent)->call('HEAD', sprintf('/go/%s', $partnerLink->code));
 
         expect(PartnerLinkDailyCount::query()->count())->toBe(0);
+    });
+
+    it('runs no middleware that could keep per-visitor state', function (): void {
+        expect(Route::getRoutes()->getByName('partners.go')->gatherMiddleware())->toBe([]);
     });
 
     it('sets no cookies', function (): void {
         $partnerLink = PartnerLink::factory()->create();
 
-        $response = $this->withHeader('User-Agent', PHONE_USER_AGENT)->getJson(sprintf('/go/%s', $partnerLink->code));
+        $response = $this->withHeader('User-Agent', $this->phoneUserAgent)->getJson(sprintf('/go/%s', $partnerLink->code));
 
         $response->assertFound();
         expect($response->headers->has('Set-Cookie'))->toBeFalse()

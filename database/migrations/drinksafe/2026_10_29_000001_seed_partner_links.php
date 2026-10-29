@@ -34,6 +34,7 @@ return new class extends Migration
 
     public function down(): void
     {
+        // the daily counts cascade on delete, so this removes the scan history for these codes too
         DB::table('partner_links')->whereIn('code', self::CODES)->delete();
     }
 };

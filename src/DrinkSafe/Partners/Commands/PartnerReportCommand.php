@@ -54,9 +54,10 @@ final class PartnerReportCommand extends Command
                 ->when($this->option('since'), fn (Builder $query, string $since): Builder => $query->where('date', '>=', $since))
                 ->when($this->option('until'), fn (Builder $query, string $until): Builder => $query->where('date', '<=', $until)),
             ], 'count')
-            ->orderByDesc('total')
             ->orderBy('code')
-            ->get();
+            ->get()
+            ->sortByDesc(fn (PartnerLink $partnerLink): int => (int) $partnerLink->total)
+            ->values();
 
         $this->table(
             ['Code', 'Label', 'Active', 'Total'],

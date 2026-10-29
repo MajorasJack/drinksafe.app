@@ -25,8 +25,11 @@ final class PartnerRedirectController extends Controller
 {
     /**
      * User agents that are not a person scanning a code.
+     *
+     * The bare `bot` also matches some phone model names (e.g. CUBOT), so scans
+     * from those phones are not counted.
      */
-    private const string NON_SCAN_AGENTS = '/bot|crawl|spider|slurp|facebookexternalhit|whatsapp|preview|curl|wget|python-requests|headless/i';
+    private const string NON_SCAN_AGENTS = '/bot|crawl|spider|slurp|facebookexternalhit|whatsapp|preview|curl|wget|python-requests|headless|inspectiontool|embedly|viber|http-client|node-fetch|axios|okhttp/i';
 
     /**
      * Redirect a partner code, counting the scan if it came from a person.
@@ -43,7 +46,8 @@ final class PartnerRedirectController extends Controller
         }
 
         if ($this->isScan($request)) {
-            $partnerLink->recordScan();
+            // a failed count is still reported, but must not stop a printed code redirecting
+            rescue(fn (): null => $partnerLink->recordScan());
         }
 
         return redirect($partnerLink->redirectPath());

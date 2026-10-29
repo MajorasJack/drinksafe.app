@@ -23,6 +23,7 @@ describe('PartnerLink', function (): void {
         'relative' => 'submit-report',
         'tab' => "/\t/evil.example",
         'newline' => "/\n/evil.example",
+        'trailing newline' => "/submit-report\n",
         'empty' => '',
     ]);
 
@@ -33,7 +34,7 @@ describe('PartnerLink', function (): void {
         $partnerLink->recordScan();
 
         expect($partnerLink->dailyCounts()->get(['date', 'count'])->toArray())
-            ->toBe([['date' => today()->toDateString(), 'count' => 2]]);
+            ->toBe([['date' => today('Europe/London')->toDateString(), 'count' => 2]]);
     });
 
     it('builds the address its QR code points at', function (): void {

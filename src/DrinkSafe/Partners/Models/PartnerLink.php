@@ -45,7 +45,7 @@ final class PartnerLink extends Model
      * second slash or a backslash straight after the first would make browsers
      * treat it as another host, so neither is allowed.
      */
-    public const string DESTINATION_PATTERN = '#^/(?![/\\\\])[A-Za-z0-9\-._~/?=&%]*$#';
+    public const string DESTINATION_PATTERN = '#^/(?![/\\\\])[A-Za-z0-9\-._~/?=&%]*\z#';
 
     /**
      * The table associated with the model.
@@ -109,11 +109,14 @@ final class PartnerLink extends Model
     /**
      * Add one to today's total in a single upsert, so two scans at the same
      * moment can't overwrite each other.
+     *
+     * The day is the UK calendar day, so a scan after midnight on a night out
+     * counts towards that UK date rather than the UTC one.
      */
     public function recordScan(): void
     {
         PartnerLinkDailyCount::query()->upsert(
-            [['partner_link_id' => $this->id, 'date' => today()->toDateString(), 'count' => 1]],
+            [['partner_link_id' => $this->id, 'date' => today('Europe/London')->toDateString(), 'count' => 1]],
             ['partner_link_id', 'date'],
             ['count' => DB::raw('count + 1')],
         );
