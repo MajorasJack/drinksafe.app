@@ -16,7 +16,7 @@ interface PrintDownload {
 
 const reviewSteps = [
     'Someone submits a report without an account and without giving their name.',
-    'If the description includes an email address or phone number, the report is turned away and the person is asked to take it out.',
+    'If our check finds an email address or phone number in the description, the report is turned away and the person is asked to take it out.',
     'The report is saved as waiting for review. It does not appear anywhere on the site yet.',
     'A person reads it and either publishes it or rejects it.',
     'If the report names a venue that is not on Drink Safe yet, the venue stays hidden as well until its first report is published.',

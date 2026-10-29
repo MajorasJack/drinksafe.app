@@ -43,7 +43,7 @@ it('describes each step a report goes through', function (): void {
     $page = visit('/partners');
 
     $page->assertSee('without an account and without giving their name')
-        ->assertSee('If the description includes an email address or phone number, the report is turned away')
+        ->assertSee('If our check finds an email address or phone number in the description, the report is turned away')
         ->assertSee('It does not appear anywhere on the site yet.')
         ->assertSee('either publishes it or rejects it')
         ->assertSee('the venue stays hidden as well until its first report is published')

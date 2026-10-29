@@ -25,13 +25,7 @@ describe('Partners page', function (): void {
 
     it('ships every download the page links to', function (string $fileName): void {
         expect(public_path(sprintf('downloads/%s', $fileName)))->toBeFile();
-    })->with([
-        'drink-safe-poster-a4.pdf',
-        'drink-safe-poster-a3.pdf',
-        'drink-safe-flyer.pdf',
-        'drink-safe-sticker-a.pdf',
-        'drink-safe-sticker-b.pdf',
-    ]);
+    })->with(PartnersController::DOWNLOADS);
 
     it('passes the size of each download', function (): void {
         $response = $this->get(route('partners'));
