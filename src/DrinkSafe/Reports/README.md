@@ -40,7 +40,7 @@ This module manages:
 - **ReportAwaitingReviewNotification** - Email telling the moderators a report is waiting
 
 ### Commands
-- **drinksafe:make-admin {email} {--revoke}** - Flags an existing user as an admin, or removes the flag with `--revoke`
+- **drinksafe:make-admin {email} {--revoke} {--password}** - Flags a user as an admin, or removes the flag with `--revoke`. If no user has the email, it asks for a name and password and creates an admin. `--password` asks for a new password for an existing user, which is how a lost password is replaced as the site has no password reset. It also logs out every session and remember-me cookie made with the old password. `--revoke` and `--password` can't be used together. Both refuse to run with `--no-interaction`. The email is stored in lowercase
 
 ### Resources
 - **ReportResource** - JSON response formatting for single report
@@ -82,7 +82,7 @@ New reports are saved as `pending` and stay off the site until an admin publishe
 - `HeatmapService` queries `DB::table('reports')` directly, which skips the scope, so it filters on `status` itself. Any new raw query on `reports` must do the same.
 - `status` is not mass assignable. `ReportService::reviewReport()` sets it with `forceFill`.
 - When a report is created, `ReportService` sends `ReportAwaitingReviewNotification` to `services.reports.alert_email` (`REPORT_ALERT_EMAIL`, default `drinksafe@protonmail.com`). The email has no report text and no venue name. It sends during the request rather than through the queue. If it can't be sent, the report is still saved.
-- Admins work the queue at `/admin/reports`. It needs a logged-in user with `is_admin` set, which only `php artisan drinksafe:make-admin {email}` can do. Publishing or rejecting sets `reviewed_at`. A published report can be taken down by rejecting it.
+- Admins work the queue at `/admin/reports`. It needs a logged-in user with `is_admin` set, which only `php artisan drinksafe:make-admin {email}` can do. The site has no public registration, so the same command creates the account if it doesn't exist yet. Publishing or rejecting sets `reviewed_at`. A published report can be taken down by rejecting it.
 - A venue named for the first time in a submission is unpublished (`published_at` is null) and hidden by `PublishedVenueScope` until a report about it is published. Venues created through `POST /api/venues` start unpublished too.
 - The migration that added `status` made every existing report pending, on purpose, so they all get reviewed.
 - Heatmap and analytics results are cached (15 minutes and 6 hours), so a newly published report can take that long to show there. Venue safety scores are cleared straight away by `ReportObserver`.

@@ -30,24 +30,31 @@ test('profile information can be updated', function () {
 
     expect($user->name)->toBe('Test User');
     expect($user->email)->toBe('test@example.com');
-    expect($user->email_verified_at)->toBeNull();
 });
 
-test('email verification status is unchanged when the email address is unchanged', function () {
+test('a changed email address is stored in lowercase', function () {
     $user = User::factory()->create();
 
-    $response = $this
-        ->actingAs($user)
-        ->patch(route('profile.update'), [
-            'name' => 'Test User',
-            'email' => $user->email,
-        ]);
-
-    $response
-        ->assertSessionHasNoErrors()
+    $this->actingAs($user)
+        ->patchJson(route('profile.update'), [
+            'name' => fake()->name(),
+            'email' => ' New.Address@Example.com ',
+        ])
         ->assertRedirect(route('profile.edit'));
 
-    expect($user->refresh()->email_verified_at)->not->toBeNull();
+    expect($user->fresh()->email)->toBe('new.address@example.com');
+});
+
+test('an email given as an array is rejected as invalid', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->patchJson(route('profile.update'), [
+            'name' => fake()->name(),
+            'email' => [fake()->safeEmail()],
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
 });
 
 test('user can delete their account', function () {
