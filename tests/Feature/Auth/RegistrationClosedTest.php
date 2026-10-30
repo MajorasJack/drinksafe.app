@@ -20,7 +20,7 @@ test('nobody can register an account', function () {
     $this->assertDatabaseCount('users', 0);
 });
 
-test('the login page does not offer registration', function () {
+test('the login page is not told registration exists', function () {
     $this->get(route('login'))
         ->assertInertia(fn (AssertableInertia $page) => $page->component('auth/Login')->missing('canRegister'));
 });

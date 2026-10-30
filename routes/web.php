@@ -13,7 +13,6 @@ use DrinkSafe\Shared\Controllers\SupportController;
 use DrinkSafe\Shared\Controllers\TermsController;
 use DrinkSafe\Venues\Controllers\VenueDetailController;
 use Illuminate\Support\Facades\Route;
-use Laravel\Fortify\Features;
 
 /*
 |--------------------------------------------------------------------------
@@ -50,7 +49,7 @@ Route::post('/submit-report', [SubmitReportController::class, 'store'])->name('r
 |
 */
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::inertia('dashboard', 'Dashboard')->name('dashboard');
 });
 

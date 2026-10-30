@@ -8,6 +8,7 @@ use App\Concerns\ProfileValidationRules;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 use function Laravel\Prompts\password;
@@ -17,8 +18,9 @@ use function Laravel\Prompts\text;
  * MakeAdminCommand
  *
  * Gives a user the admin flag so they can work the report review queue. The
- * site has no registration, so this command is the only way to create an
- * account. --revoke takes the flag away again.
+ * site has no registration or password reset, so this command is the only way
+ * to create an account or replace a lost password. --revoke takes the flag
+ * away again.
  */
 final class MakeAdminCommand extends Command
 {
@@ -31,7 +33,8 @@ final class MakeAdminCommand extends Command
      */
     protected $signature = 'drinksafe:make-admin
         {email : Email address of the admin, created if no user has it yet}
-        {--revoke : Remove the admin flag instead of setting it}';
+        {--revoke : Remove the admin flag instead of setting it}
+        {--password : Set a new password for an existing user}';
 
     /**
      * The console command description.
@@ -42,15 +45,38 @@ final class MakeAdminCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * The email is lowercased because Fortify lowercases it on login, so an
+     * account stored with capitals could never log in.
      */
     public function handle(): int
     {
-        $user = User::where('email', $this->argument('email'))->first();
+        $email = Str::lower(trim($this->argument('email')));
+        $user = User::where('email', $email)->first();
 
-        if ($user === null) {
-            return $this->option('revoke') ? $this->failForMissingUser() : $this->createAdmin();
-        }
+        return match (true) {
+            $user === null && ($this->option('revoke') || $this->option('password')) => $this->failForMissingUser($email),
+            $user === null => $this->createAdmin($email),
+            $this->option('password') => $this->resetPassword($user),
+            default => $this->setAdminFlag($user),
+        };
+    }
 
+    /**
+     * Report that there is no user to revoke or reset.
+     */
+    private function failForMissingUser(string $email): int
+    {
+        $this->error(sprintf('No user found with the email %s.', $email));
+
+        return self::FAILURE;
+    }
+
+    /**
+     * Set or remove the admin flag on an existing user.
+     */
+    private function setAdminFlag(User $user): int
+    {
         $user->forceFill(['is_admin' => ! $this->option('revoke')])->save();
 
         $this->info($this->option('revoke')
@@ -61,13 +87,21 @@ final class MakeAdminCommand extends Command
     }
 
     /**
-     * Report that there is no user to revoke.
+     * Replace an existing user's password, leaving the admin flag as it is.
      */
-    private function failForMissingUser(): int
+    private function resetPassword(User $user): int
     {
-        $this->error(sprintf('No user found with the email %s.', $this->argument('email')));
+        if (! $this->input->isInteractive()) {
+            $this->error(sprintf('Run this again without --no-interaction to set a new password for %s.', $user->email));
 
-        return self::FAILURE;
+            return self::FAILURE;
+        }
+
+        $user->forceFill(['password' => $this->askForPassword()])->save();
+
+        $this->info(sprintf('Updated the password for %s.', $user->email));
+
+        return self::SUCCESS;
     }
 
     /**
@@ -76,15 +110,15 @@ final class MakeAdminCommand extends Command
      * Without input there is no password to set, so the command stops rather
      * than create an account nobody can log in to.
      */
-    private function createAdmin(): int
+    private function createAdmin(string $email): int
     {
         if (! $this->input->isInteractive()) {
-            $this->error(sprintf('No user has the email %s. Run this again without --no-interaction to create one.', $this->argument('email')));
+            $this->error(sprintf('No user has the email %s. Run this again without --no-interaction to create one.', $email));
 
             return self::FAILURE;
         }
 
-        $emailValidator = Validator::make(['email' => $this->argument('email')], ['email' => $this->emailRules()]);
+        $emailValidator = Validator::make(['email' => $email], ['email' => $this->emailRules()]);
 
         if ($emailValidator->fails()) {
             $this->error($emailValidator->errors()->first('email'));
@@ -92,19 +126,10 @@ final class MakeAdminCommand extends Command
             return self::FAILURE;
         }
 
-        $name = text(label: 'Name', required: true, validate: ['name' => $this->nameRules()]);
-        $password = password(label: 'Password', required: true, validate: ['password' => ['required', 'string', Password::defaults()]]);
-
-        password(
-            label: 'Confirm password',
-            required: true,
-            validate: fn (string $confirmation): ?string => $confirmation === $password ? null : 'The passwords do not match.',
-        );
-
         $user = User::forceCreate([
-            'name' => $name,
-            'email' => $this->argument('email'),
-            'password' => $password,
+            'name' => text(label: 'Name', required: true, validate: ['name' => $this->nameRules()]),
+            'email' => $email,
+            'password' => $this->askForPassword(),
             'email_verified_at' => now(),
             'is_admin' => true,
         ]);
@@ -112,5 +137,23 @@ final class MakeAdminCommand extends Command
         $this->info(sprintf('Created %s. They can now review reports at /admin/reports.', $user->email));
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Ask for a password twice, starting both prompts again if they differ.
+     *
+     * Both are asked again because the mistake could be in either entry.
+     */
+    private function askForPassword(): string
+    {
+        $password = password(label: 'Password', required: true, validate: ['password' => ['required', 'string', Password::defaults()]]);
+
+        if (password(label: 'Confirm password', required: true) === $password) {
+            return $password;
+        }
+
+        $this->error('The passwords do not match. Enter both again.');
+
+        return $this->askForPassword();
     }
 }
