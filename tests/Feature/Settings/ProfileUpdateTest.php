@@ -45,6 +45,18 @@ test('a changed email address is stored in lowercase', function () {
     expect($user->fresh()->email)->toBe('new.address@example.com');
 });
 
+test('an email given as an array is rejected as invalid', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->patchJson(route('profile.update'), [
+            'name' => fake()->name(),
+            'email' => [fake()->safeEmail()],
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('email');
+});
+
 test('user can delete their account', function () {
     $user = User::factory()->create();
 
