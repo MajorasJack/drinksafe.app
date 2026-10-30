@@ -74,13 +74,13 @@ sudo su - drinksafe
 Follow the installation commands in `server-requirements.md`:
 
 ```bash
-# Install PHP 8.4 and extensions
+# Install PHP 8.5 and extensions
 sudo add-apt-repository ppa:ondrej/php -y
 sudo apt-get update
-sudo apt-get install -y php8.4 php8.4-fpm php8.4-cli php8.4-bcmath \
-    php8.4-ctype php8.4-curl php8.4-dom php8.4-fileinfo php8.4-json \
-    php8.4-mbstring php8.4-openssl php8.4-pdo php8.4-tokenizer \
-    php8.4-xml php8.4-pgsql php8.4-gd php8.4-intl php8.4-zip php8.4-redis
+sudo apt-get install -y php8.5 php8.5-fpm php8.5-cli php8.5-bcmath \
+    php8.5-ctype php8.5-curl php8.5-dom php8.5-fileinfo php8.5-json \
+    php8.5-mbstring php8.5-openssl php8.5-pdo php8.5-tokenizer \
+    php8.5-xml php8.5-pgsql php8.5-gd php8.5-intl php8.5-zip php8.5-redis
 
 # Install Composer
 curl -sS https://getcomposer.org/installer | php
@@ -532,7 +532,7 @@ sudo -u www-data php artisan view:cache
 ### Step 5: Restart Services
 
 ```bash
-sudo systemctl restart php8.4-fpm
+sudo systemctl restart php8.5-fpm
 sudo systemctl reload nginx
 sudo supervisorctl restart drinksafe-worker:*
 ```
@@ -576,7 +576,7 @@ sudo -u www-data php artisan route:cache
 sudo -u www-data php artisan view:cache
 
 # Restart services
-sudo systemctl restart php8.4-fpm
+sudo systemctl restart php8.5-fpm
 sudo supervisorctl restart drinksafe-worker:*
 ```
 
@@ -609,7 +609,7 @@ sudo tail -f /var/www/drinksafe/storage/logs/laravel.log
 sudo tail -f /var/log/nginx/drinksafe-error.log
 
 # Check PHP-FPM logs
-sudo tail -f /var/log/php8.4-fpm.log
+sudo tail -f /var/log/php8.5-fpm.log
 
 # Common fixes:
 sudo chown -R www-data:www-data /var/www/drinksafe
@@ -743,7 +743,7 @@ If issues persist:
 
 1. Check Laravel logs: `storage/logs/laravel.log`
 2. Check Nginx logs: `/var/log/nginx/drinksafe-error.log`
-3. Check PHP-FPM logs: `/var/log/php8.4-fpm.log`
+3. Check PHP-FPM logs: `/var/log/php8.5-fpm.log`
 4. Check system logs: `sudo journalctl -xe`
 5. Run health checks: `php artisan health:check`
 
