@@ -823,8 +823,25 @@ Set these repository secrets:
 | `DEPLOY_HOST` | Server host name or IP address |
 | `DEPLOY_USER` | Unprivileged SSH user the workflow connects as |
 | `DEPLOY_KEY` | Private SSH key for that user |
-| `DEPLOY_PATH` | Staging directory that user can write to |
+| `DEPLOY_PATH` | `/`, which `rrsync` maps to the staging directory |
 | `DEPLOY_SCRIPT` | Absolute path of the server's deploy script |
+
+And these repository variables, which are public values:
+
+| Variable | Value |
+|---|---|
+| `DEPLOY_KNOWN_HOSTS` | The server's `known_hosts` line, e.g. `46.101.14.179 ssh-ed25519 AAAA…` |
+| `DEPLOY_HOST_FINGERPRINT` | The SHA256 fingerprint of the host key `appleboy/ssh-action` checks, e.g. `SHA256:…` |
+
+Read both from the server over a connection you already trust (`ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`), not from a fresh `ssh-keyscan`. Both SSH steps refuse to connect if the server's key doesn't match.
+
+The deploy key is tied to a forced command in `DEPLOY_USER`'s `authorized_keys`:
+
+```
+restrict,command="/usr/local/sbin/dsdeploy-gate" ssh-ed25519 AAAA…
+```
+
+The gate is owned by root. It allows an `rsync --server` upload through `rrsync -wo`, which is confined to the staging directory and can't download, and the exact command `sudo /usr/local/sbin/drinksafe-deploy`. It refuses everything else, including a shell, and logs what it saw to `~/gate.log`.
 
 The deploy script is owned by root and kept on the server. `DEPLOY_USER` is allowed to run only that script through `sudo`, with no arguments. Root does no file work itself: every step runs as the user the site runs as, so a release can only reach what the site can already reach. The script must:
 

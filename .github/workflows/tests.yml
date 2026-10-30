@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - develop
-      - main
       - master
       - workos
   pull_request:
@@ -39,9 +38,7 @@ jobs:
           node-version: '22'
 
       - name: Install Node Dependencies
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
+        run: npm ci
 
       - name: Install PHP Dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
