@@ -35,12 +35,23 @@ jobs:
         env:
           VITE_APP_NAME: DrinkSafe
         run: |
-          rm -rf node_modules package-lock.json
-          npm install
+          npm ci
           npm run build
 
       - name: Record the revision being deployed
         run: git rev-parse HEAD > REVISION
+
+      - name: Trust only the server's own host key
+        env:
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST_FINGERPRINT: ${{ secrets.DEPLOY_HOST_FINGERPRINT }}
+        run: |
+          # an empty fingerprint makes ssh-action skip the host check, so stop instead
+          if [ -z "$DEPLOY_KNOWN_HOSTS" ] || [ "${DEPLOY_HOST_FINGERPRINT#SHA256:}" = "$DEPLOY_HOST_FINGERPRINT" ]; then
+            echo "DEPLOY_KNOWN_HOSTS and DEPLOY_HOST_FINGERPRINT must both be set" >&2
+            exit 1
+          fi
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/deploy_known_hosts"
 
       - name: Deploy to server
         uses: easingthemes/ssh-deploy@5d8aeab1a56041e269567e67a08ce00df324a617 # v6.0.1
@@ -50,6 +61,7 @@ jobs:
           REMOTE_USER: ${{ secrets.DEPLOY_USER }}
           TARGET: ${{ secrets.DEPLOY_PATH }}
           ARGS: "-rltz --delete"
+          SSH_CMD_ARGS: "-o StrictHostKeyChecking=yes -o UserKnownHostsFile=${{ runner.temp }}/deploy_known_hosts"
           EXCLUDE: "/.git, /.github, /node_modules, /vendor, /.env, /tests"
 
       - name: Run post-deploy commands
@@ -58,6 +70,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
+          fingerprint: ${{ secrets.DEPLOY_HOST_FINGERPRINT }}
           command_timeout: 30m
           script: |
             sudo ${{ secrets.DEPLOY_SCRIPT }}

@@ -823,8 +823,22 @@ Set these repository secrets:
 | `DEPLOY_HOST` | Server host name or IP address |
 | `DEPLOY_USER` | Unprivileged SSH user the workflow connects as |
 | `DEPLOY_KEY` | Private SSH key for that user |
-| `DEPLOY_PATH` | Staging directory that user can write to |
+| `DEPLOY_PATH` | `/`, which `rrsync` maps to the staging directory |
 | `DEPLOY_SCRIPT` | Absolute path of the server's deploy script |
+| `DEPLOY_KNOWN_HOSTS` | The server's `known_hosts` line, `<host> ssh-ed25519 <key>` |
+| `DEPLOY_HOST_FINGERPRINT` | The `SHA256:` fingerprint of the server's ECDSA host key |
+
+The two host key values are secrets, not variables, even though host keys aren't private. Variables are printed in workflow logs, which are public for this repository, and a host key or its fingerprint is enough to find the server's address, which the CDN otherwise hides. Keep every server-specific value (address, user names, paths, PHP build) in secrets or on the server, never in the repository, a PR or an issue.
+
+Read both values from the server over a connection you already trust, not from a fresh `ssh-keyscan`. `DEPLOY_KNOWN_HOSTS` uses the Ed25519 key, which OpenSSH prefers when it has a matching `known_hosts` entry. `DEPLOY_HOST_FINGERPRINT` uses the ECDSA key, because `appleboy/ssh-action`'s Go client negotiates ECDSA first and compares the fingerprint as an exact string. The workflow stops if either secret is empty, because an empty fingerprint would silently turn the check off.
+
+The deploy key is tied to a forced command in `DEPLOY_USER`'s `authorized_keys`:
+
+```
+restrict,command="<gate script>" ssh-ed25519 AAAA…
+```
+
+The gate is owned by root, and so are the user's `.ssh` directory and `authorized_keys`, so no upload can add a key. The gate allows two things. One is an `rsync --server` upload through `rrsync -munge -wo`, confined to the staging directory, with symlinks munged and downloads refused. The other is the exact command `sudo <deploy script>`. It refuses everything else, including a shell, and logs what it saw to the system journal.
 
 The deploy script is owned by root and kept on the server. `DEPLOY_USER` is allowed to run only that script through `sudo`, with no arguments. Root does no file work itself: every step runs as the user the site runs as, so a release can only reach what the site can already reach. The script must:
 
