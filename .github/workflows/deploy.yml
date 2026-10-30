@@ -59,7 +59,8 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
           REMOTE_HOST: ${{ secrets.DEPLOY_HOST }}
           REMOTE_USER: ${{ secrets.DEPLOY_USER }}
-          TARGET: ${{ secrets.DEPLOY_PATH }}
+          # rrsync on the server maps / to the staging folder; a one-character secret would mask every / in the log
+          TARGET: /
           ARGS: "-rltz --delete"
           SSH_CMD_ARGS: "-o StrictHostKeyChecking=yes -o UserKnownHostsFile=${{ runner.temp }}/deploy_known_hosts"
           EXCLUDE: "/.git, /.github, /node_modules, /vendor, /.env, /tests"

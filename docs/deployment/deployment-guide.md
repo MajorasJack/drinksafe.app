@@ -823,7 +823,6 @@ Set these repository secrets:
 | `DEPLOY_HOST` | Server host name or IP address |
 | `DEPLOY_USER` | Unprivileged SSH user the workflow connects as |
 | `DEPLOY_KEY` | Private SSH key for that user |
-| `DEPLOY_PATH` | `/`, which `rrsync` maps to the staging directory |
 | `DEPLOY_SCRIPT` | Absolute path of the server's deploy script |
 | `DEPLOY_KNOWN_HOSTS` | The server's `known_hosts` line, `<host> ssh-ed25519 <key>`, where `<host>` is exactly the `DEPLOY_HOST` value (`[<host>]:<port>` if SSH isn't on port 22) |
 | `DEPLOY_HOST_FINGERPRINT` | The `SHA256:` fingerprint of the server's ECDSA host key |
@@ -831,6 +830,8 @@ Set these repository secrets:
 The two host key values are secrets, not variables, even though host keys aren't private. Variables are printed in workflow logs, which are public for this repository, and a host key or its fingerprint is enough to find the server's address, which the CDN otherwise hides. Keep every server-specific value (address, user names, paths, PHP build) in secrets or on the server, never in the repository, a PR or an issue.
 
 Read both values from the server over a connection you already trust, not from a fresh `ssh-keyscan`. `DEPLOY_KNOWN_HOSTS` uses the Ed25519 key, which OpenSSH prefers when it has a matching `known_hosts` entry. `DEPLOY_HOST_FINGERPRINT` uses the ECDSA key, because `appleboy/ssh-action`'s Go client negotiates ECDSA first and compares the fingerprint as an exact string. The workflow stops if either secret is empty, because an empty fingerprint would silently turn the check off. If the server's host keys are ever regenerated, update both secrets first. A mismatch makes OpenSSH print the new fingerprint into the public log, and that fingerprint isn't a secret, so it isn't masked.
+
+The workflow uploads to `/`, which `rrsync` maps to the staging directory, so there's no secret for the target path. A one-character secret would be masked everywhere it appears, and that would hide every `/` in the logs.
 
 The deploy key is tied to a forced command in `DEPLOY_USER`'s `authorized_keys`:
 
