@@ -49,7 +49,7 @@ Route::post('/submit-report', [SubmitReportController::class, 'store'])->name('r
 |
 */
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'auth.session'])->group(function () {
     Route::inertia('dashboard', 'Dashboard')->name('dashboard');
 });
 

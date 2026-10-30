@@ -7,6 +7,7 @@ namespace DrinkSafe\Reports\Commands;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
@@ -55,11 +56,22 @@ final class MakeAdminCommand extends Command
         $user = User::where('email', $email)->first();
 
         return match (true) {
+            $this->option('revoke') && $this->option('password') => $this->failForConflictingOptions(),
             $user === null && ($this->option('revoke') || $this->option('password')) => $this->failForMissingUser($email),
             $user === null => $this->createAdmin($email),
             $this->option('password') => $this->resetPassword($user),
             default => $this->setAdminFlag($user),
         };
+    }
+
+    /**
+     * Refuse --revoke and --password together, as the command does one or the other.
+     */
+    private function failForConflictingOptions(): int
+    {
+        $this->error('Use either --revoke or --password, not both.');
+
+        return self::FAILURE;
     }
 
     /**
@@ -88,6 +100,12 @@ final class MakeAdminCommand extends Command
 
     /**
      * Replace an existing user's password, leaving the admin flag as it is.
+     *
+     * A lost or stolen password is the reason to run this, so it also ends
+     * every login made with the old one. Rotating the remember token stops
+     * remember-me cookies, deleting session rows covers the database driver,
+     * and the `auth.session` middleware logs out cookie sessions on their next
+     * request.
      */
     private function resetPassword(User $user): int
     {
@@ -97,7 +115,14 @@ final class MakeAdminCommand extends Command
             return self::FAILURE;
         }
 
-        $user->forceFill(['password' => $this->askForPassword()])->save();
+        $user->forceFill([
+            'password' => $this->askForPassword(),
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        if (config('session.driver') === 'database') {
+            DB::table(config('session.table'))->where('user_id', $user->id)->delete();
+        }
 
         $this->info(sprintf('Updated the password for %s.', $user->email));
 
@@ -105,7 +130,7 @@ final class MakeAdminCommand extends Command
     }
 
     /**
-     * Create a verified admin, asking for their name and password.
+     * Create an admin, asking for their name and password.
      *
      * Without input there is no password to set, so the command stops rather
      * than create an account nobody can log in to.

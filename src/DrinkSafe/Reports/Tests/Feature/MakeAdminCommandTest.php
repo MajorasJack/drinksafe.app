@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -29,7 +30,7 @@ describe('drinksafe:make-admin', function (): void {
         expect($user->fresh()->is_admin)->toBeFalse();
     });
 
-    it('creates a verified admin when no user has the email', function (): void {
+    it('creates an admin when no user has the email', function (): void {
         $email = fake()->safeEmail();
         $name = fake()->name();
         $password = fake()->password(minLength: 12);
@@ -157,5 +158,70 @@ describe('drinksafe:make-admin', function (): void {
             ->assertFailed();
 
         $this->assertDatabaseMissing('users', ['email' => $email]);
+    });
+
+    it('rotates the remember token with --password', function (): void {
+        $user = User::factory()->create(['remember_token' => Str::random(60)]);
+        $password = fake()->password(minLength: 12);
+
+        $this->artisan('drinksafe:make-admin', ['email' => $user->email, '--password' => true])
+            ->expectsQuestion('Password', $password)
+            ->expectsQuestion('Confirm password', $password)
+            ->assertSuccessful();
+
+        expect($user->fresh()->remember_token)->not->toBe($user->remember_token);
+    });
+
+    it('deletes the database sessions of the user with --password', function (): void {
+        config(['session.driver' => 'database']);
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $password = fake()->password(minLength: 12);
+        DB::table('sessions')->insert([
+            ['id' => Str::random(40), 'user_id' => $user->id, 'payload' => '', 'last_activity' => now()->timestamp],
+            ['id' => Str::random(40), 'user_id' => $otherUser->id, 'payload' => '', 'last_activity' => now()->timestamp],
+        ]);
+
+        $this->artisan('drinksafe:make-admin', ['email' => $user->email, '--password' => true])
+            ->expectsQuestion('Password', $password)
+            ->expectsQuestion('Confirm password', $password)
+            ->assertSuccessful();
+
+        $this->assertDatabaseMissing('sessions', ['user_id' => $user->id]);
+        $this->assertDatabaseHas('sessions', ['user_id' => $otherUser->id]);
+    });
+
+    it('logs out a session made before --password on its next request', function (): void {
+        $user = User::factory()->admin()->create();
+        $password = fake()->password(minLength: 12);
+
+        $this->artisan('drinksafe:make-admin', ['email' => $user->email, '--password' => true])
+            ->expectsQuestion('Password', $password)
+            ->expectsQuestion('Confirm password', $password)
+            ->assertSuccessful();
+
+        $this->actingAs($user->fresh())
+            ->withSession(['password_hash_web' => $user->getAuthPassword()])
+            ->getJson(route('admin.reports.index'))
+            ->assertUnauthorized();
+    });
+
+    it('keeps a session made with the current password logged in', function (): void {
+        $user = User::factory()->admin()->create();
+
+        $this->actingAs($user)
+            ->withSession(['password_hash_web' => $user->getAuthPassword()])
+            ->getJson(route('admin.reports.index'))
+            ->assertOk();
+    });
+
+    it('refuses --revoke together with --password', function (): void {
+        $user = User::factory()->admin()->create();
+
+        $this->artisan('drinksafe:make-admin', ['email' => $user->email, '--revoke' => true, '--password' => true])
+            ->expectsOutput('Use either --revoke or --password, not both.')
+            ->assertFailed();
+
+        expect($user->fresh()->is_admin)->toBeTrue();
     });
 });

@@ -76,7 +76,7 @@ Route::prefix('api')->group(function (): void {
 
 // Reports Module Admin Routes
 Route::prefix('admin/reports')
-    ->middleware(['auth'])
+    ->middleware(['auth', 'auth.session'])
     ->name('admin.reports.')
     ->group(function (): void {
         Route::get('/', [ReportModerationController::class, 'index'])

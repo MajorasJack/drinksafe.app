@@ -40,7 +40,7 @@ This module manages:
 - **ReportAwaitingReviewNotification** - Email telling the moderators a report is waiting
 
 ### Commands
-- **drinksafe:make-admin {email} {--revoke} {--password}** - Flags a user as an admin, or removes the flag with `--revoke`. If no user has the email, it asks for a name and password and creates a verified admin. `--password` asks for a new password for an existing user, which is how a lost password is replaced as the site has no password reset. Both refuse to run with `--no-interaction`. The email is stored in lowercase
+- **drinksafe:make-admin {email} {--revoke} {--password}** - Flags a user as an admin, or removes the flag with `--revoke`. If no user has the email, it asks for a name and password and creates an admin. `--password` asks for a new password for an existing user, which is how a lost password is replaced as the site has no password reset. It also logs out every session and remember-me cookie made with the old password. `--revoke` and `--password` can't be used together. Both refuse to run with `--no-interaction`. The email is stored in lowercase
 
 ### Resources
 - **ReportResource** - JSON response formatting for single report
