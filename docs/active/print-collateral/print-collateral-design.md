@@ -175,9 +175,10 @@ before you go.
          drinksafe.app
 ```
 
-QR target, both sides: `https://drinksafe.app/submit-report`
+QR target, front: `https://drinksafe.app` (`qr-home-34mm.svg` at 25mm), as its copy offers both
+reporting and checking a venue.
 
-QR target: `https://drinksafe.app/submit-report`
+QR target, back: `https://drinksafe.app/submit-report` (`qr-report-25mm.svg`).
 
 The five tips, the support numbers and the small print are taken word for word from the About
 page and the footer disclaimer, so the print and the site cannot drift apart. If the site's
@@ -323,7 +324,7 @@ Generated as vector at final size and committed to `print/qr/`.
 | File | Target | Symbol | Size | Module |
 |---|---|---|---|---|
 | `qr-report-22mm.svg` | `/submit-report` | 3-M | 22mm | 595 micron |
-| `qr-home-34mm.svg` | home | 2-M | 34mm | 1030 micron, placed at 30mm |
+| `qr-home-34mm.svg` | home | 2-M | 34mm | 1030 micron, placed at 30mm (909 micron) and at 25mm on the flyer front (758 micron) |
 | `qr-report-25mm.svg` | `/submit-report` | 3-M | 25mm | 676 micron |
 | `qr-report-106mm.svg` | `/submit-report` | 3-M | 106mm | 2865 micron, 4051 micron on the A3 poster |
 
