@@ -29,11 +29,11 @@ const faqs = [
     },
     {
         question: "How can I add a venue that isn't listed?",
-        answer: "When submitting a report, you can search for venues. If a venue isn't in our database, it will be added automatically when you submit your report. Alternatively, contact us with venue details.",
+        answer: "When submitting a report, you can search for venues. If a venue isn't in our database, it's added once your report has been reviewed and published. Alternatively, contact us with venue details.",
     },
     {
         question: 'Is my report truly anonymous?',
-        answer: 'Yes. We do not collect any personal information, require accounts, or store IP addresses linked to reports. There is no way for us or anyone else to identify who submitted a report.',
+        answer: 'Yes. We do not collect any personal information, require accounts, or store IP addresses linked to reports. We have no way to identify who submitted a report.',
     },
 ];
 </script>
