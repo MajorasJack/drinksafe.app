@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Shield, Eye, Database, Clock, Lock, UserX } from 'lucide-vue-next';
+import { Shield, Eye, Database, Clock, Lock, UserX, Globe } from 'lucide-vue-next';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 </script>
@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                         protect your anonymity.
                     </p>
                     <p class="text-sm text-slate-500 dark:text-gray-400">
-                        Last updated: October 2026
+                        Last updated: November 2026
                     </p>
                 </div>
 
@@ -78,12 +78,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                                     address, and location coordinates.
                                 </li>
                                 <li>
-                                    <strong>Technical Data:</strong> Anonymous
-                                    usage statistics to improve the platform
-                                    (page views, browser type). No individual
-                                    tracking.
-                                </li>
-                                <li>
                                     <strong>Partner QR Codes:</strong> If you
                                     scan a QR code from one of our partners, we
                                     add one to that partner's total for the
@@ -114,6 +108,39 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                                 <li>Location data beyond venue searches</li>
                                 <li>Any information that could identify reporters</li>
                             </ul>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <div class="flex items-center gap-3">
+                                <Globe class="size-6 text-brand-teal" />
+                                <CardTitle>When You Visit the Site</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent
+                            class="space-y-4 text-slate-700 dark:text-gray-300"
+                        >
+                            <p>
+                                Drink Safe runs behind Cloudflare, which handles
+                                every request to the site and sees your IP
+                                address as part of doing that. The report form
+                                uses Cloudflare Turnstile to check that it is
+                                being sent by a person rather than a bot.
+                            </p>
+                            <p>
+                                To stop abuse, our server keeps a scrambled form
+                                of your connection address for about a minute
+                                while it limits how many requests can be made,
+                                and then it expires.
+                            </p>
+                            <p>
+                                The site also sets cookies that its forms need to
+                                work. They expire after two hours.
+                            </p>
+                            <p>
+                                Nothing else about you is stored or logged.
+                            </p>
                         </CardContent>
                     </Card>
 
@@ -179,8 +206,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                                 is no privacy risk in maintaining this record.
                             </p>
                             <p>
-                                Anonymous analytics data is retained for up to 26
-                                months to understand long-term usage patterns.
+                                The scrambled connection address used to limit
+                                requests expires after about a minute.
                             </p>
                         </CardContent>
                     </Card>
