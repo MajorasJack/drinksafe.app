@@ -63,7 +63,8 @@ export const useVenueStore = defineStore('venue', () => {
         loading.value = true;
         error.value = null;
 
-        cancelTokenSource = axios.CancelToken.source();
+        const source = axios.CancelToken.source();
+        cancelTokenSource = source;
 
         try {
             const params = new URLSearchParams();
@@ -95,7 +96,7 @@ export const useVenueStore = defineStore('venue', () => {
 
             const url = `/api/venues${params.toString() ? `?${params.toString()}` : ''}`;
             const response = await axios.get(url, {
-                cancelToken: cancelTokenSource.token,
+                cancelToken: source.token,
             });
 
             venues.value = response.data.data;
@@ -107,7 +108,10 @@ export const useVenueStore = defineStore('venue', () => {
             error.value = describeRequestError(err);
             console.error('Failed to fetch venues:', err);
         } finally {
-            loading.value = false;
+            // a cancelled request settles after its replacement has started, so only the current one may end loading
+            if (cancelTokenSource === source) {
+                loading.value = false;
+            }
         }
     }
 
@@ -169,7 +173,8 @@ export const useVenueStore = defineStore('venue', () => {
         searchLoading.value = true;
         searchError.value = null;
 
-        searchCancelTokenSource = axios.CancelToken.source();
+        const source = axios.CancelToken.source();
+        searchCancelTokenSource = source;
 
         try {
             // The index endpoint ignores `q`; only the dedicated search route filters by name/city.
@@ -181,7 +186,7 @@ export const useVenueStore = defineStore('venue', () => {
                     },
                 }),
                 {
-                    cancelToken: searchCancelTokenSource.token,
+                    cancelToken: source.token,
                 },
             );
 
@@ -198,7 +203,9 @@ export const useVenueStore = defineStore('venue', () => {
 
             return [];
         } finally {
-            searchLoading.value = false;
+            if (searchCancelTokenSource === source) {
+                searchLoading.value = false;
+            }
         }
     }
 
