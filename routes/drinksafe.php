@@ -25,34 +25,34 @@ use Illuminate\Support\Facades\Route;
 // Venues Module Routes
 Route::prefix('api/venues')->group(function (): void {
     Route::get('/', [VenueController::class, 'index'])
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:240,1')
         ->name('api.venues.index');
 
     Route::get('/search', [VenueSearchController::class, 'search'])
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:120,1')
         ->name('api.venues.search');
 
     Route::get('/{uuid}', [VenueController::class, 'show'])
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:240,1')
         ->name('api.venues.show');
 
     Route::get('/{uuid}/safety-score', VenueSafetyScoreController::class)
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:240,1')
         ->name('api.venues.safety-score');
 
     Route::post('/', [VenueController::class, 'store'])
-        ->middleware('throttle:10,1')
+        ->middleware('throttle:40,1')
         ->name('api.venues.store');
 });
 
 // Reports Module Routes
 Route::prefix('api/reports')->group(function (): void {
     Route::get('/', [ReportController::class, 'index'])
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:240,1')
         ->name('api.reports.index');
 
     Route::get('/{uuid}', [ReportController::class, 'show'])
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:240,1')
         ->name('api.reports.show');
 
     Route::post('/', [ReportController::class, 'store'])
@@ -63,14 +63,14 @@ Route::prefix('api/reports')->group(function (): void {
 // Analytics Module Routes
 Route::prefix('api/analytics')->group(function (): void {
     Route::get('/temporal', TemporalAnalyticsController::class)
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:240,1')
         ->name('api.analytics.temporal');
 });
 
 // Heatmap Module Routes
 Route::prefix('api')->group(function (): void {
     Route::get('/heatmap', HeatmapController::class)
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:240,1')
         ->name('api.heatmap');
 });
 
