@@ -489,6 +489,37 @@ describe('ReportController store', function (): void {
             ->and($everyLogLine)->not->toContain(sha1($userAgent))
             ->and($everyLogLine)->not->toContain(hash('sha256', $userAgent));
     });
+
+    it('logs nothing that identifies the person reporting an unpublished venue', function (): void {
+        Turnstile::fake();
+        $venue = Venue::factory()->unpublished()->create();
+        $ipAddress = fake()->ipv4();
+        $userAgent = sprintf('Mozilla/5.0 DistinctiveReporter/%s', fake()->uuid());
+        $loggedEntries = collect();
+        Log::listen(fn (MessageLogged $entry): Collection => $loggedEntries->push(json_encode([$entry->message, $entry->context], JSON_UNESCAPED_SLASHES)));
+
+        $this->withServerVariables(['REMOTE_ADDR' => $ipAddress])
+            ->withHeader('User-Agent', $userAgent)
+            ->postJson(route('api.reports.store'), [
+                'venue_uuid' => $venue->uuid,
+                'incident_date' => now()->subDay()->toDateString(),
+                'time_of_day' => 'Night',
+                'description' => fake()->sentence(12),
+                'cf-turnstile-response' => 'test-token',
+            ])
+            ->assertNotFound();
+
+        $everyLogLine = $loggedEntries->implode("\n");
+        expect($everyLogLine)->toContain('Venue not found during report creation')
+            ->and($everyLogLine)->not->toContain($ipAddress)
+            ->and($everyLogLine)->not->toContain(md5($ipAddress))
+            ->and($everyLogLine)->not->toContain(sha1($ipAddress))
+            ->and($everyLogLine)->not->toContain(hash('sha256', $ipAddress))
+            ->and($everyLogLine)->not->toContain($userAgent)
+            ->and($everyLogLine)->not->toContain(md5($userAgent))
+            ->and($everyLogLine)->not->toContain(sha1($userAgent))
+            ->and($everyLogLine)->not->toContain(hash('sha256', $userAgent));
+    });
 });
 
 describe('ReportController review queue', function (): void {
