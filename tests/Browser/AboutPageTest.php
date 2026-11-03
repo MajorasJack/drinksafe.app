@@ -171,3 +171,10 @@ it('tells people what being spiked can feel like', function (): void {
 
     $page->assertSee('Often the only sign of being spiked is feeling far drunker than you should for what you have had.');
 });
+
+it('says reports can be sent without an account or a name rather than promising complete anonymity', function (): void {
+    $page = visit('/about');
+
+    $page->assertSee('search for venues with reported activity, without an account or your name.')
+        ->assertDontSee('complete anonymity');
+});

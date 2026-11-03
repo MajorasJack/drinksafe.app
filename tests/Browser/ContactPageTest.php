@@ -11,7 +11,7 @@ it('says a new venue is added once its report has been reviewed and published', 
         ->assertNoJavaScriptErrors();
 });
 
-it('says reports cannot be traced back to the person who sent them', function (): void {
+it('says we have no way to identify who submitted a report', function (): void {
     $page = visit('/contact');
 
     $page->click('Is my report truly anonymous?')

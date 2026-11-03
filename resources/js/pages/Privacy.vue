@@ -69,7 +69,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                             <ul class="list-inside list-disc space-y-2">
                                 <li>
                                     <strong>Report Data:</strong> Venue name,
-                                    date of incident, and incident description.
+                                    date of incident, time of day, the time of
+                                    the incident if you give it, the incident
+                                    description, and when the report was sent.
                                     No personal identifiers are collected.
                                 </li>
                                 <li>
@@ -104,7 +106,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                                 <li>Names, email addresses, or contact details</li>
                                 <li>Account credentials or passwords</li>
                                 <li>IP addresses linked to reports</li>
-                                <li>Device identifiers or fingerprints</li>
+                                <li>
+                                    Device identifiers or fingerprints (the
+                                    browser and device details Turnstile checks
+                                    go to Cloudflare, not to us)
+                                </li>
                                 <li>Location data beyond venue searches</li>
                                 <li>Any information that could identify reporters</li>
                             </ul>
@@ -122,24 +128,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                             class="space-y-4 text-slate-700 dark:text-gray-300"
                         >
                             <p>
-                                Drink Safe runs behind Cloudflare, which handles
-                                every request to the site and sees your IP
-                                address as part of doing that. The report form
-                                uses Cloudflare Turnstile to check that it is
-                                being sent by a person rather than a bot.
+                                Every request to the site goes through
+                                Cloudflare, which sees your IP address. Our
+                                server never receives your IP address.
                             </p>
                             <p>
-                                To stop abuse, our server keeps a scrambled form
-                                of your connection address for about a minute
-                                while it limits how many requests can be made,
-                                and then it expires.
+                                The maps on the site are drawn with map images
+                                from CARTO. Your browser downloads them directly
+                                from CARTO, which sees your IP address and the
+                                area of the map you are looking at.
                             </p>
                             <p>
-                                The site also sets cookies that its forms need to
-                                work. They expire after two hours.
+                                The report form uses Cloudflare Turnstile to
+                                check that it is being sent by a person rather
+                                than a bot. Turnstile runs in your browser and
+                                sends Cloudflare some details about your browser
+                                and device to make that check. We only see
+                                whether the check passed.
                             </p>
                             <p>
-                                Nothing else about you is stored or logged.
+                                The site sets three cookies on every page, which
+                                its forms need to work. They expire after two
+                                hours.
+                            </p>
+                            <p>
+                                Nothing else about you is stored or logged by
+                                us.
                             </p>
                         </CardContent>
                     </Card>
@@ -158,7 +172,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                             <ul class="list-inside list-disc space-y-2">
                                 <li>Display incident reports on the map and venue pages</li>
                                 <li>Calculate venue statistics and heatmap data</li>
-                                <li>Improve platform performance and user experience</li>
                                 <li>Detect and prevent abuse or spam submissions</li>
                             </ul>
                             <p>
@@ -200,14 +213,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                             class="space-y-4 text-slate-700 dark:text-gray-300"
                         >
                             <p>
-                                Report data is retained indefinitely to provide a
-                                comprehensive historical record for community safety.
-                                Since reports contain no personal information, there
-                                is no privacy risk in maintaining this record.
+                                Reports are kept indefinitely as a historical
+                                record. We remove anything that names or could
+                                identify a person during review, and a published
+                                report can still be taken down.
                             </p>
                             <p>
-                                The scrambled connection address used to limit
-                                requests expires after about a minute.
+                                To stop abuse, the site limits how many requests
+                                can be sent in a minute. Each count lasts at most
+                                a minute and is kept against a Cloudflare
+                                address, not against you.
                             </p>
                         </CardContent>
                     </Card>
