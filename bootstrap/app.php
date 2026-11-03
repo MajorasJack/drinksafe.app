@@ -22,8 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // AddLinkHeadersForPreloadedAssets is deliberately not registered. It
         // repeats every Vite preload tag in a `Link` header, which on the
-        // heavier pages pushes the response headers past nginx's 4 KB FastCGI
-        // buffer and the origin answers with a 502. The <link rel="preload">
+        // heavier pages pushes the response headers past the web server's
+        // header buffer and the origin answers with a 502. The <link rel="preload">
         // tags in the HTML give browsers the same hint without the header.
         $middleware->web(append: [
             EnforceProduction::class,
