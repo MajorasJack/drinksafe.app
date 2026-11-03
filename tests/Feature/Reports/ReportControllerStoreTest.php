@@ -93,7 +93,7 @@ it('rejects a report whose description contains personal information', function 
 });
 
 it('keeps report submission open after browsing uses up the venues allowance', function (): void {
-    foreach (range(1, 60) as $request) {
+    foreach (range(1, 240) as $request) {
         $this->getJson('/api/venues');
     }
 
@@ -102,8 +102,8 @@ it('keeps report submission open after browsing uses up the venues allowance', f
     $response->assertUnprocessable();
 });
 
-it('refuses a sixth report submission within a minute', function (): void {
-    foreach (range(1, 5) as $request) {
+it('refuses a twenty-first report submission within a minute', function (): void {
+    foreach (range(1, 20) as $request) {
         $this->postJson('/api/reports');
     }
 

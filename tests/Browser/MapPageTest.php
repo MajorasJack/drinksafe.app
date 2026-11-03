@@ -3,7 +3,11 @@
 declare(strict_types=1);
 
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Venues\Controllers\VenueSearchController;
 use DrinkSafe\Venues\Models\Venue;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Route;
 
 it('loads map page successfully', function (): void {
     $page = visit('/map');
@@ -425,4 +429,52 @@ it('opens the search suggestions when typing a search', function (): void {
     $page->fill('input[placeholder*="Search"]', $venueName)
         ->wait(1)
         ->assertVisible('[data-testid="venue-search-suggestions"]');
+});
+
+it('says the map is busy instead of nothing reported when search is rate limited', function (): void {
+    Route::get('api/venues/search', fn (): JsonResponse => response()->json([], Response::HTTP_TOO_MANY_REQUESTS));
+
+    $page = visit('/map');
+
+    $page->fill('input[placeholder*="Search"]', fake()->word())
+        ->wait(1)
+        ->assertSee('A lot of people are using the map right now. Please try again in a minute.')
+        ->assertNotPresent('[data-testid="nothing-reported-yet"]');
+});
+
+it('says the venues could not load instead of nothing reported when search fails', function (): void {
+    Route::get('api/venues/search', fn (): JsonResponse => response()->json([], Response::HTTP_INTERNAL_SERVER_ERROR));
+
+    $page = visit('/map');
+
+    $page->fill('input[placeholder*="Search"]', fake()->word())
+        ->wait(1)
+        ->assertSee("Couldn't load this. Please try again.")
+        ->assertSee('Try again')
+        ->assertNotPresent('[data-testid="nothing-reported-yet"]');
+});
+
+it('lists the venues once a failed search is retried', function (): void {
+    $venueName = fake()->unique()->company();
+    Venue::factory()->create(['name' => $venueName]);
+    $page = visit('/map');
+    Route::get('api/venues/search', fn (): JsonResponse => response()->json([], Response::HTTP_INTERNAL_SERVER_ERROR));
+    $page->fill('input[placeholder*="Search"]', $venueName)->wait(1);
+    Route::get('api/venues/search', [VenueSearchController::class, 'search']);
+
+    $page->click('Try again')
+        ->wait(1)
+        ->assertSee($venueName)
+        ->assertNotPresent('[data-testid="venue-load-error"]');
+});
+
+it('says the heatmap could not load instead of no incidents when it fails', function (): void {
+    Route::get('api/heatmap', fn (): JsonResponse => response()->json([], Response::HTTP_INTERNAL_SERVER_ERROR));
+    $page = visit('/map');
+    $page->script("localStorage.setItem('drinksafe_heatmap_visible', 'true')");
+
+    $page->navigate('/map')
+        ->wait(2)
+        ->assertSee("Couldn't load this. Please try again.")
+        ->assertDontSee('No incidents in this area');
 });

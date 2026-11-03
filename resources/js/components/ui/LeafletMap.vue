@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
 import type { HeatLayer, Icon, Map, Marker, MarkerClusterGroup } from 'leaflet';
+import markerIconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIconUrl from 'leaflet/dist/images/marker-icon.png';
+import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png';
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { HeatmapControls } from '@/components/map';
 import { useHeatmap } from '@/composables/useHeatmap';
@@ -233,9 +236,9 @@ onMounted(async () => {
     L = leaflet.default;
 
     markerIcon = L.icon({
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconUrl: markerIconUrl,
+        iconRetinaUrl: markerIconRetinaUrl,
+        shadowUrl: markerShadowUrl,
         iconSize: [25, 41],
         iconAnchor: [12, 41],
         popupAnchor: [1, -34],

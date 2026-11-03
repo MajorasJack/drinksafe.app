@@ -43,10 +43,14 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Give report submission its own counter, so browsing the map and venue pages does not use it up.
+     *
+     * The app never reads visitors' IP addresses. No proxy is trusted, so `$request->ip()` is the Cloudflare
+     * address and every limit here and on the routes counts per Cloudflare address, not per visitor. Each
+     * route has its own named counter, so browsing one part of the site does not use up another's limit.
      */
     protected function configureRateLimiting(): void
     {
-        RateLimiter::for('reports', fn (Request $request): Limit => Limit::perMinute(5)->by($request->ip()));
+        RateLimiter::for('reports', fn (Request $request): Limit => Limit::perMinute(20)->by($request->ip()));
     }
 
     /**

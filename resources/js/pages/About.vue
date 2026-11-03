@@ -70,8 +70,8 @@ const howToUseSteps: HowToUseStep[] = [
                         </p>
                         <p>
                             Our platform allows anyone to report incidents and
-                            search for venues with reported activity, all whilst
-                            maintaining complete anonymity. No personal
+                            search for venues with reported activity, without
+                            an account or your name. No personal
                             information is collected or stored.
                         </p>
                     </CardContent>

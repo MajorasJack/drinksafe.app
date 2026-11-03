@@ -10,7 +10,7 @@ import { useHeatmap } from '@/composables/useHeatmap';
 import HeatmapPeriodSelector from './HeatmapPeriodSelector.vue';
 import HeatmapToggle from './HeatmapToggle.vue';
 
-const { isVisible, totalReports, hasData } = useHeatmap();
+const { isVisible, totalReports, hasData, error } = useHeatmap();
 </script>
 
 <template>
@@ -34,12 +34,21 @@ const { isVisible, totalReports, hasData } = useHeatmap();
             leave-to-class="opacity-0 translate-y-1"
         >
             <div
-                v-if="isVisible && hasData"
+                v-if="isVisible && !error && hasData"
                 class="rounded-md bg-slate-900/80 px-2.5 py-1 text-xs font-medium text-white shadow-md dark:bg-gray-900/90"
             >
                 {{ totalReports }} incident{{ totalReports !== 1 ? 's' : '' }} shown
             </div>
         </Transition>
+
+        <div
+            v-if="isVisible && error"
+            role="alert"
+            data-testid="heatmap-load-error"
+            class="max-w-64 rounded-md bg-red-700/90 px-2.5 py-1 text-xs font-medium text-white shadow-md"
+        >
+            {{ error }}
+        </div>
 
         <!-- Empty state (shows when heatmap is visible but no data) -->
         <Transition
@@ -51,7 +60,7 @@ const { isVisible, totalReports, hasData } = useHeatmap();
             leave-to-class="opacity-0 translate-y-1"
         >
             <div
-                v-if="isVisible && !hasData && totalReports === 0"
+                v-if="isVisible && !error && !hasData && totalReports === 0"
                 class="rounded-md bg-slate-600/80 px-2.5 py-1 text-xs font-medium text-white shadow-md dark:bg-gray-700/90"
             >
                 No incidents in this area

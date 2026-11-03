@@ -10,6 +10,7 @@ import type {CancelTokenSource} from 'axios';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { search } from '@/actions/DrinkSafe/Venues/Controllers/VenueSearchController';
+import { describeRequestError } from '@/lib/requestError';
 import type { Venue, VenueFilters } from '@/types';
 
 const DEBOUNCE_DELAY_MS = 300;
@@ -23,10 +24,13 @@ export const useVenueStore = defineStore('venue', () => {
     const loading = ref(false);
     const searchLoading = ref(false);
     const error = ref<string | null>(null);
+    const searchError = ref<string | null>(null);
 
     // Debounce and cancellation for bounds fetching
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     let cancelTokenSource: CancelTokenSource | null = null;
+    // searches get their own token, so moving the map doesn't cancel a search in flight
+    let searchCancelTokenSource: CancelTokenSource | null = null;
     let lastBounds: string | null = null;
 
     // Getters
@@ -59,7 +63,8 @@ export const useVenueStore = defineStore('venue', () => {
         loading.value = true;
         error.value = null;
 
-        cancelTokenSource = axios.CancelToken.source();
+        const source = axios.CancelToken.source();
+        cancelTokenSource = source;
 
         try {
             const params = new URLSearchParams();
@@ -91,7 +96,7 @@ export const useVenueStore = defineStore('venue', () => {
 
             const url = `/api/venues${params.toString() ? `?${params.toString()}` : ''}`;
             const response = await axios.get(url, {
-                cancelToken: cancelTokenSource.token,
+                cancelToken: source.token,
             });
 
             venues.value = response.data.data;
@@ -100,11 +105,13 @@ export const useVenueStore = defineStore('venue', () => {
                 return;
             }
 
-            error.value =
-                err instanceof Error ? err.message : 'Failed to fetch venues';
+            error.value = describeRequestError(err);
             console.error('Failed to fetch venues:', err);
         } finally {
-            loading.value = false;
+            // a cancelled request settles after its replacement has started, so only the current one may end loading
+            if (cancelTokenSource === source) {
+                loading.value = false;
+            }
         }
     }
 
@@ -161,12 +168,13 @@ export const useVenueStore = defineStore('venue', () => {
         query: string,
         filters?: VenueFilters,
     ): Promise<Venue[]> {
-        cancelPendingRequest();
+        searchCancelTokenSource?.cancel('Request cancelled due to new search');
 
         searchLoading.value = true;
-        error.value = null;
+        searchError.value = null;
 
-        cancelTokenSource = axios.CancelToken.source();
+        const source = axios.CancelToken.source();
+        searchCancelTokenSource = source;
 
         try {
             // The index endpoint ignores `q`; only the dedicated search route filters by name/city.
@@ -178,7 +186,7 @@ export const useVenueStore = defineStore('venue', () => {
                     },
                 }),
                 {
-                    cancelToken: cancelTokenSource.token,
+                    cancelToken: source.token,
                 },
             );
 
@@ -190,13 +198,14 @@ export const useVenueStore = defineStore('venue', () => {
                 return [];
             }
 
-            error.value =
-                err instanceof Error ? err.message : 'Failed to search venues';
+            searchError.value = describeRequestError(err);
             console.error('Failed to search venues:', err);
 
             return [];
         } finally {
-            searchLoading.value = false;
+            if (searchCancelTokenSource === source) {
+                searchLoading.value = false;
+            }
         }
     }
 
@@ -209,6 +218,7 @@ export const useVenueStore = defineStore('venue', () => {
 
     function clearError(): void {
         error.value = null;
+        searchError.value = null;
     }
 
     return {
@@ -219,6 +229,7 @@ export const useVenueStore = defineStore('venue', () => {
         loading,
         searchLoading,
         error,
+        searchError,
 
         // Getters
         hasVenues,

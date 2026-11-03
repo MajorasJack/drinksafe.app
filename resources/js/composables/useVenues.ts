@@ -19,6 +19,7 @@ export function useVenues() {
         loading,
         searchLoading,
         error,
+        searchError,
         hasVenues,
         hasSearchResults,
     } = storeToRefs(store);
@@ -31,6 +32,7 @@ export function useVenues() {
         loading,
         searchLoading,
         error,
+        searchError,
 
         // Getters (already reactive via storeToRefs)
         hasVenues,

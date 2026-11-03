@@ -117,8 +117,8 @@ const supportAreas: SupportArea[] = [
                                     We believe safety information should be
                                     accessible to everyone. That's why Drink
                                     Safe will always be free to use, with no
-                                    ads on the site, no paywalls, and no data
-                                    collection.
+                                    ads on the site, no paywalls, and no
+                                    tracking.
                                 </p>
                             </div>
                             <div

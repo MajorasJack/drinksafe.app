@@ -5,6 +5,9 @@ declare(strict_types=1);
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use RyanChandler\LaravelCloudflareTurnstile\Facades\Turnstile;
 use Tests\TestCase;
 
@@ -454,6 +457,68 @@ describe('ReportController store', function (): void {
         // Assert
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['longitude']);
+    });
+
+    it('logs nothing that identifies the person reporting', function (): void {
+        Turnstile::fake();
+        $venue = Venue::factory()->create();
+        $ipAddress = fake()->ipv4();
+        $userAgent = sprintf('Mozilla/5.0 DistinctiveReporter/%s', fake()->uuid());
+        $loggedEntries = collect();
+        Log::listen(fn (MessageLogged $entry): Collection => $loggedEntries->push(json_encode([$entry->message, $entry->context], JSON_UNESCAPED_SLASHES)));
+
+        $this->withServerVariables(['REMOTE_ADDR' => '172.70.0.1'])
+            ->withHeaders(['CF-Connecting-IP' => $ipAddress, 'X-Forwarded-For' => $ipAddress, 'User-Agent' => $userAgent])
+            ->postJson(route('api.reports.store'), [
+                'venue_uuid' => $venue->uuid,
+                'incident_date' => now()->subDay()->toDateString(),
+                'time_of_day' => 'Night',
+                'description' => fake()->sentence(12),
+                'cf-turnstile-response' => 'test-token',
+            ])
+            ->assertCreated();
+
+        $everyLogLine = $loggedEntries->implode("\n");
+        expect($loggedEntries)->not->toBeEmpty()
+            ->and($everyLogLine)->not->toContain($ipAddress)
+            ->and($everyLogLine)->not->toContain(md5($ipAddress))
+            ->and($everyLogLine)->not->toContain(sha1($ipAddress))
+            ->and($everyLogLine)->not->toContain(hash('sha256', $ipAddress))
+            ->and($everyLogLine)->not->toContain($userAgent)
+            ->and($everyLogLine)->not->toContain(md5($userAgent))
+            ->and($everyLogLine)->not->toContain(sha1($userAgent))
+            ->and($everyLogLine)->not->toContain(hash('sha256', $userAgent));
+    });
+
+    it('logs nothing that identifies the person reporting an unpublished venue', function (): void {
+        Turnstile::fake();
+        $venue = Venue::factory()->unpublished()->create();
+        $ipAddress = fake()->ipv4();
+        $userAgent = sprintf('Mozilla/5.0 DistinctiveReporter/%s', fake()->uuid());
+        $loggedEntries = collect();
+        Log::listen(fn (MessageLogged $entry): Collection => $loggedEntries->push(json_encode([$entry->message, $entry->context], JSON_UNESCAPED_SLASHES)));
+
+        $this->withServerVariables(['REMOTE_ADDR' => '172.70.0.1'])
+            ->withHeaders(['CF-Connecting-IP' => $ipAddress, 'X-Forwarded-For' => $ipAddress, 'User-Agent' => $userAgent])
+            ->postJson(route('api.reports.store'), [
+                'venue_uuid' => $venue->uuid,
+                'incident_date' => now()->subDay()->toDateString(),
+                'time_of_day' => 'Night',
+                'description' => fake()->sentence(12),
+                'cf-turnstile-response' => 'test-token',
+            ])
+            ->assertNotFound();
+
+        $everyLogLine = $loggedEntries->implode("\n");
+        expect($everyLogLine)->toContain('Venue not found during report creation')
+            ->and($everyLogLine)->not->toContain($ipAddress)
+            ->and($everyLogLine)->not->toContain(md5($ipAddress))
+            ->and($everyLogLine)->not->toContain(sha1($ipAddress))
+            ->and($everyLogLine)->not->toContain(hash('sha256', $ipAddress))
+            ->and($everyLogLine)->not->toContain($userAgent)
+            ->and($everyLogLine)->not->toContain(md5($userAgent))
+            ->and($everyLogLine)->not->toContain(sha1($userAgent))
+            ->and($everyLogLine)->not->toContain(hash('sha256', $userAgent));
     });
 });
 

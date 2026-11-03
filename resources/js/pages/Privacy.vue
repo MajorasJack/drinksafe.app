@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Shield, Eye, Database, Clock, Lock, UserX } from 'lucide-vue-next';
+import { Shield, Eye, Database, Clock, Lock, UserX, Globe } from 'lucide-vue-next';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 </script>
@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                         protect your anonymity.
                     </p>
                     <p class="text-sm text-slate-500 dark:text-gray-400">
-                        Last updated: October 2026
+                        Last updated: November 2026
                     </p>
                 </div>
 
@@ -69,19 +69,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                             <ul class="list-inside list-disc space-y-2">
                                 <li>
                                     <strong>Report Data:</strong> Venue name,
-                                    date of incident, and incident description.
+                                    date of incident, time of day, the time of
+                                    the incident if you give it, the incident
+                                    description, and when the report was sent.
                                     No personal identifiers are collected.
                                 </li>
                                 <li>
                                     <strong>Venue Information:</strong> Publicly
                                     available venue details such as name,
                                     address, and location coordinates.
-                                </li>
-                                <li>
-                                    <strong>Technical Data:</strong> Anonymous
-                                    usage statistics to improve the platform
-                                    (page views, browser type). No individual
-                                    tracking.
                                 </li>
                                 <li>
                                     <strong>Partner QR Codes:</strong> If you
@@ -110,10 +106,55 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                                 <li>Names, email addresses, or contact details</li>
                                 <li>Account credentials or passwords</li>
                                 <li>IP addresses linked to reports</li>
-                                <li>Device identifiers or fingerprints</li>
+                                <li>
+                                    Device identifiers or fingerprints (the
+                                    browser and device details Turnstile checks
+                                    go to Cloudflare, not to us)
+                                </li>
                                 <li>Location data beyond venue searches</li>
                                 <li>Any information that could identify reporters</li>
                             </ul>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <div class="flex items-center gap-3">
+                                <Globe class="size-6 text-brand-teal" />
+                                <CardTitle>When You Visit the Site</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent
+                            class="space-y-4 text-slate-700 dark:text-gray-300"
+                        >
+                            <p>
+                                Every request to the site goes through
+                                Cloudflare, which sees your IP address. The site
+                                itself never reads, stores or logs it.
+                            </p>
+                            <p>
+                                The maps on the site are drawn with map images
+                                from CARTO. Your browser downloads them directly
+                                from CARTO, which sees your IP address and the
+                                area of the map you are looking at.
+                            </p>
+                            <p>
+                                The report form uses Cloudflare Turnstile to
+                                check that it is being sent by a person rather
+                                than a bot. Turnstile runs in your browser and
+                                sends Cloudflare some details about your browser
+                                and device to make that check. We only see
+                                whether the check passed.
+                            </p>
+                            <p>
+                                The site sets three cookies on every page, which
+                                its forms need to work. They expire after two
+                                hours.
+                            </p>
+                            <p>
+                                Nothing else about you is stored or logged by
+                                us.
+                            </p>
                         </CardContent>
                     </Card>
 
@@ -131,7 +172,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                             <ul class="list-inside list-disc space-y-2">
                                 <li>Display incident reports on the map and venue pages</li>
                                 <li>Calculate venue statistics and heatmap data</li>
-                                <li>Improve platform performance and user experience</li>
                                 <li>Detect and prevent abuse or spam submissions</li>
                             </ul>
                             <p>
@@ -173,14 +213,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                             class="space-y-4 text-slate-700 dark:text-gray-300"
                         >
                             <p>
-                                Report data is retained indefinitely to provide a
-                                comprehensive historical record for community safety.
-                                Since reports contain no personal information, there
-                                is no privacy risk in maintaining this record.
+                                Reports are kept indefinitely as a historical
+                                record. We remove anything that names or could
+                                identify a person during review, and a published
+                                report can still be taken down.
                             </p>
                             <p>
-                                Anonymous analytics data is retained for up to 26
-                                months to understand long-term usage patterns.
+                                To stop abuse, the site limits how many requests
+                                can be sent in a minute. Each count lasts at most
+                                a minute and is kept against a Cloudflare
+                                address, not against you.
                             </p>
                         </CardContent>
                     </Card>
