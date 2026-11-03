@@ -467,8 +467,8 @@ describe('ReportController store', function (): void {
         $loggedEntries = collect();
         Log::listen(fn (MessageLogged $entry): Collection => $loggedEntries->push(json_encode([$entry->message, $entry->context], JSON_UNESCAPED_SLASHES)));
 
-        $this->withServerVariables(['REMOTE_ADDR' => $ipAddress])
-            ->withHeader('User-Agent', $userAgent)
+        $this->withServerVariables(['REMOTE_ADDR' => '172.70.0.1'])
+            ->withHeaders(['CF-Connecting-IP' => $ipAddress, 'X-Forwarded-For' => $ipAddress, 'User-Agent' => $userAgent])
             ->postJson(route('api.reports.store'), [
                 'venue_uuid' => $venue->uuid,
                 'incident_date' => now()->subDay()->toDateString(),
@@ -498,8 +498,8 @@ describe('ReportController store', function (): void {
         $loggedEntries = collect();
         Log::listen(fn (MessageLogged $entry): Collection => $loggedEntries->push(json_encode([$entry->message, $entry->context], JSON_UNESCAPED_SLASHES)));
 
-        $this->withServerVariables(['REMOTE_ADDR' => $ipAddress])
-            ->withHeader('User-Agent', $userAgent)
+        $this->withServerVariables(['REMOTE_ADDR' => '172.70.0.1'])
+            ->withHeaders(['CF-Connecting-IP' => $ipAddress, 'X-Forwarded-For' => $ipAddress, 'User-Agent' => $userAgent])
             ->postJson(route('api.reports.store'), [
                 'venue_uuid' => $venue->uuid,
                 'incident_date' => now()->subDay()->toDateString(),

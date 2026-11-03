@@ -9,10 +9,10 @@ it('says that partner QR scans are only counted per partner per day', function (
         ->assertNoJavaScriptErrors();
 });
 
-it('says that Cloudflare sees visitors IP addresses and our server never receives them', function (): void {
+it('says that Cloudflare sees visitors IP addresses and the site never reads them', function (): void {
     $page = visit('/privacy');
 
-    $page->assertSee('Every request to the site goes through Cloudflare, which sees your IP address. Our server never receives your IP address.');
+    $page->assertSee('Every request to the site goes through Cloudflare, which sees your IP address. The site itself never reads, stores or logs it.');
 });
 
 it('says that the map images come directly from CARTO', function (): void {

@@ -129,8 +129,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
                         >
                             <p>
                                 Every request to the site goes through
-                                Cloudflare, which sees your IP address. Our
-                                server never receives your IP address.
+                                Cloudflare, which sees your IP address. The site
+                                itself never reads, stores or logs it.
                             </p>
                             <p>
                                 The maps on the site are drawn with map images
