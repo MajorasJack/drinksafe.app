@@ -10,6 +10,7 @@ import axios from 'axios';
 import type {CancelTokenSource} from 'axios';
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
+import { describeRequestError } from '@/lib/requestError';
 import type {
     HeatmapPeriod,
     HeatmapPoint,
@@ -144,7 +145,7 @@ export const useHeatmapStore = defineStore('heatmap', () => {
                 return;
             }
 
-            error.value = err instanceof Error ? err.message : 'Failed to fetch heatmap data';
+            error.value = describeRequestError(err);
             console.error('Failed to fetch heatmap data:', err);
         } finally {
             loading.value = false;

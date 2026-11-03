@@ -28,8 +28,12 @@ const props = withDefaults(defineProps<Props>(), {
 const {
     venues: storeVenues,
     loading,
+    error: venuesError,
+    searchError,
     fetchVenues,
+    fetchVenuesByBounds,
     fetchVenuesByBoundsDebounced,
+    searchVenues,
 } = useVenues();
 const {
     query: searchQuery,
@@ -70,6 +74,11 @@ const hasNoReports = computed(() =>
     filteredVenues.value.every((venue) => !venue.reports_count),
 );
 
+// a search shows its own failure; otherwise the map area's
+const loadError = computed(() =>
+    searchQuery.value.trim() ? searchError.value : venuesError.value,
+);
+
 // Combined loading state for search and bounds fetching
 const isLoading = computed(() => loading.value || isSearching.value);
 
@@ -86,6 +95,16 @@ const handleVenueClick = (venue: Venue): void => {
 
 const handleSearchClear = (): void => {
     selectedVenue.value = null;
+};
+
+const retryLoading = (): void => {
+    if (searchQuery.value.trim()) {
+        searchVenues(searchQuery.value);
+    } else if (currentBounds.value) {
+        fetchVenuesByBounds(currentBounds.value);
+    } else {
+        fetchVenues();
+    }
 };
 
 const handleDateFilterApply = (): void => {
@@ -192,6 +211,18 @@ onMounted(() => {
                         class="py-10 text-center text-slate-500 dark:text-gray-400"
                     >
                         {{ isSearching ? 'Searching...' : 'Loading venues...' }}
+                    </div>
+
+                    <div
+                        v-else-if="loadError"
+                        role="alert"
+                        data-testid="venue-load-error"
+                        class="py-10 text-center text-slate-700 dark:text-gray-300"
+                    >
+                        <p class="mb-4">{{ loadError }}</p>
+                        <Button variant="outline" @click="retryLoading">
+                            Try again
+                        </Button>
                     </div>
 
                     <div
