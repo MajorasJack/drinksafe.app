@@ -33,6 +33,20 @@ it('saves an edited venue name', function (): void {
     expect($venue->fresh()->name)->toBe($newName);
 });
 
+it('confirms a saved venue edit with a toast', function (): void {
+    $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+    $venue = Venue::factory()->create();
+
+    $page = visit(sprintf('/admin/venues/%s', $venue->uuid));
+
+    $page->fill('name', fake()->unique()->company())
+        ->click('Save venue')
+        ->wait(1)
+        ->assertSee('Venue saved.')
+        ->assertScript("document.querySelectorAll('[data-sonner-toast]').length", 1)
+        ->assertNoJavaScriptErrors();
+});
+
 it('asks before unpublishing a venue', function (): void {
     $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
     $venue = Venue::factory()->create();

@@ -59,3 +59,17 @@ it('publishes the selected pending reports together', function (): void {
         ->assertNoJavaScriptErrors();
     expect(Report::whereKey($reports->modelKeys())->count())->toBe(2);
 });
+
+it('shows one toast after a bulk review', function (): void {
+    $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+    Report::factory()->pending()->count(2)->create();
+
+    $page = visit('/admin/reports');
+
+    $page->click('Select all on this page')
+        ->click('Publish selected')
+        ->wait(1)
+        ->assertSee('2 reports published')
+        ->assertScript("document.querySelectorAll('[data-sonner-toast]').length", 1)
+        ->assertNoJavaScriptErrors();
+});
