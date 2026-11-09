@@ -7,6 +7,7 @@ namespace DrinkSafe\Heatmap\Services;
 use DrinkSafe\Heatmap\DataTransferObjects\HeatmapPointDTO;
 use DrinkSafe\Heatmap\Exceptions\InvalidBoundingBoxException;
 use DrinkSafe\Reports\Enums\ReportStatus;
+use DrinkSafe\Shared\Services\PublicCacheVersion;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -47,6 +48,15 @@ final class HeatmapService
      * Cache key prefix for heatmap data.
      */
     private const string CACHE_KEY_PREFIX = 'heatmap:';
+
+    /**
+     * Create a new HeatmapService instance.
+     *
+     * @param  PublicCacheVersion  $publicCacheVersion  Version number put in every cache key
+     */
+    public function __construct(
+        private readonly PublicCacheVersion $publicCacheVersion,
+    ) {}
 
     /**
      * Get heatmap data for a geographic bounding box.
@@ -91,13 +101,13 @@ final class HeatmapService
     }
 
     /**
-     * Invalidate all heatmap caches.
+     * Invalidate all heatmap caches, and the temporal analytics caches with them.
      *
-     * Should be called when new reports are submitted.
+     * Bumps the public cache version rather than flushing the store.
      */
     public function invalidateCache(): void
     {
-        Cache::flush();
+        $this->publicCacheVersion->bump();
     }
 
     /**
@@ -141,7 +151,7 @@ final class HeatmapService
     }
 
     /**
-     * Build cache key from bounds and period.
+     * Build cache key from the public cache version, bounds and period.
      */
     private function buildCacheKey(
         float $north,
@@ -156,8 +166,9 @@ final class HeatmapService
         $roundedWest = round($west, 3);
 
         return sprintf(
-            '%s%s:%s:%s:%s:%d',
+            '%sv%d:%s:%s:%s:%s:%d',
             self::CACHE_KEY_PREFIX,
+            $this->publicCacheVersion->current(),
             $roundedNorth,
             $roundedSouth,
             $roundedEast,

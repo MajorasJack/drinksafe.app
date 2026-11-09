@@ -8,6 +8,7 @@ use DrinkSafe\Analytics\Enums\DayOfWeek;
 use DrinkSafe\Analytics\Exceptions\InsufficientDataException;
 use DrinkSafe\Reports\Enums\TimeOfDay;
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Shared\Services\PublicCacheVersion;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -42,9 +43,11 @@ final class TemporalAnalyticsService
      * Create a new TemporalAnalyticsService instance.
      *
      * @param  InsightGeneratorService  $insightGenerator  Service for generating insights
+     * @param  PublicCacheVersion  $publicCacheVersion  Version number put in every cache key
      */
     public function __construct(
         private readonly InsightGeneratorService $insightGenerator,
+        private readonly PublicCacheVersion $publicCacheVersion,
     ) {}
 
     /**
@@ -117,14 +120,13 @@ final class TemporalAnalyticsService
     }
 
     /**
-     * Invalidate all analytics cache entries.
+     * Invalidate all analytics cache entries, and the heatmap caches with them.
      *
-     * Should be called when new reports are submitted to ensure
-     * fresh data on next request.
+     * Bumps the public cache version rather than flushing the store.
      */
     public function invalidateCache(): void
     {
-        Cache::flush();
+        $this->publicCacheVersion->bump();
     }
 
     /**
@@ -144,7 +146,7 @@ final class TemporalAnalyticsService
     }
 
     /**
-     * Build cache key from filter parameters.
+     * Build cache key from the public cache version and filter parameters.
      *
      * @param  string|null  $city  City filter
      * @param  string|null  $venueUuid  Venue UUID filter
@@ -153,8 +155,9 @@ final class TemporalAnalyticsService
     private function buildCacheKey(?string $city, ?string $venueUuid, int $periodDays): string
     {
         return sprintf(
-            '%s%s:%s:%d',
+            '%sv%d:%s:%s:%d',
             self::CACHE_KEY_PREFIX,
+            $this->publicCacheVersion->current(),
             $city ?? 'all',
             $venueUuid ?? 'all',
             $periodDays,

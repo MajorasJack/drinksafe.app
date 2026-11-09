@@ -5,24 +5,33 @@ declare(strict_types=1);
 namespace DrinkSafe\Reports\Observers;
 
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Services\SafetyScoreService;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
 /**
  * ReportObserver
  *
  * Observes Report model events to maintain data integrity and cache consistency.
  * Automatically invalidates venue safety score cache when reports are created,
- * updated, or deleted.
+ * updated, or deleted, and clears the public heatmap and analytics caches
+ * when a report's status changes.
+ *
+ * Runs after the surrounding transaction commits, so a rolled-back review
+ * never clears a cache, and a cache can't be rebuilt from data that hasn't
+ * committed yet.
  */
-final class ReportObserver
+final class ReportObserver implements ShouldHandleEventsAfterCommit
 {
     /**
      * Create a new observer instance.
      *
      * @param  SafetyScoreService  $safetyScoreService  Service for managing safety score cache
+     * @param  PublicCacheVersion  $publicCacheVersion  Version of the heatmap and analytics caches
      */
     public function __construct(
         private readonly SafetyScoreService $safetyScoreService,
+        private readonly PublicCacheVersion $publicCacheVersion,
     ) {}
 
     /**
@@ -42,7 +51,9 @@ final class ReportObserver
      * Handle the Report "updated" event.
      *
      * Invalidates the venue's safety score cache if the report's
-     * venue, incident date or review status has changed.
+     * venue, incident date or review status has changed. A status change
+     * also clears the public heatmap and analytics caches, so a takedown
+     * disappears from them straight away.
      *
      * @param  Report  $report  The updated report
      */
@@ -51,10 +62,15 @@ final class ReportObserver
         if ($report->wasChanged(['venue_uuid', 'incident_date', 'status'])) {
             $this->invalidateVenueScore($report);
 
-            $originalVenueUuid = $report->getOriginal('venue_uuid');
-            if ($originalVenueUuid !== null && $originalVenueUuid !== $report->venue_uuid) {
-                $this->safetyScoreService->invalidateScore($originalVenueUuid);
+            // after a commit, getOriginal() already holds the new venue
+            $previousVenueUuid = $report->getPrevious()['venue_uuid'] ?? null;
+            if ($previousVenueUuid !== null) {
+                $this->safetyScoreService->invalidateScore($previousVenueUuid);
             }
+        }
+
+        if ($report->wasChanged('status')) {
+            $this->publicCacheVersion->bump();
         }
     }
 

@@ -13,7 +13,7 @@ use Tests\TestCase;
 uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->service = new HeatmapService;
+    $this->service = app(HeatmapService::class);
 });
 
 describe('HeatmapService', function (): void {
@@ -328,7 +328,7 @@ describe('HeatmapService', function (): void {
                 west: -0.2,
             );
 
-            expect(Cache::has('heatmap:51.6:51.4:0:-0.2:30'))->toBeTrue();
+            expect(Cache::has('heatmap:v1:51.6:51.4:0:-0.2:30'))->toBeTrue();
         });
 
         it('returns cached result on subsequent calls', function (): void {
@@ -367,8 +367,8 @@ describe('HeatmapService', function (): void {
             $this->service->getHeatmapData(north: 51.6, south: 51.4, east: 0.0, west: -0.2, periodDays: 30);
             $this->service->getHeatmapData(north: 51.7, south: 51.5, east: 0.0, west: -0.2, periodDays: 30);
 
-            expect(Cache::has('heatmap:51.6:51.4:0:-0.2:30'))->toBeTrue()
-                ->and(Cache::has('heatmap:51.7:51.5:0:-0.2:30'))->toBeTrue();
+            expect(Cache::has('heatmap:v1:51.6:51.4:0:-0.2:30'))->toBeTrue()
+                ->and(Cache::has('heatmap:v1:51.7:51.5:0:-0.2:30'))->toBeTrue();
         });
 
         it('uses different cache keys for different periods', function (): void {
@@ -381,8 +381,8 @@ describe('HeatmapService', function (): void {
             $this->service->getHeatmapData(north: 51.6, south: 51.4, east: 0.0, west: -0.2, periodDays: 7);
             $this->service->getHeatmapData(north: 51.6, south: 51.4, east: 0.0, west: -0.2, periodDays: 30);
 
-            expect(Cache::has('heatmap:51.6:51.4:0:-0.2:7'))->toBeTrue()
-                ->and(Cache::has('heatmap:51.6:51.4:0:-0.2:30'))->toBeTrue();
+            expect(Cache::has('heatmap:v1:51.6:51.4:0:-0.2:7'))->toBeTrue()
+                ->and(Cache::has('heatmap:v1:51.6:51.4:0:-0.2:30'))->toBeTrue();
         });
     });
 
@@ -396,11 +396,11 @@ describe('HeatmapService', function (): void {
 
             $this->service->getHeatmapData(north: 51.6, south: 51.4, east: 0.0, west: -0.2, periodDays: 30);
 
-            expect(Cache::has('heatmap:51.6:51.4:0:-0.2:30'))->toBeTrue();
+            expect(Cache::has('heatmap:v1:51.6:51.4:0:-0.2:30'))->toBeTrue();
 
             $this->service->invalidateCacheForBounds(51.6, 51.4, 0.0, -0.2, 30);
 
-            expect(Cache::has('heatmap:51.6:51.4:0:-0.2:30'))->toBeFalse();
+            expect(Cache::has('heatmap:v1:51.6:51.4:0:-0.2:30'))->toBeFalse();
         });
     });
 

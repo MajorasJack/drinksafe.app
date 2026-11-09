@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Reports\Services\ReportService;
+use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
@@ -432,7 +435,7 @@ describe('HeatmapController', function (): void {
                 'west' => -0.2,
             ]));
 
-            expect(Cache::has('heatmap:51.6:51.4:0:-0.2:30'))->toBeTrue();
+            expect(Cache::has('heatmap:v1:51.6:51.4:0:-0.2:30'))->toBeTrue();
         });
     });
 
@@ -471,5 +474,31 @@ describe('HeatmapController review queue', function (): void {
         $response = $this->getJson(route('api.heatmap', ['north' => 51.6, 'south' => 51.4, 'east' => 0.0, 'west' => -0.2]));
 
         $response->assertOk()->assertJsonCount(0, 'data.points');
+    });
+});
+
+describe('HeatmapController cache invalidation', function (): void {
+    it('serves fresh heatmap data after a report is taken down', function (): void {
+        $venue = Venue::factory()->create(['latitude' => 51.5, 'longitude' => -0.1]);
+        $reports = Report::factory()->count(3)->for($venue, 'venue')->daysAgo(15)->create();
+        $this->getJson(route('api.heatmap', ['north' => 51.6, 'south' => 51.4, 'east' => 0.0, 'west' => -0.2]))
+            ->assertJsonCount(1, 'data.points');
+
+        app(ReportService::class)->reviewReport(uuid: $reports->first()->uuid, status: ReportStatus::Rejected);
+
+        $this->getJson(route('api.heatmap', ['north' => 51.6, 'south' => 51.4, 'east' => 0.0, 'west' => -0.2]))
+            ->assertOk()
+            ->assertJsonCount(0, 'data.points');
+    });
+
+    it('does not clear rate limiter counters when public caches are invalidated', function (): void {
+        $remainingBefore = $this->getJson(route('api.heatmap', ['north' => 51.6, 'south' => 51.4, 'east' => 0.0, 'west' => -0.2]))
+            ->headers->get('X-RateLimit-Remaining');
+
+        app(PublicCacheVersion::class)->bump();
+
+        $this->getJson(route('api.heatmap', ['north' => 51.6, 'south' => 51.4, 'east' => 0.0, 'west' => -0.2]))
+            ->assertOk()
+            ->assertHeader('X-RateLimit-Remaining', (string) ((int) $remainingBefore - 1));
     });
 });
