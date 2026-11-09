@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Reports\Services\ReportService;
 use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
@@ -276,7 +278,7 @@ describe('TemporalAnalyticsController', function (): void {
 
             $this->getJson(route('api.analytics.temporal'));
 
-            expect(Cache::has('temporal_analytics:all:all:90'))->toBeTrue();
+            expect(Cache::has('temporal_analytics:v1:all:all:90'))->toBeTrue();
         });
 
         it('uses separate cache keys for different cities', function (): void {
@@ -289,8 +291,8 @@ describe('TemporalAnalyticsController', function (): void {
             $this->getJson(route('api.analytics.temporal', ['city' => 'London']));
             $this->getJson(route('api.analytics.temporal', ['city' => 'Manchester']));
 
-            expect(Cache::has('temporal_analytics:London:all:90'))->toBeTrue()
-                ->and(Cache::has('temporal_analytics:Manchester:all:90'))->toBeTrue();
+            expect(Cache::has('temporal_analytics:v1:London:all:90'))->toBeTrue()
+                ->and(Cache::has('temporal_analytics:v1:Manchester:all:90'))->toBeTrue();
         });
     });
 
@@ -348,5 +350,17 @@ describe('TemporalAnalyticsController review queue', function (): void {
         $response = $this->getJson(route('api.analytics.temporal'));
 
         $response->assertUnprocessable()->assertJsonPath('actual_count', 5);
+    });
+});
+
+describe('TemporalAnalyticsController cache invalidation', function (): void {
+    it('serves fresh analytics after a report is taken down', function (): void {
+        $venue = Venue::factory()->create();
+        $reports = Report::factory()->count(15)->for($venue, 'venue')->daysAgo(15)->create();
+        $this->getJson(route('api.analytics.temporal'))->assertJsonPath('data.meta.total_reports', 15);
+
+        app(ReportService::class)->reviewReport(uuid: $reports->first()->uuid, status: ReportStatus::Rejected);
+
+        $this->getJson(route('api.analytics.temporal'))->assertOk()->assertJsonPath('data.meta.total_reports', 14);
     });
 });

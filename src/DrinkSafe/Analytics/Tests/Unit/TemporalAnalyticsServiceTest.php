@@ -6,6 +6,7 @@ use DrinkSafe\Analytics\Exceptions\InsufficientDataException;
 use DrinkSafe\Analytics\Services\InsightGeneratorService;
 use DrinkSafe\Analytics\Services\TemporalAnalyticsService;
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -15,7 +16,7 @@ uses(TestCase::class, RefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->insightGenerator = new InsightGeneratorService;
-    $this->service = new TemporalAnalyticsService($this->insightGenerator);
+    $this->service = new TemporalAnalyticsService(insightGenerator: $this->insightGenerator, publicCacheVersion: new PublicCacheVersion);
 });
 
 describe('TemporalAnalyticsService', function (): void {
@@ -213,7 +214,7 @@ describe('TemporalAnalyticsService', function (): void {
 
             $this->service->getTemporalData();
 
-            expect(Cache::has('temporal_analytics:all:all:90'))->toBeTrue();
+            expect(Cache::has('temporal_analytics:v1:all:all:90'))->toBeTrue();
         });
 
         it('returns cached result on subsequent calls', function (): void {
@@ -236,8 +237,8 @@ describe('TemporalAnalyticsService', function (): void {
             $this->service->getTemporalData(city: 'London', periodDays: 30);
             $this->service->getTemporalData(city: 'London', periodDays: 90);
 
-            expect(Cache::has('temporal_analytics:London:all:30'))->toBeTrue()
-                ->and(Cache::has('temporal_analytics:London:all:90'))->toBeTrue();
+            expect(Cache::has('temporal_analytics:v1:London:all:30'))->toBeTrue()
+                ->and(Cache::has('temporal_analytics:v1:London:all:90'))->toBeTrue();
         });
     });
 
@@ -273,11 +274,11 @@ describe('TemporalAnalyticsService', function (): void {
 
             $this->service->getTemporalData(city: 'London', periodDays: 30);
 
-            expect(Cache::has('temporal_analytics:London:all:30'))->toBeTrue();
+            expect(Cache::has('temporal_analytics:v1:London:all:30'))->toBeTrue();
 
             $this->service->invalidateCacheForFilters('London', null, 30);
 
-            expect(Cache::has('temporal_analytics:London:all:30'))->toBeFalse();
+            expect(Cache::has('temporal_analytics:v1:London:all:30'))->toBeFalse();
         });
     });
 });

@@ -10,11 +10,13 @@ use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Notifications\ReportAwaitingReviewNotification;
 use DrinkSafe\Reports\Services\ReportModerationService;
 use DrinkSafe\Reports\Services\ReportService;
+use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Models\Venue;
 use DrinkSafe\Venues\Services\VenueService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -243,6 +245,24 @@ describe('ReportService', function (): void {
         it('throws ModelNotFoundException for an unknown UUID', function (): void {
             expect(fn () => $this->service->reviewReport(uuid: fake()->uuid(), status: ReportStatus::Published))
                 ->toThrow(ModelNotFoundException::class);
+        });
+
+        it('clears caches only after the review transaction commits', function (): void {
+            $report = Report::factory()->pending()->create();
+
+            DB::beginTransaction();
+            $this->service->reviewReport(uuid: $report->uuid, status: ReportStatus::Published);
+            DB::rollBack();
+
+            expect(app(PublicCacheVersion::class)->current())->toBe(1);
+        });
+
+        it('clears caches once the review commits', function (): void {
+            $report = Report::factory()->pending()->create();
+
+            $this->service->reviewReport(uuid: $report->uuid, status: ReportStatus::Published);
+
+            expect(app(PublicCacheVersion::class)->current())->toBe(2);
         });
     });
 
