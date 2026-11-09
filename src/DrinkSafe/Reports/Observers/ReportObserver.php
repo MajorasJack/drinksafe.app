@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DrinkSafe\Reports\Observers;
 
+use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Services\SafetyScoreService;
@@ -15,7 +16,7 @@ use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
  * Observes Report model events to maintain data integrity and cache consistency.
  * Automatically invalidates venue safety score cache when reports are created,
  * updated, or deleted, and clears the public heatmap and analytics caches
- * when a report's status changes.
+ * when a report's status changes or a published report is deleted or restored.
  *
  * Runs after the surrounding transaction commits, so a rolled-back review
  * never clears a cache, and a cache can't be rebuilt from data that hasn't
@@ -78,26 +79,45 @@ final class ReportObserver implements ShouldHandleEventsAfterCommit
      * Handle the Report "deleted" event.
      *
      * Invalidates the venue's safety score cache so the next request
-     * will compute a fresh score without the deleted report.
+     * will compute a fresh score without the deleted report, and clears the
+     * public caches if the report was published.
      *
      * @param  Report  $report  The deleted report
      */
     public function deleted(Report $report): void
     {
         $this->invalidateVenueScore($report);
+        $this->invalidatePublicCachesIfPublished($report);
     }
 
     /**
      * Handle the Report "restored" event.
      *
      * Invalidates the venue's safety score cache when a soft-deleted
-     * report is restored.
+     * report is restored, and clears the public caches if the report is
+     * published.
      *
      * @param  Report  $report  The restored report
      */
     public function restored(Report $report): void
     {
         $this->invalidateVenueScore($report);
+        $this->invalidatePublicCachesIfPublished($report);
+    }
+
+    /**
+     * Clear the heatmap and analytics caches when a published report comes or goes.
+     *
+     * Pending and rejected reports never appear there, so their deletion
+     * leaves the caches alone.
+     *
+     * @param  Report  $report  The deleted or restored report
+     */
+    private function invalidatePublicCachesIfPublished(Report $report): void
+    {
+        if ($report->status === ReportStatus::Published) {
+            $this->publicCacheVersion->bump();
+        }
     }
 
     /**

@@ -12,8 +12,11 @@ use Illuminate\Support\Facades\Cache;
  * A version number that the heatmap and temporal analytics caches put in
  * their keys. Bumping it makes every existing entry unreachable at once, so
  * those caches can be cleared without flushing the whole store, which would
- * also wipe rate limiter counters and sessions. Old entries expire on their
- * own TTL.
+ * also wipe rate limiter counters and sessions.
+ *
+ * Nothing deletes the old entries. On the database store an expired row is
+ * only removed when the same key is read again, and nothing reads an old
+ * version's keys, so those rows stay in the `cache` table.
  */
 final class PublicCacheVersion
 {

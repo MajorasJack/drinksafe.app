@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
+use DrinkSafe\Analytics\Services\TemporalAnalyticsService;
+use DrinkSafe\Heatmap\Services\HeatmapService;
 use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Services\ReportService;
-use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
@@ -495,7 +496,8 @@ describe('HeatmapController cache invalidation', function (): void {
         $remainingBefore = $this->getJson(route('api.heatmap', ['north' => 51.6, 'south' => 51.4, 'east' => 0.0, 'west' => -0.2]))
             ->headers->get('X-RateLimit-Remaining');
 
-        app(PublicCacheVersion::class)->bump();
+        app(HeatmapService::class)->invalidateCache();
+        app(TemporalAnalyticsService::class)->invalidateCache();
 
         $this->getJson(route('api.heatmap', ['north' => 51.6, 'south' => 51.4, 'east' => 0.0, 'west' => -0.2]))
             ->assertOk()

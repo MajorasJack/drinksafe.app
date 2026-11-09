@@ -29,3 +29,28 @@ it('leaves the public caches alone when a report changes without a status change
 
     expect(Cache::get('public-cache-version', 1))->toBe(1);
 });
+
+it('clears the public caches when a published report is deleted', function (): void {
+    $report = Report::factory()->create();
+
+    $report->delete();
+
+    expect(Cache::get('public-cache-version'))->toBe(2);
+});
+
+it('clears the public caches when a published report is restored', function (): void {
+    $report = Report::factory()->create();
+    $report->delete();
+
+    $report->restore();
+
+    expect(Cache::get('public-cache-version'))->toBe(3);
+});
+
+it('leaves the public caches alone when a pending report is deleted', function (): void {
+    $report = Report::factory()->pending()->create();
+
+    $report->delete();
+
+    expect(Cache::get('public-cache-version', 1))->toBe(1);
+});
