@@ -12,9 +12,11 @@ use DrinkSafe\Reports\Notifications\ReportAwaitingReviewNotification;
 use DrinkSafe\Reports\Services\ReportService;
 use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Models\Venue;
+use DrinkSafe\Venues\Services\SafetyScoreService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -579,6 +581,29 @@ describe('ReportService admin-unpublished venues', function (): void {
         $this->assertDatabaseHas('venues', ['uuid' => $venue->uuid, 'unpublished_at' => null]);
     });
 
+    it('clears the venue safety score when it hides a venue whose report was already rejected', function (): void {
+        $venue = Venue::factory()->create();
+        $report = Report::factory()->for($venue, 'venue')->rejected()->create();
+        app(SafetyScoreService::class)->computeScore($venue);
+
+        $this->service->reviewReport(uuid: $report->uuid, status: ReportStatus::Rejected, hideVenueIfEmpty: true);
+
+        expect(Cache::has(sprintf('venue:safety_score:%s', $venue->uuid)))->toBeFalse();
+    });
+
+    it('keeps the venue safety score until the hide commits', function (): void {
+        $venue = Venue::factory()->create();
+        $report = Report::factory()->for($venue, 'venue')->rejected()->create();
+        app(SafetyScoreService::class)->computeScore($venue);
+
+        DB::beginTransaction();
+        $this->service->reviewReport(uuid: $report->uuid, status: ReportStatus::Rejected, hideVenueIfEmpty: true);
+        $scoreCachedBeforeCommit = Cache::has(sprintf('venue:safety_score:%s', $venue->uuid));
+        DB::commit();
+
+        expect($scoreCachedBeforeCommit)->toBeTrue();
+    });
+
     it('clears the public caches when it hides a venue whose report was already rejected', function (): void {
         $venue = Venue::factory()->create();
         $report = Report::factory()->for($venue, 'venue')->rejected()->create();
@@ -590,16 +615,17 @@ describe('ReportService admin-unpublished venues', function (): void {
 });
 
 describe('ReportService reviewMany', function (): void {
-    it('reviews only the pending reports and returns how many it reviewed', function (): void {
+    it('counts the reports it reviewed and the ones it skipped', function (): void {
         $pending = Report::factory()->pending()->count(2)->create();
         $rejected = Report::factory()->rejected()->create();
+        $blocked = Report::factory()->for(Venue::factory()->unpublishedByAdmin(), 'venue')->pending()->create();
 
-        $reviewedCount = $this->service->reviewMany(
-            uuids: [...$pending->pluck('uuid')->all(), $rejected->uuid, fake()->uuid()],
+        $outcome = $this->service->reviewMany(
+            uuids: [...$pending->pluck('uuid')->all(), $rejected->uuid, fake()->uuid(), $blocked->uuid],
             status: ReportStatus::Published,
         );
 
-        expect($reviewedCount)->toBe(2);
+        expect($outcome)->toBe(['reviewed' => 2, 'not_pending' => 2, 'venue_unpublished' => 1]);
     });
 
     it('leaves reports that are no longer pending alone', function (): void {
@@ -613,7 +639,7 @@ describe('ReportService reviewMany', function (): void {
     it('counts a repeated UUID once', function (): void {
         $report = Report::factory()->pending()->create();
 
-        expect($this->service->reviewMany(uuids: [$report->uuid, $report->uuid], status: ReportStatus::Rejected))->toBe(1);
+        expect($this->service->reviewMany(uuids: [$report->uuid, $report->uuid], status: ReportStatus::Rejected)['reviewed'])->toBe(1);
     });
 
     it('carries on past a report whose venue the admin unpublished', function (): void {

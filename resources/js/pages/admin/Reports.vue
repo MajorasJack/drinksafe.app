@@ -271,7 +271,8 @@ const confirmTakedown = (report: QueuedReport): void => {
                                 class="text-sm font-medium"
                             >
                                 This venue is unpublished. Publish the venue
-                                first.
+                                first. Publishing selected reports skips this
+                                one.
                             </p>
                             <p
                                 v-else-if="report.venue.published_at === null"

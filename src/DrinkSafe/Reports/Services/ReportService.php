@@ -224,19 +224,25 @@ final class ReportService
      *
      * Each report goes through reviewReport() in its own transaction, so one
      * that can't be published (its venue was unpublished by the admin) doesn't
-     * undo the others.
+     * undo the others. An unknown UUID counts as no longer pending.
      *
      * @param  array<int, string>  $uuids  The report UUIDs
      * @param  ReportStatus  $status  The admin's decision
      * @param  array<int, string>  $hideVenueUuids  Venues to hide if a rejection leaves them with no published reports
-     * @return int How many reports were reviewed
+     * @return array{reviewed: int, not_pending: int, venue_unpublished: int} How many reports were reviewed, and how many were skipped and why
      */
-    public function reviewMany(array $uuids, ReportStatus $status, array $hideVenueUuids = []): int
+    public function reviewMany(array $uuids, ReportStatus $status, array $hideVenueUuids = []): array
     {
-        return collect($uuids)
+        $outcomes = collect($uuids)
             ->unique()
-            ->filter(fn (string $uuid): bool => $this->reviewIfPending(uuid: $uuid, status: $status, hideVenueUuids: $hideVenueUuids))
-            ->count();
+            ->map(fn (string $uuid): string => $this->reviewIfPending(uuid: $uuid, status: $status, hideVenueUuids: $hideVenueUuids))
+            ->countBy();
+
+        return [
+            'reviewed' => $outcomes->get('reviewed', 0),
+            'not_pending' => $outcomes->get('not_pending', 0),
+            'venue_unpublished' => $outcomes->get('venue_unpublished', 0),
+        ];
     }
 
     /**
@@ -245,12 +251,12 @@ final class ReportService
      * @param  string  $uuid  The report UUID
      * @param  ReportStatus  $status  The admin's decision
      * @param  array<int, string>  $hideVenueUuids  Venues to hide if a rejection leaves them with no published reports
-     * @return bool Whether the report was reviewed
+     * @return string reviewed, not_pending or venue_unpublished
      */
-    private function reviewIfPending(string $uuid, ReportStatus $status, array $hideVenueUuids): bool
+    private function reviewIfPending(string $uuid, ReportStatus $status, array $hideVenueUuids): string
     {
         try {
-            return DB::transaction(function () use ($uuid, $status, $hideVenueUuids): bool {
+            return DB::transaction(function () use ($uuid, $status, $hideVenueUuids): string {
                 $pendingReport = Report::withoutGlobalScope(PublishedScope::class)
                     ->whereKey($uuid)
                     ->where('status', ReportStatus::Pending)
@@ -258,7 +264,7 @@ final class ReportService
                     ->first();
 
                 if ($pendingReport === null) {
-                    return false;
+                    return 'not_pending';
                 }
 
                 $this->reviewReport(
@@ -267,10 +273,10 @@ final class ReportService
                     hideVenueIfEmpty: in_array($pendingReport->venue_uuid, $hideVenueUuids, true),
                 );
 
-                return true;
+                return 'reviewed';
             });
         } catch (VenueUnpublishedException) {
-            return false;
+            return 'venue_unpublished';
         }
     }
 

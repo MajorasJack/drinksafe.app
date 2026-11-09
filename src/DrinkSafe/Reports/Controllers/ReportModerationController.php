@@ -43,11 +43,19 @@ final class ReportModerationController extends Controller
      * Each report carries whether rejecting it would leave its venue with no
      * published reports, and each pending report carries its abuse flags.
      *
-     * @return Response Inertia response for the review queue
+     * A page past the end, left behind when a review empties the last page,
+     * redirects to the last page that still has reports.
+     *
+     * @return Response|RedirectResponse Inertia response for the review queue
      */
-    public function index(): Response
+    public function index(): Response|RedirectResponse
     {
         $pendingReports = $this->reportService->getPendingReports();
+
+        if ($pendingReports->currentPage() > $pendingReports->lastPage()) {
+            return redirect()->route('admin.reports.index', ['page' => $pendingReports->lastPage()]);
+        }
+
         $reviewedReports = $this->reportService->getRecentlyReviewedReports();
 
         $this->reportFlagService->loadVenueCounts($reviewedReports->concat($pendingReports->items()));
@@ -93,7 +101,7 @@ final class ReportModerationController extends Controller
         }
 
         return redirect()
-            ->route('admin.reports.index')
+            ->to(url()->previous(route('admin.reports.index')))
             ->with('success', $report->status === ReportStatus::Published ? 'Report published.' : 'Report rejected.');
     }
 
@@ -101,23 +109,43 @@ final class ReportModerationController extends Controller
      * Publish or reject several pending reports at once.
      *
      * Reports that are no longer pending are skipped, as are reports that
-     * can't be published because the admin unpublished their venue.
+     * can't be published because the admin unpublished their venue. The
+     * message says how many were skipped and why.
      *
      * @param  BulkReviewReportsRequest  $request  The validated decision and reports
      * @return RedirectResponse Back to the review queue
      */
     public function bulk(BulkReviewReportsRequest $request): RedirectResponse
     {
-        $reviewedCount = $this->reportService->reviewMany(
+        $outcome = $this->reportService->reviewMany(
             uuids: $request->uuids(),
             status: $request->status(),
             hideVenueUuids: $request->hideVenueUuids(),
         );
 
-        $message = sprintf('%d %s %s', $reviewedCount, Str::plural('report', $reviewedCount), $request->status()->value);
+        $skippedReasons = collect([
+            $outcome['venue_unpublished'] > 0 ? sprintf(
+                '%d skipped because %s venue is unpublished. Publish the venue first.',
+                $outcome['venue_unpublished'],
+                $outcome['venue_unpublished'] === 1 ? 'its' : 'their',
+            ) : null,
+            $outcome['not_pending'] > 0 ? sprintf(
+                '%d skipped because %s no longer pending.',
+                $outcome['not_pending'],
+                $outcome['not_pending'] === 1 ? 'it is' : 'they are',
+            ) : null,
+        ])->filter();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => $message]);
+        $message = collect([
+            sprintf('%d %s %s', $outcome['reviewed'], Str::plural('report', $outcome['reviewed']), $request->status()->value),
+            $skippedReasons->implode(' '),
+        ])->filter()->implode('. ');
 
-        return back()->with('status', $message);
+        Inertia::flash('toast', [
+            'type' => $skippedReasons->isEmpty() ? 'success' : 'warning',
+            'message' => $message,
+        ]);
+
+        return redirect()->to(url()->previous(route('admin.reports.index')))->with('status', $message);
     }
 }

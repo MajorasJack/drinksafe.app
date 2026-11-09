@@ -242,6 +242,38 @@ describe('ReportModerationController review queue', function (): void {
         );
     });
 
+    it('sends a page past the end to the last page that still has reports', function (): void {
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+        Report::factory()->pending()->count(51)->create();
+
+        $response = $this->get(route('admin.reports.index', ['page' => 3]));
+
+        $response->assertRedirect(route('admin.reports.index', ['page' => 2]));
+    });
+
+    it('sends a page past the end to page 1 when nothing is pending', function (): void {
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+
+        $response = $this->get(route('admin.reports.index', ['page' => 2]));
+
+        $response->assertRedirect(route('admin.reports.index', ['page' => 1]));
+    });
+
+    it('lands on the last page with reports after a review empties the current one', function (): void {
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+        Report::factory()->pending()->count(50)->create(['created_at' => now()->subDay()]);
+        $lastReport = Report::factory()->pending()->create();
+
+        $response = $this->from(route('admin.reports.index', ['page' => 2]))
+            ->followingRedirects()
+            ->patch(route('admin.reports.update', $lastReport->uuid), ['status' => ReportStatus::Rejected->value]);
+
+        $response->assertOk()->assertInertia(fn ($page) => $page
+            ->where('pending_pagination', ['current_page' => 1, 'last_page' => 1])
+            ->has('pending_reports', 50)
+        );
+    });
+
     it('shows the flags on a pending report', function (): void {
         $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
         $venue = Venue::factory()->atDefaultCoordinates()->create();
@@ -381,8 +413,9 @@ describe('ReportModerationController bulk', function (): void {
             'status' => ReportStatus::Rejected->value,
         ]);
 
-        $response->assertRedirect()->assertSessionHas('status', '2 reports rejected');
-        expect($published->fresh()->status)->toBe(ReportStatus::Published);
+        $response->assertRedirect()->assertSessionHas('status', '2 reports rejected. 2 skipped because they are no longer pending.');
+        expect($published->fresh()->status)->toBe(ReportStatus::Published)
+            ->and(Report::withoutGlobalScopes()->whereKey($pending->modelKeys())->pluck('status')->unique()->all())->toBe([ReportStatus::Rejected]);
     });
 
     it('skips reports whose venue the admin unpublished in a bulk publish', function (): void {
@@ -395,8 +428,25 @@ describe('ReportModerationController bulk', function (): void {
             'status' => ReportStatus::Published->value,
         ]);
 
-        $response->assertRedirect()->assertSessionHas('status', '1 report published');
+        $response->assertRedirect()->assertSessionHas('status', '1 report published. 1 skipped because its venue is unpublished. Publish the venue first.');
         expect(Report::withoutGlobalScopes()->find($blocked->uuid)->status)->toBe(ReportStatus::Pending);
+    });
+
+    it('says how many reports a mixed bulk publish skipped and why', function (): void {
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+        $allowed = Report::factory()->pending()->count(3)->create();
+        $blocked = Report::factory()->for(Venue::factory()->unpublishedByAdmin(), 'venue')->pending()->count(2)->create();
+        $alreadyRejected = Report::factory()->rejected()->create();
+
+        $response = $this->postJson(route('admin.reports.bulk'), [
+            'uuids' => [...$allowed->pluck('uuid')->all(), ...$blocked->pluck('uuid')->all(), $alreadyRejected->uuid],
+            'status' => ReportStatus::Published->value,
+        ]);
+
+        $response->assertRedirect()->assertSessionHas(
+            'status',
+            '3 reports published. 2 skipped because their venue is unpublished. Publish the venue first. 1 skipped because it is no longer pending.',
+        );
     });
 
     it('hides the venues it was asked to when a bulk reject leaves them empty', function (): void {
@@ -416,6 +466,16 @@ describe('ReportModerationController bulk', function (): void {
 
         expect(Venue::find($hiddenVenue->uuid))->toBeNull()
             ->and(Venue::find($keptVenue->uuid))->not->toBeNull();
+    });
+
+    it('returns to the page the bulk review was made from', function (): void {
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+        $report = Report::factory()->pending()->create();
+
+        $response = $this->from(route('admin.reports.index', ['page' => 2]))
+            ->postJson(route('admin.reports.bulk'), ['uuids' => [$report->uuid], 'status' => ReportStatus::Rejected->value]);
+
+        $response->assertRedirect(route('admin.reports.index', ['page' => 2]));
     });
 
     it('refuses to move reports back to pending in bulk', function (): void {
