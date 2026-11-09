@@ -32,7 +32,7 @@ This module manages:
 - **ReportStatus** - Where a report sits in the review queue (Pending, Published, Rejected)
 
 ### Scopes
-- **PublishedScope** - Global scope on Report that limits every query to published reports
+- **PublishedScope** - Global scope on Report that limits every query to published reports about a published venue
 
 ### Policies
 - **ReportPolicy** - `moderate` lets users flagged `is_admin` work the review queue
@@ -79,7 +79,7 @@ Reports are submitted without user accounts or personal information.
 ### Review Queue
 New reports are saved as `pending` and stay off the site until an admin publishes them.
 
-- `PublishedScope` is a global scope on `Report`, so every Eloquent query, relationship, `withCount` and `has('reports')` only sees published reports. Anything that needs the others (the review queue) has to opt out with `Report::withoutGlobalScope(PublishedScope::class)`. Note that `$report->fresh()` ignores global scopes.
+- `PublishedScope` is a global scope on `Report`, so every Eloquent query, relationship, `withCount` and `has('reports')` only sees published reports about a published venue. Unpublishing a venue takes its reports off the site too. Anything that needs the others (the admin pages) has to opt out with `Report::withoutGlobalScope(PublishedScope::class)`. Note that `$report->fresh()` ignores global scopes.
 - `HeatmapService` queries `DB::table('reports')` directly, which skips the scope, so it filters on `status` itself. Any new raw query on `reports` must do the same.
 - `status` is not mass assignable. `ReportService::reviewReport()` sets it with `forceFill`.
 - When a report is created, `ReportService` sends `ReportAwaitingReviewNotification` to `services.reports.alert_email` (`REPORT_ALERT_EMAIL`, default `drinksafe@protonmail.com`). The email has no report text and no venue name. It sends during the request rather than through the queue. If it can't be sent, the report is still saved.

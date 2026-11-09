@@ -184,7 +184,8 @@ final class TemporalAnalyticsService
         $query = Report::query()
             ->join('venues', 'reports.venue_uuid', '=', 'venues.uuid')
             ->where('reports.incident_date', '>=', now()->subDays($periodDays))
-            ->whereNull('reports.deleted_at');
+            ->whereNull('reports.deleted_at')
+            ->whereNotNull('venues.published_at');
 
         if ($city !== null) {
             $query->where('venues.city', $city);

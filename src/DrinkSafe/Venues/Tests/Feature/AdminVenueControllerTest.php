@@ -6,6 +6,7 @@ use App\Models\User;
 use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Scopes\PublishedScope;
+use DrinkSafe\Shared\Controllers\SitemapController;
 use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Models\Venue;
 use DrinkSafe\Venues\Scopes\PublishedVenueScope;
@@ -262,5 +263,125 @@ describe('AdminVenueController publish and unpublish', function (): void {
         $response = $this->postJson(route('admin.venues.publish', fake()->uuid()));
 
         $response->assertNotFound();
+    });
+});
+
+describe('AdminVenueController unpublish and the venue\'s reports', function (): void {
+    it('drops an unpublished venue\'s reports from the heatmap', function (): void {
+        $venue = Venue::factory()->create(['latitude' => 51.5, 'longitude' => -0.1]);
+        Report::factory()->count(3)->for($venue, 'venue')->daysAgo(5)->create();
+
+        $this->postJson(route('admin.venues.unpublish', $venue->uuid));
+        $response = $this->getJson(route('api.heatmap', ['north' => 51.6, 'south' => 51.4, 'east' => 0.0, 'west' => -0.2]));
+
+        $response->assertOk()
+            ->assertJsonPath('data.points', [])
+            ->assertJsonPath('data.total_reports', 0);
+    });
+
+    it('puts a republished venue\'s reports back on the heatmap', function (): void {
+        $venue = Venue::factory()->create(['latitude' => 51.5, 'longitude' => -0.1]);
+        Report::factory()->count(3)->for($venue, 'venue')->daysAgo(5)->create();
+        $this->postJson(route('admin.venues.unpublish', $venue->uuid));
+
+        $this->postJson(route('admin.venues.publish', $venue->uuid));
+        $response = $this->getJson(route('api.heatmap', ['north' => 51.6, 'south' => 51.4, 'east' => 0.0, 'west' => -0.2]));
+
+        $response->assertOk()->assertJsonPath('data.total_reports', 3);
+    });
+
+    it('drops an unpublished venue\'s reports from the temporal analytics', function (): void {
+        $venue = Venue::factory()->create();
+        Report::factory()->count(15)->for($venue, 'venue')->daysAgo(5)->create();
+
+        $this->postJson(route('admin.venues.unpublish', $venue->uuid));
+        $response = $this->getJson(route('api.analytics.temporal'));
+
+        $response->assertUnprocessable()->assertJsonPath('actual_count', 0);
+    });
+
+    it('drops an unpublished venue\'s reports from the reports API', function (): void {
+        $venue = Venue::factory()->create();
+        Report::factory()->count(2)->for($venue, 'venue')->create();
+        $otherReport = Report::factory()->create();
+
+        $this->postJson(route('admin.venues.unpublish', $venue->uuid));
+        $response = $this->getJson(route('api.reports.index'));
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.uuid', $otherReport->uuid);
+    });
+
+    it('returns not found for a report about an unpublished venue', function (): void {
+        $report = Report::factory()->create();
+
+        $this->postJson(route('admin.venues.unpublish', $report->venue_uuid));
+        $response = $this->getJson(route('api.reports.show', ['uuid' => $report->uuid]));
+
+        $response->assertNotFound();
+    });
+
+    it('leaves an unpublished venue\'s reports out of the home page total', function (): void {
+        $venue = Venue::factory()->create();
+        Report::factory()->count(3)->for($venue, 'venue')->create();
+        Report::factory()->count(2)->create();
+
+        $this->postJson(route('admin.venues.unpublish', $venue->uuid));
+        $response = $this->get(route('home'));
+
+        $response->assertOk()->assertInertia(fn (AssertableInertia $page): AssertableInertia => $page
+            ->where('stats.total_reports', 2));
+    });
+
+    it('serves a republished venue\'s reports from the reports API again', function (): void {
+        $venue = Venue::factory()->create();
+        $report = Report::factory()->for($venue, 'venue')->create();
+        $this->postJson(route('admin.venues.unpublish', $venue->uuid));
+
+        $this->postJson(route('admin.venues.publish', $venue->uuid));
+        $response = $this->getJson(route('api.reports.show', ['uuid' => $report->uuid]));
+
+        $response->assertOk()->assertJsonPath('uuid', $report->uuid);
+    });
+
+    it('still lists an unpublished venue\'s reports in the admin report search', function (): void {
+        $report = Report::factory()->create();
+
+        $this->postJson(route('admin.venues.unpublish', $report->venue_uuid));
+        $response = $this->get(route('admin.reports.search'));
+
+        $response->assertOk()->assertInertia(fn (AssertableInertia $page): AssertableInertia => $page
+            ->where('total', 1)
+            ->where('reports.0.uuid', $report->uuid));
+    });
+
+    it('still counts an unpublished venue\'s published reports on the admin venue list', function (): void {
+        $venue = Venue::factory()->create();
+        Report::factory()->count(2)->for($venue, 'venue')->create();
+
+        $this->postJson(route('admin.venues.unpublish', $venue->uuid));
+        $response = $this->get(route('admin.venues.index'));
+
+        $response->assertOk()->assertInertia(fn (AssertableInertia $page): AssertableInertia => $page
+            ->where('venues.0.published_reports_count', 2));
+    });
+
+    it('clears the cached sitemap when a venue is unpublished', function (): void {
+        $venue = Venue::factory()->create();
+        Cache::put(SitemapController::CACHE_KEY, fake()->text());
+
+        $this->postJson(route('admin.venues.unpublish', $venue->uuid));
+
+        expect(Cache::has(SitemapController::CACHE_KEY))->toBeFalse();
+    });
+
+    it('clears the cached sitemap when a venue is published', function (): void {
+        $venue = Venue::factory()->unpublishedByAdmin()->create();
+        Cache::put(SitemapController::CACHE_KEY, fake()->text());
+
+        $this->postJson(route('admin.venues.publish', $venue->uuid));
+
+        expect(Cache::has(SitemapController::CACHE_KEY))->toBeFalse();
     });
 });
