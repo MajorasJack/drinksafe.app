@@ -28,7 +28,7 @@ describe('ReportModerationController', function (): void {
         });
 
         it('lists pending reports oldest first', function (): void {
-            $this->actingAs(User::factory()->admin()->create());
+            $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
             $newerPending = Report::factory()->pending()->create(['created_at' => now()->subHour()]);
             $olderPending = Report::factory()->pending()->create(['created_at' => now()->subDay()]);
 
@@ -43,7 +43,7 @@ describe('ReportModerationController', function (): void {
         });
 
         it('lists recent decisions separately from the pending reports', function (): void {
-            $this->actingAs(User::factory()->admin()->create());
+            $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
             $published = Report::factory()->create(['reviewed_at' => now()->subDay()]);
             $rejected = Report::factory()->rejected()->create(['reviewed_at' => now()->subHour()]);
             Report::factory()->pending()->create();
@@ -59,7 +59,7 @@ describe('ReportModerationController', function (): void {
         });
 
         it('shows the report text and venue so the admin can review them', function (): void {
-            $this->actingAs(User::factory()->admin()->create());
+            $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
             $report = Report::factory()->pending()->create();
 
             $response = $this->get(route('admin.reports.index'));
@@ -99,7 +99,7 @@ describe('ReportModerationController', function (): void {
         });
 
         it('publishes a report', function (): void {
-            $this->actingAs(User::factory()->admin()->create());
+            $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
             $report = Report::factory()->pending()->create();
 
             $response = $this->patchJson(route('admin.reports.update', $report->uuid), ['status' => ReportStatus::Published->value]);
@@ -109,7 +109,7 @@ describe('ReportModerationController', function (): void {
         });
 
         it('rejects a report', function (): void {
-            $this->actingAs(User::factory()->admin()->create());
+            $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
             $report = Report::factory()->pending()->create();
 
             $response = $this->patchJson(route('admin.reports.update', $report->uuid), ['status' => ReportStatus::Rejected->value]);
@@ -119,7 +119,7 @@ describe('ReportModerationController', function (): void {
         });
 
         it('can take down a report that was already published', function (): void {
-            $this->actingAs(User::factory()->admin()->create());
+            $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
             $report = Report::factory()->create();
 
             $this->patchJson(route('admin.reports.update', $report->uuid), ['status' => ReportStatus::Rejected->value]);
@@ -128,7 +128,7 @@ describe('ReportModerationController', function (): void {
         });
 
         it('refuses to move a report back to pending', function (): void {
-            $this->actingAs(User::factory()->admin()->create());
+            $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
             $report = Report::factory()->create();
 
             $response = $this->patchJson(route('admin.reports.update', $report->uuid), ['status' => ReportStatus::Pending->value]);
@@ -137,7 +137,7 @@ describe('ReportModerationController', function (): void {
         });
 
         it('requires a status', function (): void {
-            $this->actingAs(User::factory()->admin()->create());
+            $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
             $report = Report::factory()->pending()->create();
 
             $response = $this->patchJson(route('admin.reports.update', $report->uuid), []);
@@ -146,7 +146,7 @@ describe('ReportModerationController', function (): void {
         });
 
         it('returns 404 for an unknown report', function (): void {
-            $this->actingAs(User::factory()->admin()->create());
+            $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
 
             $response = $this->patchJson(route('admin.reports.update', fake()->uuid()), ['status' => ReportStatus::Published->value]);
 
@@ -157,7 +157,7 @@ describe('ReportModerationController', function (): void {
 
 describe('ReportModerationController unpublished venues', function (): void {
     it('shows the venue name for a pending report about an unpublished venue', function (): void {
-        $this->actingAs(User::factory()->admin()->create());
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
         $venue = Venue::factory()->unpublished()->create();
         Report::factory()->for($venue, 'venue')->pending()->create();
 
@@ -167,7 +167,7 @@ describe('ReportModerationController unpublished venues', function (): void {
     });
 
     it('shows the address of an unpublished venue and marks it as new', function (): void {
-        $this->actingAs(User::factory()->admin()->create());
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
         $venue = Venue::factory()->unpublished()->create(['address' => fake()->address()]);
         Report::factory()->for($venue, 'venue')->pending()->create();
 
@@ -180,7 +180,7 @@ describe('ReportModerationController unpublished venues', function (): void {
     });
 
     it('makes the venue page available once its first report is published', function (): void {
-        $this->actingAs(User::factory()->admin()->create());
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
         $venue = Venue::factory()->unpublished()->create();
         $report = Report::factory()->for($venue, 'venue')->pending()->create();
 
@@ -192,7 +192,7 @@ describe('ReportModerationController unpublished venues', function (): void {
 
 describe('ReportModerationController safety score cache', function (): void {
     it('updates a cached safety score when a report is published', function (): void {
-        $this->actingAs(User::factory()->admin()->create());
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
         $venue = Venue::factory()->create();
         $report = Report::factory()->for($venue, 'venue')->daysAgo(15)->pending()->create();
         $this->getJson(route('api.venues.safety-score', $venue->uuid))->assertJsonPath('data.report_count_30d', 0);

@@ -1,6 +1,15 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { LayoutGrid } from 'lucide-vue-next';
+import { Link, usePage } from '@inertiajs/vue3';
+import {
+    ClipboardCheck,
+    FileText,
+    LayoutGrid,
+    MapPin,
+    QrCode,
+    Table,
+} from 'lucide-vue-next';
+import type { LucideIcon } from 'lucide-vue-next';
+import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -13,16 +22,27 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
+import { dashboard } from '@/routes/admin';
 import type { NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
+const page = usePage();
+
+const adminNavIcons: Record<string, LucideIcon> = {
+    'admin.dashboard': LayoutGrid,
+    'admin.reports.index': ClipboardCheck,
+    'admin.reports.search': FileText,
+    'admin.venues.index': MapPin,
+    'admin.partners.index': QrCode,
+    'admin.coverage': Table,
+};
+
+const mainNavItems = computed<NavItem[]>(() =>
+    page.props.admin.nav.map((item) => ({
+        title: item.title,
+        href: item.href,
+        icon: adminNavIcons[item.name],
+    })),
+);
 </script>
 
 <template>
