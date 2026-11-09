@@ -249,6 +249,7 @@ final class HeatmapService
             ->where('reports.incident_date', '>=', now()->subDays($periodDays))
             ->whereNull('reports.deleted_at')
             ->where('reports.status', ReportStatus::Published->value)
+            ->whereNotNull('venues.published_at')
             ->whereBetween('venues.latitude', [$south, $north])
             ->whereBetween('venues.longitude', [$west, $east])
             ->selectRaw(

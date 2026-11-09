@@ -24,7 +24,7 @@ final class SitemapController extends Controller
     /**
      * Cache key for the rendered sitemap XML.
      */
-    private const CACHE_KEY = 'sitemap.xml';
+    public const CACHE_KEY = 'sitemap.xml';
 
     /**
      * Static public routes to include, keyed by route name with their

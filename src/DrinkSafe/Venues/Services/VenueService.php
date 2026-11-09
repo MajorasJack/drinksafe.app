@@ -8,6 +8,7 @@ use DateTimeInterface;
 use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Scopes\PublishedScope;
+use DrinkSafe\Shared\Controllers\SitemapController;
 use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Exceptions\VenueDuplicateException;
 use DrinkSafe\Venues\Exceptions\VenueNotFoundException;
@@ -17,6 +18,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -172,7 +174,9 @@ final class VenueService
     {
         return Venue::withoutGlobalScope(PublishedVenueScope::class)
             ->withCount([
-                'reports as published_reports_count',
+                'reports as published_reports_count' => fn (Builder $query): Builder => $query
+                    ->withoutGlobalScope(PublishedScope::class)
+                    ->where('status', ReportStatus::Published),
                 'reports as pending_reports_count' => fn (Builder $query): Builder => $query
                     ->withoutGlobalScope(PublishedScope::class)
                     ->where('status', ReportStatus::Pending),
@@ -304,7 +308,7 @@ final class VenueService
     }
 
     /**
-     * Clear the venue's cached safety score and the heatmap caches once the transaction commits.
+     * Clear the venue's cached safety score, the heatmap caches and the sitemap once the transaction commits.
      *
      * @param  Venue  $venue  The venue that moved, or was published or unpublished
      */
@@ -313,6 +317,7 @@ final class VenueService
         DB::afterCommit(function () use ($venue): void {
             $this->safetyScoreService->invalidateScore($venue->uuid);
             $this->publicCacheVersion->bump();
+            Cache::forget(SitemapController::CACHE_KEY);
         });
     }
 }

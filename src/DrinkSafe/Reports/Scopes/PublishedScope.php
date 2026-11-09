@@ -12,9 +12,11 @@ use Illuminate\Database\Eloquent\Scope;
 /**
  * PublishedScope
  *
- * Limits every Report query to published reports, so relationships, counts
- * and joins on the public site can't show a report that hasn't been reviewed.
- * The moderation queue opts out with withoutGlobalScope(PublishedScope::class).
+ * Limits every Report query to published reports about a published venue, so
+ * relationships, counts and joins on the public site can't show a report that
+ * hasn't been reviewed, or one whose venue the admin has taken off the site.
+ * The venue check runs through PublishedVenueScope inside whereHas(). The
+ * admin pages opt out with withoutGlobalScope(PublishedScope::class).
  */
 final class PublishedScope implements Scope
 {
@@ -25,6 +27,6 @@ final class PublishedScope implements Scope
      */
     public function apply(Builder $builder, Model $model): void
     {
-        $builder->where($model->qualifyColumn('status'), ReportStatus::Published);
+        $builder->where($model->qualifyColumn('status'), ReportStatus::Published)->whereHas('venue');
     }
 }
