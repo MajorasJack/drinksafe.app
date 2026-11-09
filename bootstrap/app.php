@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnforceProduction;
+use App\Http\Middleware\EnsureTwoFactorConfirmed;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -30,6 +31,8 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
         ]);
+
+        $middleware->alias(['two-factor.confirmed' => EnsureTwoFactorConfirmed::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

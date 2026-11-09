@@ -20,8 +20,8 @@ use function Laravel\Prompts\text;
  *
  * Gives a user the admin flag so they can work the report review queue. The
  * site has no registration or password reset, so this command is the only way
- * to create an account or replace a lost password. --revoke takes the flag
- * away again.
+ * to create an account, replace a lost password or turn off two-factor for an
+ * admin who has lost their device. --revoke takes the flag away again.
  */
 final class MakeAdminCommand extends Command
 {
@@ -35,7 +35,8 @@ final class MakeAdminCommand extends Command
     protected $signature = 'drinksafe:make-admin
         {email : Email address of the admin, created if no user has it yet}
         {--revoke : Remove the admin flag instead of setting it}
-        {--password : Set a new password for an existing user}';
+        {--password : Set a new password for an existing user}
+        {--reset-two-factor : Turn off two-factor for an existing user so they can set it up again}';
 
     /**
      * The console command description.
@@ -55,21 +56,24 @@ final class MakeAdminCommand extends Command
         $email = Str::lower(trim($this->argument('email')));
         $user = User::where('email', $email)->first();
 
+        $chosenOptions = array_filter([$this->option('revoke'), $this->option('password'), $this->option('reset-two-factor')]);
+
         return match (true) {
-            $this->option('revoke') && $this->option('password') => $this->failForConflictingOptions(),
-            $user === null && ($this->option('revoke') || $this->option('password')) => $this->failForMissingUser($email),
+            count($chosenOptions) > 1 => $this->failForConflictingOptions(),
+            $user === null && $chosenOptions !== [] => $this->failForMissingUser($email),
             $user === null => $this->createAdmin($email),
             $this->option('password') => $this->resetPassword($user),
+            $this->option('reset-two-factor') => $this->resetTwoFactor($user),
             default => $this->setAdminFlag($user),
         };
     }
 
     /**
-     * Refuse --revoke and --password together, as the command does one or the other.
+     * Refuse more than one of --revoke, --password and --reset-two-factor, as the command does one at a time.
      */
     private function failForConflictingOptions(): int
     {
-        $this->error('Use either --revoke or --password, not both.');
+        $this->error('Use only one of --revoke, --password and --reset-two-factor.');
 
         return self::FAILURE;
     }
@@ -102,10 +106,7 @@ final class MakeAdminCommand extends Command
      * Replace an existing user's password, leaving the admin flag as it is.
      *
      * A lost or stolen password is the reason to run this, so it also ends
-     * every login made with the old one. Rotating the remember token stops
-     * remember-me cookies, deleting session rows covers the database driver,
-     * and the `auth.session` middleware logs out cookie sessions on their next
-     * request.
+     * every login made with the old one.
      */
     private function resetPassword(User $user): int
     {
@@ -115,18 +116,50 @@ final class MakeAdminCommand extends Command
             return self::FAILURE;
         }
 
-        $user->forceFill([
-            'password' => $this->askForPassword(),
-            'remember_token' => Str::random(60),
-        ])->save();
-
-        if (config('session.driver') === 'database') {
-            DB::table(config('session.table'))->where('user_id', $user->id)->delete();
-        }
+        $this->updateAndEndSessions($user, ['password' => $this->askForPassword()]);
 
         $this->info(sprintf('Updated the password for %s.', $user->email));
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Turn off two-factor for a user who has lost their device.
+     *
+     * Remember-me cookies and database sessions are ended in case the device
+     * was stolen. A cookie session stays logged in, as the password has not
+     * changed, but the admin area refuses it until two-factor is set up again,
+     * and that asks for the password.
+     */
+    private function resetTwoFactor(User $user): int
+    {
+        $this->updateAndEndSessions($user, [
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
+            'two_factor_confirmed_at' => null,
+        ]);
+
+        $this->info(sprintf('Turned off two-factor for %s. They will be asked to set it up again at their next admin visit.', $user->email));
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Save the given attributes and end every existing login of the user.
+     *
+     * Rotating the remember token stops remember-me cookies, and deleting
+     * session rows covers the database driver. The `auth.session` middleware
+     * logs out cookie sessions on their next request when the password changes.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private function updateAndEndSessions(User $user, array $attributes): void
+    {
+        $user->forceFill([...$attributes, 'remember_token' => Str::random(60)])->save();
+
+        if (config('session.driver') === 'database') {
+            DB::table(config('session.table'))->where('user_id', $user->id)->delete();
+        }
     }
 
     /**

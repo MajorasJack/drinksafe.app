@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | API routes for the DrinkSafe application, organised by module, prefixed
-| with 'api/'. The admin review queue sits at the end under 'admin/'.
+| with 'api/'. The admin area sits at the end under 'admin/'.
 |
 */
 
@@ -74,16 +74,14 @@ Route::prefix('api')->group(function (): void {
         ->name('api.heatmap');
 });
 
-// Reports Module Admin Routes
-Route::prefix('admin/reports')
-    ->middleware(['auth', 'auth.session'])
-    ->name('admin.reports.')
+// Admin Routes
+// `can` runs before the two-factor check so users who are not admins get a 403, not a setup prompt.
+Route::prefix('admin')
+    ->middleware(['auth', 'auth.session', sprintf('can:moderate,%s', Report::class), 'two-factor.confirmed'])
+    ->name('admin.')
     ->group(function (): void {
-        Route::get('/', [ReportModerationController::class, 'index'])
-            ->can('moderate', Report::class)
-            ->name('index');
+        Route::inertia('/', 'admin/Dashboard')->name('dashboard');
 
-        Route::patch('/{uuid}', [ReportModerationController::class, 'update'])
-            ->can('moderate', Report::class)
-            ->name('update');
+        Route::get('/reports', [ReportModerationController::class, 'index'])->name('reports.index');
+        Route::patch('/reports/{uuid}', [ReportModerationController::class, 'update'])->name('reports.update');
     });

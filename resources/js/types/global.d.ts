@@ -1,4 +1,4 @@
-import type { Auth } from '@/types/auth';
+import type { AdminNavItem, Auth } from '@/types/auth';
 
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
@@ -22,6 +22,9 @@ declare module '@inertiajs/core' {
                 warning?: string;
             };
             auth: Auth;
+            admin: {
+                nav: AdminNavItem[];
+            };
             app: {
                 name: string;
                 url: string;

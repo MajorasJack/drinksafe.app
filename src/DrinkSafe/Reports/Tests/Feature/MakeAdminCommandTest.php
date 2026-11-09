@@ -192,7 +192,7 @@ describe('drinksafe:make-admin', function (): void {
     });
 
     it('logs out a session made before --password on its next request', function (): void {
-        $user = User::factory()->admin()->create();
+        $user = User::factory()->admin()->withTwoFactor()->create();
         $password = fake()->password(minLength: 12);
 
         $this->artisan('drinksafe:make-admin', ['email' => $user->email, '--password' => true])
@@ -207,7 +207,7 @@ describe('drinksafe:make-admin', function (): void {
     });
 
     it('keeps a session made with the current password logged in', function (): void {
-        $user = User::factory()->admin()->create();
+        $user = User::factory()->admin()->withTwoFactor()->create();
 
         $this->actingAs($user)
             ->withSession(['password_hash_web' => $user->getAuthPassword()])
@@ -215,11 +215,60 @@ describe('drinksafe:make-admin', function (): void {
             ->assertOk();
     });
 
+    it('resets two-factor for an admin', function (): void {
+        $user = User::factory()->admin()->withTwoFactor()->create(['remember_token' => Str::random(60)]);
+
+        $this->artisan('drinksafe:make-admin', ['email' => $user->email, '--reset-two-factor' => true, '--no-interaction' => true])
+            ->expectsOutput(sprintf('Turned off two-factor for %s. They will be asked to set it up again at their next admin visit.', $user->email))
+            ->assertSuccessful();
+
+        expect($user->fresh())
+            ->two_factor_secret->toBeNull()
+            ->two_factor_recovery_codes->toBeNull()
+            ->two_factor_confirmed_at->toBeNull()
+            ->remember_token->not->toBe($user->remember_token);
+    });
+
+    it('deletes the database sessions of the user with --reset-two-factor', function (): void {
+        config(['session.driver' => 'database']);
+        $user = User::factory()->admin()->withTwoFactor()->create();
+        $otherUser = User::factory()->create();
+        DB::table('sessions')->insert([
+            ['id' => Str::random(40), 'user_id' => $user->id, 'payload' => '', 'last_activity' => now()->timestamp],
+            ['id' => Str::random(40), 'user_id' => $otherUser->id, 'payload' => '', 'last_activity' => now()->timestamp],
+        ]);
+
+        $this->artisan('drinksafe:make-admin', ['email' => $user->email, '--reset-two-factor' => true])->assertSuccessful();
+
+        $this->assertDatabaseMissing('sessions', ['user_id' => $user->id]);
+        $this->assertDatabaseHas('sessions', ['user_id' => $otherUser->id]);
+    });
+
+    it('fails to reset two-factor when no user has the email', function (): void {
+        $email = fake()->safeEmail();
+
+        $this->artisan('drinksafe:make-admin', ['email' => $email, '--reset-two-factor' => true])
+            ->expectsOutput(sprintf('No user found with the email %s.', $email))
+            ->assertFailed();
+
+        $this->assertDatabaseMissing('users', ['email' => $email]);
+    });
+
+    it('refuses --reset-two-factor together with another option', function (string $otherOption): void {
+        $user = User::factory()->admin()->withTwoFactor()->create();
+
+        $this->artisan('drinksafe:make-admin', ['email' => $user->email, '--reset-two-factor' => true, $otherOption => true])
+            ->expectsOutput('Use only one of --revoke, --password and --reset-two-factor.')
+            ->assertFailed();
+
+        expect($user->fresh()->two_factor_confirmed_at)->not->toBeNull();
+    })->with(['--revoke', '--password']);
+
     it('refuses --revoke together with --password', function (): void {
         $user = User::factory()->admin()->create();
 
         $this->artisan('drinksafe:make-admin', ['email' => $user->email, '--revoke' => true, '--password' => true])
-            ->expectsOutput('Use either --revoke or --password, not both.')
+            ->expectsOutput('Use only one of --revoke, --password and --reset-two-factor.')
             ->assertFailed();
 
         expect($user->fresh()->is_admin)->toBeTrue();

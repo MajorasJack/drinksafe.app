@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use DrinkSafe\Shared\Seo\Seo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -18,6 +19,23 @@ class HandleInertiaRequests extends Middleware
      * @var string
      */
     protected $rootView = 'app';
+
+    /**
+     * Admin sidebar items, by route name.
+     *
+     * Each one is shared only once its route exists, so a page can be added to
+     * this list before it is built.
+     *
+     * @var array<string, string>
+     */
+    private const array ADMIN_NAV = [
+        'admin.dashboard' => 'Dashboard',
+        'admin.reports.index' => 'Review queue',
+        'admin.reports.search' => 'Reports',
+        'admin.venues.index' => 'Venues',
+        'admin.partners.index' => 'Partners',
+        'admin.coverage' => 'Coverage',
+    ];
 
     /**
      * Determines the current asset version.
@@ -47,8 +65,11 @@ class HandleInertiaRequests extends Middleware
             ],
             'auth' => [
                 'user' => fn (): ?array => $request->user()
-                    ? $request->user()->only(['id', 'name', 'email'])
+                    ? $request->user()->only(['id', 'name', 'email', 'is_admin'])
                     : null,
+            ],
+            'admin' => [
+                'nav' => fn (): array => $request->user()?->is_admin ? $this->adminNav() : [],
             ],
             'app' => [
                 'name' => config('app.name'),
@@ -63,5 +84,19 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
+    }
+
+    /**
+     * Build the admin sidebar items whose routes exist.
+     *
+     * @return list<array{name: string, title: string, href: string}>
+     */
+    private function adminNav(): array
+    {
+        return collect(self::ADMIN_NAV)
+            ->filter(fn (string $title, string $routeName): bool => Route::has($routeName))
+            ->map(fn (string $title, string $routeName): array => ['name' => $routeName, 'title' => $title, 'href' => route($routeName, [], false)])
+            ->values()
+            ->all();
     }
 }
