@@ -17,7 +17,12 @@ export interface Venue {
     address: string | null;
     latitude: number;
     longitude: number;
+    /** Only sent to admins */
     published_at?: string | null;
+    /** Only sent to admins: when an admin took the venue off the site */
+    unpublished_at?: string | null;
+    /** Only sent to admins: whether the venue sits on the default for submissions with no location */
+    is_at_default_coordinates?: boolean;
     reports_count?: number;
     reports?: Report[];
     created_at: string;

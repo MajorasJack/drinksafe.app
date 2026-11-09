@@ -83,5 +83,6 @@ Route::prefix('admin')
         Route::inertia('/', 'admin/Dashboard')->name('dashboard');
 
         Route::get('/reports', [ReportModerationController::class, 'index'])->name('reports.index');
+        Route::post('/reports/bulk', [ReportModerationController::class, 'bulk'])->name('reports.bulk');
         Route::patch('/reports/{uuid}', [ReportModerationController::class, 'update'])->name('reports.update');
     });

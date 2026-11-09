@@ -85,3 +85,22 @@ export type ModeratedReport = Required<
     Pick<Report, 'venue' | 'status' | 'reviewed_at'>
 > &
     Report;
+
+/**
+ * Abuse signal shown as a badge on a pending report, matching ReportFlagService
+ */
+export type ReportFlag =
+    | 'personal_details_removed'
+    | 'new_venue_several_pending'
+    | 'venue_report_spike'
+    | 'default_coordinates';
+
+/**
+ * Report as the review queue lists it
+ */
+export type QueuedReport = ModeratedReport & {
+    /** Whether rejecting it leaves its published venue with no published reports */
+    would_empty_venue: boolean;
+    /** Only on pending reports */
+    flags?: ReportFlag[];
+};

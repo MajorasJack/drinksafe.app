@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories\DrinkSafe;
 
+use DrinkSafe\Reports\Services\ReportService;
 use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -132,6 +133,28 @@ final class VenueFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'published_at' => null,
+        ]);
+    }
+
+    /**
+     * State for a venue an admin took off the site.
+     */
+    public function unpublishedByAdmin(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'published_at' => null,
+            'unpublished_at' => now(),
+        ]);
+    }
+
+    /**
+     * State for a venue at the point a submission gets when it has no coordinates.
+     */
+    public function atDefaultCoordinates(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'latitude' => ReportService::DEFAULT_LATITUDE,
+            'longitude' => ReportService::DEFAULT_LONGITUDE,
         ]);
     }
 
