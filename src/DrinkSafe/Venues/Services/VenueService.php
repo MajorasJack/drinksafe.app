@@ -183,13 +183,8 @@ final class VenueService
             ))
             ->when($filters['city'] ?? null, fn (Builder $query, string $city): Builder => $query->where('city', $city))
             ->when(($filters['state'] ?? null) === 'published', fn (Builder $query): Builder => $query->whereNotNull('published_at'))
-            ->when(in_array($filters['state'] ?? null, ['unpublished', 'orphaned'], true), fn (Builder $query): Builder => $query->whereNull('published_at'))
-            ->when(($filters['state'] ?? null) === 'orphaned', fn (Builder $query): Builder => $query->whereDoesntHave(
-                'reports',
-                fn (Builder $reportQuery): Builder => $reportQuery
-                    ->withoutGlobalScope(PublishedScope::class)
-                    ->where('status', ReportStatus::Pending),
-            ))
+            ->when(($filters['state'] ?? null) === 'unpublished', fn (Builder $query): Builder => $query->whereNull('published_at'))
+            ->when(($filters['state'] ?? null) === 'orphaned', fn (Builder $query): Builder => $query->orphaned())
             ->orderBy('name')
             ->orderBy('uuid')
             ->paginate($perPage)

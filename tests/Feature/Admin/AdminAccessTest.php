@@ -13,6 +13,7 @@ dataset('admin actions', [
     'venue publish' => ['POST', 'admin.venues.publish'],
     'venue unpublish' => ['POST', 'admin.venues.unpublish'],
     'partner link edit' => ['PATCH', 'admin.partners.update'],
+    'public cache refresh' => ['POST', 'admin.caches.refresh'],
 ]);
 
 it('redirects guests to login', function (string $routeName): void {

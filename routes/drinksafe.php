@@ -10,6 +10,7 @@ use DrinkSafe\Reports\Controllers\AdminReportSearchController;
 use DrinkSafe\Reports\Controllers\ReportController;
 use DrinkSafe\Reports\Controllers\ReportModerationController;
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Shared\Controllers\AdminDashboardController;
 use DrinkSafe\Venues\Controllers\AdminVenueController;
 use DrinkSafe\Venues\Controllers\VenueController;
 use DrinkSafe\Venues\Controllers\VenueSafetyScoreController;
@@ -84,7 +85,8 @@ Route::prefix('admin')
     ->middleware(['auth', 'auth.session', sprintf('can:moderate,%s', Report::class), 'two-factor.confirmed'])
     ->name('admin.')
     ->group(function (): void {
-        Route::inertia('/', 'admin/Dashboard')->name('dashboard');
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::post('/caches/refresh', [AdminDashboardController::class, 'refreshCaches'])->name('caches.refresh');
 
         Route::get('/reports', [ReportModerationController::class, 'index'])->name('reports.index');
         Route::get('/reports/all', AdminReportSearchController::class)->name('reports.search');

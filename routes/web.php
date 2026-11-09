@@ -40,18 +40,8 @@ Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 Route::get('/submit-report', [SubmitReportController::class, 'create'])->name('reports.create');
 Route::post('/submit-report', [SubmitReportController::class, 'store'])->name('reports.store');
 
-/*
-|--------------------------------------------------------------------------
-| Authentication Routes (Future)
-|--------------------------------------------------------------------------
-|
-| Authentication routes will be added here when admin features are implemented.
-|
-*/
-
-Route::middleware(['auth', 'auth.session'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
-});
+// The starter kit's dashboard is gone. Old bookmarks land on the admin one.
+Route::permanentRedirect('/dashboard', '/admin');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/drinksafe.php';

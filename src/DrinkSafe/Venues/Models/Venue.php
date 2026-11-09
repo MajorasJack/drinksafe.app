@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace DrinkSafe\Venues\Models;
 
 use Database\Factories\DrinkSafe\VenueFactory;
+use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Reports\Scopes\PublishedScope;
 use DrinkSafe\Reports\Services\ReportService;
 use DrinkSafe\Shared\Traits\HasSlug;
 use DrinkSafe\Shared\Traits\HasUuid;
@@ -187,6 +189,25 @@ final class Venue extends Model
                 [$latitude, $longitude, $latitude, $radiusKm]
             )
             ->orderBy('distance');
+    }
+
+    /**
+     * Scope a query to unpublished venues with no report waiting for review.
+     *
+     * These are the venues that `POST /api/venues` or rejected submissions
+     * leave behind. Call it on a query without PublishedVenueScope, or it
+     * finds nothing.
+     *
+     * @param  Builder<Venue>  $query
+     * @return Builder<Venue>
+     */
+    public function scopeOrphaned(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('published_at')
+            ->whereDoesntHave('reports', fn (Builder $reportQuery): Builder => $reportQuery
+                ->withoutGlobalScope(PublishedScope::class)
+                ->where('status', ReportStatus::Pending));
     }
 
     /**
