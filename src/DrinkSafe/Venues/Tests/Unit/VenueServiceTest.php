@@ -15,7 +15,7 @@ uses(TestCase::class, RefreshDatabase::class);
 
 describe('VenueService', function (): void {
     beforeEach(function (): void {
-        $this->service = new VenueService;
+        $this->service = app(VenueService::class);
     });
 
     describe('getAllVenues', function (): void {
@@ -195,7 +195,7 @@ describe('VenueService', function (): void {
 
 describe('VenueService createVenue publishing', function (): void {
     it('creates the venue unpublished', function (): void {
-        $venue = (new VenueService)->createVenue([
+        $venue = app(VenueService::class)->createVenue([
             'name' => fake()->company(),
             'city' => fake()->city(),
             'latitude' => fake()->latitude(),
