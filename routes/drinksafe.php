@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use DrinkSafe\Analytics\Controllers\TemporalAnalyticsController;
 use DrinkSafe\Heatmap\Controllers\HeatmapController;
+use DrinkSafe\Reports\Controllers\AdminReportSearchController;
 use DrinkSafe\Reports\Controllers\ReportController;
 use DrinkSafe\Reports\Controllers\ReportModerationController;
 use DrinkSafe\Reports\Models\Report;
@@ -83,6 +84,7 @@ Route::prefix('admin')
         Route::inertia('/', 'admin/Dashboard')->name('dashboard');
 
         Route::get('/reports', [ReportModerationController::class, 'index'])->name('reports.index');
+        Route::get('/reports/all', AdminReportSearchController::class)->name('reports.search');
         Route::post('/reports/bulk', [ReportModerationController::class, 'bulk'])->name('reports.bulk');
         Route::patch('/reports/{uuid}', [ReportModerationController::class, 'update'])->name('reports.update');
     });

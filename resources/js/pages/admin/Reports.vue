@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { Form, Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import AdminReportSearchController from '@/actions/DrinkSafe/Reports/Controllers/AdminReportSearchController';
 import ReportModerationController from '@/actions/DrinkSafe/Reports/Controllers/ReportModerationController';
+import ReportDecisionRow from '@/components/admin/ReportDecisionRow.vue';
+import ReviewConfirmationDialog from '@/components/admin/ReviewConfirmationDialog.vue';
 import VenueMiniMap from '@/components/admin/VenueMiniMap.vue';
 import Heading from '@/components/Heading.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -15,34 +18,20 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { formatDateTime } from '@/lib/utils';
 import { ReportStatus } from '@/types/report';
-import type { QueuedReport, ReportFlag } from '@/types/report';
+import type {
+    AffectedVenue,
+    QueuedReport,
+    ReportFlag,
+    ReviewConfirmation,
+} from '@/types/report';
 
 type Props = {
     pending_reports: QueuedReport[];
     pending_count: number;
     pending_pagination: { current_page: number; last_page: number };
     reviewed_reports: QueuedReport[];
-};
-
-type AffectedVenue = { uuid: string; label: string };
-
-type Confirmation = {
-    title: string;
-    description: string;
-    confirmLabel: string;
-    /** Venues the action would leave with no published reports. When there are any, the dialog asks whether to hide them. */
-    affectedVenues: AffectedVenue[];
-    submit: (hideVenues: boolean) => void;
 };
 
 const props = defineProps<Props>();
@@ -71,7 +60,7 @@ const statusError = computed(
 );
 
 const selectedUuids = ref<string[]>([]);
-const confirmation = ref<Confirmation | null>(null);
+const confirmation = ref<ReviewConfirmation | null>(null);
 const isSubmitting = ref(false);
 
 const selectedReports = computed(() =>
@@ -89,14 +78,6 @@ const allSelected = computed<boolean | 'indeterminate'>(() => {
         ? true
         : 'indeterminate';
 });
-
-const formatDateTime = (isoDate: string | null): string =>
-    isoDate === null
-        ? ''
-        : new Date(isoDate).toLocaleString('en-GB', {
-              dateStyle: 'medium',
-              timeStyle: 'short',
-          });
 
 const venueLabel = (report: QueuedReport): string =>
     `${report.venue.name}, ${report.venue.city}`;
@@ -167,26 +148,6 @@ const confirmBulkReject = (): void => {
             submitBulk(
                 ReportStatus.Rejected,
                 hideVenues ? affectedVenues.map((venue) => venue.uuid) : [],
-            ),
-    };
-};
-
-const confirmTakedown = (report: QueuedReport): void => {
-    const affectedVenues = affectedVenuesOf([report]);
-
-    confirmation.value = {
-        title: 'Take down this report?',
-        description:
-            affectedVenues.length > 0
-                ? `It's the last published report about ${venueLabel(report)}. Hide the venue from the site too?`
-                : 'It comes off the site straight away.',
-        confirmLabel: 'Take down',
-        affectedVenues,
-        submit: (hideVenues) =>
-            router.patch(
-                ReportModerationController.update.url(report.uuid),
-                { status: ReportStatus.Rejected, hide_venue: hideVenues },
-                visitOptions,
             ),
     };
 };
@@ -429,11 +390,19 @@ const confirmTakedown = (report: QueuedReport): void => {
         </section>
 
         <section class="space-y-4">
-            <Heading
-                variant="small"
-                title="Recent decisions"
-                description="The last 20 reports you published or rejected."
-            />
+            <header>
+                <h2 class="mb-0.5 text-base font-medium">
+                    <Link
+                        :href="AdminReportSearchController()"
+                        class="underline underline-offset-4"
+                    >
+                        Recent decisions
+                    </Link>
+                </h2>
+                <p class="text-sm text-muted-foreground">
+                    The reports you published or rejected most recently.
+                </p>
+            </header>
 
             <p
                 v-if="reviewed_reports.length === 0"
@@ -443,108 +412,18 @@ const confirmTakedown = (report: QueuedReport): void => {
             </p>
 
             <ul class="divide-y rounded-xl border">
-                <li
+                <ReportDecisionRow
                     v-for="report in reviewed_reports"
                     :key="report.uuid"
-                    class="flex flex-wrap items-center justify-between gap-2 p-4"
-                >
-                    <div class="min-w-0">
-                        <p class="font-medium">{{ venueLabel(report) }}</p>
-                        <p class="truncate text-sm text-muted-foreground">
-                            {{ report.description }}
-                        </p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-sm text-muted-foreground">
-                            {{ formatDateTime(report.reviewed_at) }}
-                        </span>
-                        <Badge
-                            :variant="
-                                report.status === ReportStatus.Published
-                                    ? 'default'
-                                    : 'destructive'
-                            "
-                        >
-                            {{
-                                report.status === ReportStatus.Published
-                                    ? 'Published'
-                                    : 'Rejected'
-                            }}
-                        </Badge>
-                        <Button
-                            v-if="report.status === ReportStatus.Published"
-                            size="sm"
-                            variant="outline"
-                            @click="confirmTakedown(report)"
-                        >
-                            Take down
-                        </Button>
-                    </div>
-                </li>
+                    :report="report"
+                />
             </ul>
         </section>
 
-        <Dialog
-            :open="confirmation !== null"
-            @update:open="(isOpen) => !isOpen && (confirmation = null)"
-        >
-            <DialogContent v-if="confirmation">
-                <DialogHeader>
-                    <DialogTitle>{{ confirmation.title }}</DialogTitle>
-                    <DialogDescription>
-                        {{ confirmation.description }}
-                    </DialogDescription>
-                </DialogHeader>
-
-                <ul
-                    v-if="confirmation.affectedVenues.length > 1"
-                    class="list-disc pl-5 text-sm"
-                >
-                    <li
-                        v-for="venue in confirmation.affectedVenues"
-                        :key="venue.uuid"
-                    >
-                        {{ venue.label }}
-                    </li>
-                </ul>
-                <p
-                    v-else-if="confirmation.affectedVenues.length === 1"
-                    class="text-sm font-medium"
-                >
-                    {{ confirmation.affectedVenues[0].label }}
-                </p>
-
-                <DialogFooter class="gap-2">
-                    <template v-if="confirmation.affectedVenues.length > 0">
-                        <Button
-                            variant="outline"
-                            :disabled="isSubmitting"
-                            @click="confirmation.submit(false)"
-                        >
-                            Keep the venue listed
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            :disabled="isSubmitting"
-                            @click="confirmation.submit(true)"
-                        >
-                            Hide the venue too
-                        </Button>
-                    </template>
-                    <template v-else>
-                        <DialogClose as-child>
-                            <Button variant="outline">Cancel</Button>
-                        </DialogClose>
-                        <Button
-                            variant="destructive"
-                            :disabled="isSubmitting"
-                            @click="confirmation.submit(false)"
-                        >
-                            {{ confirmation.confirmLabel }}
-                        </Button>
-                    </template>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <ReviewConfirmationDialog
+            :confirmation="confirmation"
+            :is-submitting="isSubmitting"
+            @close="confirmation = null"
+        />
     </div>
 </template>
