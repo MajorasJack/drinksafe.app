@@ -473,7 +473,7 @@ describe('ReportController store', function (): void {
                 'venue_uuid' => $venue->uuid,
                 'incident_date' => now()->subDay()->toDateString(),
                 'time_of_day' => 'Night',
-                'description' => fake()->sentence(12),
+                'description' => fake()->realText(200),
                 'cf-turnstile-response' => 'test-token',
             ])
             ->assertCreated();
@@ -504,7 +504,7 @@ describe('ReportController store', function (): void {
                 'venue_uuid' => $venue->uuid,
                 'incident_date' => now()->subDay()->toDateString(),
                 'time_of_day' => 'Night',
-                'description' => fake()->sentence(12),
+                'description' => fake()->realText(200),
                 'cf-turnstile-response' => 'test-token',
             ])
             ->assertNotFound();
@@ -606,7 +606,7 @@ describe('ReportController unpublished venues', function (): void {
             'venue_city' => fake()->city(),
             'incident_date' => now()->subDays(2)->toDateString(),
             'time_of_day' => 'Evening',
-            'description' => fake()->sentence(),
+            'description' => fake()->realText(200),
             'cf-turnstile-response' => 'test-token',
         ]);
 
