@@ -26,6 +26,7 @@ it('refreshes the public caches from the admin dashboard', function (): void {
     $page->click('Refresh public caches')
         ->wait(1)
         ->assertSee('Public caches refreshed.')
+        ->assertScript("document.querySelectorAll('[data-sonner-toast]').length", 1)
         ->assertNoJavaScriptErrors();
     expect(app(PublicCacheVersion::class)->current())->toBe($versionBefore + 1);
 });

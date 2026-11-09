@@ -48,8 +48,6 @@ final class AdminDashboardController extends Controller
     {
         $publicCacheVersion->bump();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Public caches refreshed.']);
-
         return redirect()->to(url()->previous(route('admin.dashboard')))->with('success', 'Public caches refreshed.');
     }
 }

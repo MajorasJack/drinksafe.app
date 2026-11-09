@@ -171,8 +171,8 @@ const plural = (count: number, word: string): string =>
                     </span>
                     <span
                         aria-hidden="true"
-                        class="w-full rounded-t-sm bg-primary"
-                        :class="day.count === 0 ? 'bg-muted' : ''"
+                        class="w-full rounded-t-sm"
+                        :class="day.count === 0 ? 'bg-muted' : 'bg-primary'"
                         :style="{
                             height: `${Math.max(2, (day.count / busiestDay) * 100)}%`,
                         }"
