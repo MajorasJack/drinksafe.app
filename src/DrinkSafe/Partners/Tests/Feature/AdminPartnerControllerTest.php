@@ -51,6 +51,32 @@ describe('AdminPartnerController index', function (): void {
             ->where('partners.0.total', 10));
     });
 
+    it('totals the 30 days up to the end date when only the end date is given', function (): void {
+        $partnerLink = PartnerLink::factory()->create();
+        PartnerLinkDailyCount::factory()->for($partnerLink)->on('2026-09-01')->create(['count' => 100]);
+        PartnerLinkDailyCount::factory()->for($partnerLink)->on('2026-09-02')->create(['count' => 3]);
+        PartnerLinkDailyCount::factory()->for($partnerLink)->on('2026-10-01')->create(['count' => 5]);
+        PartnerLinkDailyCount::factory()->for($partnerLink)->on('2026-10-02')->create(['count' => 100]);
+
+        $response = $this->get(route('admin.partners.index', ['to' => '2026-10-01']));
+
+        $response->assertOk()->assertInertia(fn (AssertableInertia $page): AssertableInertia => $page
+            ->where('range', ['from' => '2026-09-02', 'to' => '2026-10-01'])
+            ->where('partners.0.total', 8));
+    });
+
+    it('totals a scan made between midnight and 1am in summer time on its UK date', function (): void {
+        $partnerLink = PartnerLink::factory()->create();
+        $this->travelTo(CarbonImmutable::parse('2026-07-05 00:30', 'Europe/London'));
+        $this->withHeader('User-Agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1')
+            ->getJson(sprintf('/go/%s', $partnerLink->code));
+
+        $response = $this->get(route('admin.partners.index', ['from' => '2026-07-05', 'to' => '2026-07-05']));
+
+        $response->assertOk()->assertInertia(fn (AssertableInertia $page): AssertableInertia => $page
+            ->where('partners.0.total', 1));
+    });
+
     it('rejects a range that ends before it starts', function (): void {
         $response = $this->getJson(route('admin.partners.index', ['from' => '2026-10-02', 'to' => '2026-10-01']));
 
@@ -108,6 +134,20 @@ describe('AdminPartnerController update', function (): void {
         $this->patchJson(route('admin.partners.update', $partnerLink->code), ['code' => 'changed', 'active' => false]);
 
         expect($partnerLink->fresh()->code)->toBe($partnerLink->code);
+    });
+
+    it('refuses a request that changes nothing', function (): void {
+        $partnerLink = PartnerLink::factory()->create();
+
+        $response = $this->patchJson(route('admin.partners.update', $partnerLink->code), []);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors(['label' => 'Send at least one of label, destination or active.']);
+    });
+
+    it('returns not found for a code outside the allowed characters', function (): void {
+        $response = $this->patchJson(sprintf('/admin/partners/%s', fake()->lexify('UPPER_????')), ['active' => false]);
+
+        $response->assertNotFound();
     });
 
     it('returns not found for a code that does not exist', function (): void {

@@ -61,13 +61,18 @@ final class AdminCoverageRequest extends FormRequest
      * The cities typed, trimmed, with blanks and repeats left out. Empty
      * when the field is blank.
      *
+     * Repeats are matched ignoring case, because the counts are, and the
+     * first spelling typed is kept.
+     *
      * @return list<string>
      */
     public function cities(): array
     {
-        return array_values(array_unique(array_filter(
-            array_map(trim(...), explode(',', (string) $this->input('cities'))),
-            fn (string $city): bool => $city !== '',
-        )));
+        return collect(explode(',', (string) $this->input('cities')))
+            ->map(fn (string $city): string => trim($city))
+            ->reject(fn (string $city): bool => $city === '')
+            ->unique(fn (string $city): string => mb_strtolower($city))
+            ->values()
+            ->all();
     }
 }
