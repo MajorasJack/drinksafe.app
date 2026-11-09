@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Reports\Services\ReportService;
 use DrinkSafe\Venues\Models\Venue;
 use DrinkSafe\Venues\Scopes\PublishedVenueScope;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -303,5 +304,39 @@ describe('Venue publishing', function (): void {
         $venue = Venue::factory()->create(['name' => $unpublished->name]);
 
         expect($venue->slug)->not->toBe($unpublished->slug);
+    });
+});
+
+describe('Venue default coordinates', function (): void {
+    it('is at the default coordinates when both match the submission default', function (): void {
+        $venue = Venue::factory()->atDefaultCoordinates()->create();
+
+        expect($venue->fresh()->isAtDefaultCoordinates())->toBeTrue();
+    });
+
+    it('is not at the default coordinates when only the latitude matches', function (): void {
+        $venue = Venue::factory()->create(['latitude' => ReportService::DEFAULT_LATITUDE, 'longitude' => fake()->longitude(-6, -1)]);
+
+        expect($venue->fresh()->isAtDefaultCoordinates())->toBeFalse();
+    });
+
+    it('is not at the default coordinates when only the longitude matches', function (): void {
+        $venue = Venue::factory()->create(['latitude' => fake()->latitude(52, 55), 'longitude' => ReportService::DEFAULT_LONGITUDE]);
+
+        expect($venue->fresh()->isAtDefaultCoordinates())->toBeFalse();
+    });
+});
+
+describe('Venue unpublished by admin', function (): void {
+    it('was unpublished by the admin when it has an unpublished date', function (): void {
+        $venue = Venue::factory()->unpublishedByAdmin()->create();
+
+        expect($venue->wasUnpublishedByAdmin())->toBeTrue();
+    });
+
+    it('was not unpublished by the admin when it has never been published', function (): void {
+        $venue = Venue::factory()->unpublished()->create();
+
+        expect($venue->wasUnpublishedByAdmin())->toBeFalse();
     });
 });

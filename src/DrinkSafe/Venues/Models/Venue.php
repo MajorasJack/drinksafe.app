@@ -6,6 +6,7 @@ namespace DrinkSafe\Venues\Models;
 
 use Database\Factories\DrinkSafe\VenueFactory;
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Reports\Services\ReportService;
 use DrinkSafe\Shared\Traits\HasSlug;
 use DrinkSafe\Shared\Traits\HasUuid;
 use DrinkSafe\Venues\Scopes\PublishedVenueScope;
@@ -31,6 +32,7 @@ use Illuminate\Support\Carbon;
  * @property float $latitude Latitude coordinate
  * @property float $longitude Longitude coordinate
  * @property Carbon|null $published_at When the venue became visible on the site
+ * @property Carbon|null $unpublished_at When an admin took the venue off the site
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property-read Collection<int, Report> $reports
@@ -88,6 +90,7 @@ final class Venue extends Model
             'latitude' => 'decimal:8',
             'longitude' => 'decimal:8',
             'published_at' => 'datetime',
+            'unpublished_at' => 'datetime',
         ];
     }
 
@@ -115,6 +118,26 @@ final class Venue extends Model
     public function reports(): HasMany
     {
         return $this->hasMany(Report::class, 'venue_uuid', 'uuid');
+    }
+
+    /**
+     * Whether the venue sits on the point a submission gets when it has no coordinates.
+     *
+     * The decimal columns round-trip exactly, so comparing the stored strings
+     * is an exact match.
+     */
+    public function isAtDefaultCoordinates(): bool
+    {
+        return $this->latitude === number_format(ReportService::DEFAULT_LATITUDE, 8, '.', '')
+            && $this->longitude === number_format(ReportService::DEFAULT_LONGITUDE, 8, '.', '');
+    }
+
+    /**
+     * Whether an admin took the venue off the site, as opposed to it never having been published.
+     */
+    public function wasUnpublishedByAdmin(): bool
+    {
+        return $this->unpublished_at !== null;
     }
 
     /**

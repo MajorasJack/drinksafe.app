@@ -9,12 +9,16 @@ use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Enums\TimeOfDay;
 use DrinkSafe\Reports\Exceptions\ReportNotFoundException;
 use DrinkSafe\Reports\Exceptions\ReportValidationException;
+use DrinkSafe\Reports\Exceptions\VenueUnpublishedException;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Notifications\ReportAwaitingReviewNotification;
 use DrinkSafe\Reports\Scopes\PublishedScope;
+use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Models\Venue;
 use DrinkSafe\Venues\Scopes\PublishedVenueScope;
+use DrinkSafe\Venues\Services\SafetyScoreService;
 use DrinkSafe\Venues\Services\VenueService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
@@ -31,11 +35,23 @@ use Illuminate\Support\Facades\Notification;
 final class ReportService
 {
     /**
+     * Latitude given to a new venue when the submission has no coordinates (central London).
+     */
+    public const float DEFAULT_LATITUDE = 51.5074;
+
+    /**
+     * Longitude given to a new venue when the submission has no coordinates (central London).
+     */
+    public const float DEFAULT_LONGITUDE = -0.1278;
+
+    /**
      * Create a new ReportService instance.
      */
     public function __construct(
         private readonly ReportModerationService $moderationService,
-        private readonly VenueService $venueService
+        private readonly VenueService $venueService,
+        private readonly SafetyScoreService $safetyScoreService,
+        private readonly PublicCacheVersion $publicCacheVersion,
     ) {}
 
     /**
@@ -73,8 +89,8 @@ final class ReportService
                     'name' => $data['venue_name'],
                     'city' => $data['venue_city'],
                     'address' => $data['venue_address'] ?? null,
-                    'latitude' => $data['latitude'] ?? 51.5074, // Default to London
-                    'longitude' => $data['longitude'] ?? -0.1278,
+                    'latitude' => $data['latitude'] ?? self::DEFAULT_LATITUDE,
+                    'longitude' => $data['longitude'] ?? self::DEFAULT_LONGITUDE,
                 ]);
             }
         }
@@ -109,19 +125,19 @@ final class ReportService
     }
 
     /**
-     * Get the reports waiting for review, oldest first.
+     * Get a page of the reports waiting for review, oldest first.
      *
-     * @param  int  $limit  Maximum number of reports to return (default: 50)
-     * @return Collection<int, Report>
+     * @param  int  $perPage  Reports per page (default: 50)
+     * @return LengthAwarePaginator<int, Report>
      */
-    public function getPendingReports(int $limit = 50): Collection
+    public function getPendingReports(int $perPage = 50): LengthAwarePaginator
     {
         return Report::withoutGlobalScope(PublishedScope::class)
             ->with(['venue' => fn (BelongsTo $query): BelongsTo => $query->withoutGlobalScope(PublishedVenueScope::class)])
             ->where('status', ReportStatus::Pending)
             ->oldest()
-            ->limit($limit)
-            ->get();
+            ->oldest('uuid')
+            ->paginate($perPage);
     }
 
     /**
@@ -156,31 +172,136 @@ final class ReportService
      *
      * Publishing a report also publishes its venue, if this is the first
      * report about it. Both happen in one transaction, so a venue never goes
-     * public without the report that was approved alongside it.
+     * public without the report that was approved alongside it. A venue an
+     * admin unpublished stays unpublished: publishing a report about it is
+     * refused until the venue itself is published again.
+     *
+     * Rejecting with $hideVenueIfEmpty unpublishes a published venue that is
+     * left with no published reports, and marks it as unpublished by the admin.
      *
      * @param  string  $uuid  The report UUID
      * @param  ReportStatus  $status  The admin's decision
+     * @param  bool  $hideVenueIfEmpty  Whether a rejection that empties the venue also hides it
      *
      * @throws ModelNotFoundException If no report has this UUID
+     * @throws VenueUnpublishedException If publishing a report about a venue the admin unpublished
      */
-    public function reviewReport(string $uuid, ReportStatus $status): Report
+    public function reviewReport(string $uuid, ReportStatus $status, bool $hideVenueIfEmpty = false): Report
     {
         $report = Report::withoutGlobalScope(PublishedScope::class)
             ->where('uuid', $uuid)
             ->firstOrFail();
 
-        return DB::transaction(function () use ($report, $status): Report {
+        return DB::transaction(function () use ($report, $status, $hideVenueIfEmpty): Report {
+            $venue = Venue::withoutGlobalScope(PublishedVenueScope::class)
+                ->whereKey($report->venue_uuid)
+                ->lockForUpdate()
+                ->firstOrFail();
+
             if ($status === ReportStatus::Published) {
-                Venue::withoutGlobalScope(PublishedVenueScope::class)
-                    ->whereKey($report->venue_uuid)
-                    ->whereNull('published_at')
-                    ->update(['published_at' => now()]);
+                throw_if($venue->wasUnpublishedByAdmin(), VenueUnpublishedException::class);
+
+                if ($venue->published_at === null) {
+                    $venue->forceFill(['published_at' => now()])->save();
+                }
             }
 
-            return tap($report->forceFill([
+            $report->forceFill([
                 'status' => $status,
                 'reviewed_at' => now(),
-            ]))->save();
+            ])->save();
+
+            if ($status === ReportStatus::Rejected && $hideVenueIfEmpty) {
+                $this->hideVenueIfItHasNoPublishedReports($venue);
+            }
+
+            return $report;
+        });
+    }
+
+    /**
+     * Publish or reject several reports, skipping any that are no longer pending.
+     *
+     * Each report goes through reviewReport() in its own transaction, so one
+     * that can't be published (its venue was unpublished by the admin) doesn't
+     * undo the others. An unknown UUID counts as no longer pending.
+     *
+     * @param  array<int, string>  $uuids  The report UUIDs
+     * @param  ReportStatus  $status  The admin's decision
+     * @param  array<int, string>  $hideVenueUuids  Venues to hide if a rejection leaves them with no published reports
+     * @return array{reviewed: int, not_pending: int, venue_unpublished: int} How many reports were reviewed, and how many were skipped and why
+     */
+    public function reviewMany(array $uuids, ReportStatus $status, array $hideVenueUuids = []): array
+    {
+        $outcomes = collect($uuids)
+            ->unique()
+            ->map(fn (string $uuid): string => $this->reviewIfPending(uuid: $uuid, status: $status, hideVenueUuids: $hideVenueUuids))
+            ->countBy();
+
+        return [
+            'reviewed' => $outcomes->get('reviewed', 0),
+            'not_pending' => $outcomes->get('not_pending', 0),
+            'venue_unpublished' => $outcomes->get('venue_unpublished', 0),
+        ];
+    }
+
+    /**
+     * Review one report from a bulk review if it is still pending.
+     *
+     * @param  string  $uuid  The report UUID
+     * @param  ReportStatus  $status  The admin's decision
+     * @param  array<int, string>  $hideVenueUuids  Venues to hide if a rejection leaves them with no published reports
+     * @return string reviewed, not_pending or venue_unpublished
+     */
+    private function reviewIfPending(string $uuid, ReportStatus $status, array $hideVenueUuids): string
+    {
+        try {
+            return DB::transaction(function () use ($uuid, $status, $hideVenueUuids): string {
+                $pendingReport = Report::withoutGlobalScope(PublishedScope::class)
+                    ->whereKey($uuid)
+                    ->where('status', ReportStatus::Pending)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($pendingReport === null) {
+                    return 'not_pending';
+                }
+
+                $this->reviewReport(
+                    uuid: $uuid,
+                    status: $status,
+                    hideVenueIfEmpty: in_array($pendingReport->venue_uuid, $hideVenueUuids, true),
+                );
+
+                return 'reviewed';
+            });
+        } catch (VenueUnpublishedException) {
+            return 'venue_unpublished';
+        }
+    }
+
+    /**
+     * Unpublish a published venue that has no published reports left.
+     *
+     * The report observer only clears the venue's score when a report's
+     * status changes, so the venue clears its own caches once this commits.
+     *
+     * @param  Venue  $venue  The venue, locked for this transaction
+     */
+    private function hideVenueIfItHasNoPublishedReports(Venue $venue): void
+    {
+        if ($venue->published_at === null || $venue->reports()->exists()) {
+            return;
+        }
+
+        $venue->forceFill([
+            'published_at' => null,
+            'unpublished_at' => now(),
+        ])->save();
+
+        DB::afterCommit(function () use ($venue): void {
+            $this->safetyScoreService->invalidateScore($venue->uuid);
+            $this->publicCacheVersion->bump();
         });
     }
 
