@@ -104,3 +104,20 @@ export type QueuedReport = ModeratedReport & {
     /** Only on pending reports */
     flags?: ReportFlag[];
 };
+
+/**
+ * A venue a takedown would leave with no published reports
+ */
+export type AffectedVenue = { uuid: string; label: string };
+
+/**
+ * What the confirmation dialog asks before a takedown or a bulk rejection
+ */
+export type ReviewConfirmation = {
+    title: string;
+    description: string;
+    confirmLabel: string;
+    /** Venues the action would leave with no published reports. When there are any, the dialog asks whether to hide them. */
+    affectedVenues: AffectedVenue[];
+    submit: (hideVenues: boolean) => void;
+};

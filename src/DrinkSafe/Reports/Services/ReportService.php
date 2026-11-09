@@ -19,6 +19,8 @@ use DrinkSafe\Venues\Scopes\PublishedVenueScope;
 use DrinkSafe\Venues\Services\SafetyScoreService;
 use DrinkSafe\Venues\Services\VenueService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
@@ -165,6 +167,39 @@ final class ReportService
             ->latest('reviewed_at')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Get a page of reports in any status, newest first, narrowed by the admin's filters.
+     *
+     * The description search uses the full-text index where the database has
+     * one. SQLite has none, so it falls back to `LIKE`.
+     *
+     * @param  array{venue?: string, city?: string, status?: string, from?: string, to?: string, q?: string}  $filters  Venue name, city, status, incident date range (inclusive) and description text
+     * @param  int  $perPage  Reports per page (default: 25)
+     * @return LengthAwarePaginator<int, Report>
+     */
+    public function searchReports(array $filters, int $perPage = 25): LengthAwarePaginator
+    {
+        return Report::withoutGlobalScope(PublishedScope::class)
+            ->with(['venue' => fn (BelongsTo $query): BelongsTo => $query->withoutGlobalScope(PublishedVenueScope::class)])
+            ->when($filters['status'] ?? null, fn (Builder $query, string $status): Builder => $query->where('status', $status))
+            ->when($filters['from'] ?? null, fn (Builder $query, string $from): Builder => $query->whereDate('incident_date', '>=', $from))
+            ->when($filters['to'] ?? null, fn (Builder $query, string $to): Builder => $query->whereDate('incident_date', '<=', $to))
+            ->when(isset($filters['venue']) || isset($filters['city']), fn (Builder $query): Builder => $query->whereHas(
+                'venue',
+                fn (Builder $venueQuery): Builder => $venueQuery
+                    ->withoutGlobalScope(PublishedVenueScope::class)
+                    ->when($filters['venue'] ?? null, fn (Builder $venueQuery, string $name): Builder => $this->whereContains(query: $venueQuery, column: 'name', term: $name))
+                    ->when($filters['city'] ?? null, fn (Builder $venueQuery, string $city): Builder => $venueQuery->where('city', $city)),
+            ))
+            ->when($filters['q'] ?? null, fn (Builder $query, string $text): Builder => $query->getConnection()->getDriverName() === 'sqlite'
+                ? $this->whereContains(query: $query, column: 'description', term: $text)
+                : $query->whereFullText('description', $text))
+            ->latest()
+            ->latest('uuid')
+            ->paginate($perPage)
+            ->withQueryString();
     }
 
     /**
@@ -392,5 +427,21 @@ final class ReportService
         }
 
         return $report->delete();
+    }
+
+    /**
+     * Match rows whose column contains the term, treating `%` and `_` in it as plain characters.
+     *
+     * @param  Builder<Model>  $query  The query to narrow
+     * @param  string  $column  The column to search
+     * @param  string  $term  The text the admin typed
+     * @return Builder<Model>
+     */
+    private function whereContains(Builder $query, string $column, string $term): Builder
+    {
+        return $query->whereRaw(
+            sprintf('%s LIKE ? ESCAPE ?', $query->getQuery()->getGrammar()->wrap($query->qualifyColumn($column))),
+            [sprintf('%%%s%%', addcslashes($term, '\\%_')), '\\'],
+        );
     }
 }
