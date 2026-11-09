@@ -5,7 +5,7 @@ declare(strict_types=1);
 use App\Models\User;
 use Inertia\Testing\AssertableInertia;
 
-dataset('admin pages', ['admin.dashboard', 'admin.reports.index']);
+dataset('admin pages', ['admin.dashboard', 'admin.reports.index', 'admin.reports.search']);
 
 it('redirects guests to login', function (string $routeName): void {
     $response = $this->get(route($routeName));

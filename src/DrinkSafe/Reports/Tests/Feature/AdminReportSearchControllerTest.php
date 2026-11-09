@@ -130,6 +130,36 @@ describe('AdminReportSearchController', function (): void {
         );
     });
 
+    it('finds reports containing every word searched for', function (): void {
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+        $firstWord = fake()->unique()->lexify('zq??????');
+        $secondWord = fake()->unique()->lexify('zx??????');
+        $withBoth = Report::factory()->create(['description' => sprintf('%s %s %s %s', $secondWord, fake()->sentence(), $firstWord, fake()->sentence())]);
+        Report::factory()->create(['description' => sprintf('%s %s', fake()->sentence(), $firstWord)]);
+        Report::factory()->create(['description' => sprintf('%s %s', fake()->sentence(), $secondWord)]);
+
+        $response = $this->get(route('admin.reports.search', ['q' => sprintf('%s  %s', $firstWord, $secondWord)]));
+
+        $response->assertOk()->assertInertia(fn ($page) => $page
+            ->has('reports', 1)
+            ->where('reports.0.uuid', $withBoth->uuid)
+        );
+    });
+
+    it('finds a word shorter than three letters', function (): void {
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+        $shortWord = fake()->numerify('Q#');
+        $matching = Report::factory()->create(['description' => sprintf('%s %s', fake()->sentence(), $shortWord)]);
+        Report::factory()->create(['description' => fake()->sentence()]);
+
+        $response = $this->get(route('admin.reports.search', ['q' => $shortWord]));
+
+        $response->assertOk()->assertInertia(fn ($page) => $page
+            ->has('reports', 1)
+            ->where('reports.0.uuid', $matching->uuid)
+        );
+    });
+
     it('treats percent and underscore in the description search literally', function (): void {
         $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
         $literal = Report::factory()->create(['description' => sprintf('%s Drinks were 50%%_off all night.', fake()->sentence())]);

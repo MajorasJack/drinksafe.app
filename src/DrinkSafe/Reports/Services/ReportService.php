@@ -172,8 +172,9 @@ final class ReportService
     /**
      * Get a page of reports in any status, newest first, narrowed by the admin's filters.
      *
-     * The description search uses the full-text index where the database has
-     * one. SQLite has none, so it falls back to `LIKE`.
+     * The description search matches reports containing every word typed, in
+     * part or whole. It uses `LIKE` rather than the full-text index, which
+     * skips words under three letters and common words such as "the".
      *
      * @param  array{venue?: string, city?: string, status?: string, from?: string, to?: string, q?: string}  $filters  Venue name, city, status, incident date range (inclusive) and description text
      * @param  int  $perPage  Reports per page (default: 25)
@@ -193,9 +194,8 @@ final class ReportService
                     ->when($filters['venue'] ?? null, fn (Builder $venueQuery, string $name): Builder => $this->whereContains(query: $venueQuery, column: 'name', term: $name))
                     ->when($filters['city'] ?? null, fn (Builder $venueQuery, string $city): Builder => $venueQuery->where('city', $city)),
             ))
-            ->when($filters['q'] ?? null, fn (Builder $query, string $text): Builder => $query->getConnection()->getDriverName() === 'sqlite'
-                ? $this->whereContains(query: $query, column: 'description', term: $text)
-                : $query->whereFullText('description', $text))
+            ->when($filters['q'] ?? null, fn (Builder $query, string $text): Builder => collect(preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY))
+                ->reduce(fn (Builder $query, string $word): Builder => $this->whereContains(query: $query, column: 'description', term: $word), $query))
             ->latest()
             ->latest('uuid')
             ->paginate($perPage)
