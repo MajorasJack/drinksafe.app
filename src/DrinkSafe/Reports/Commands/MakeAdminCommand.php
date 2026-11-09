@@ -141,6 +141,10 @@ final class MakeAdminCommand extends Command
 
         $this->info(sprintf('Turned off two-factor for %s. They will be asked to set it up again at their next admin visit.', $user->email));
 
+        if (config('session.driver') !== 'database') {
+            $this->warn('Existing logins are only ended by --password. Run that too if the device may be compromised.');
+        }
+
         return self::SUCCESS;
     }
 

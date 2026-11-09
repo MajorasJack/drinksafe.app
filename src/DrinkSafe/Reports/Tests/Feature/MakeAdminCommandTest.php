@@ -244,6 +244,24 @@ describe('drinksafe:make-admin', function (): void {
         $this->assertDatabaseHas('sessions', ['user_id' => $otherUser->id]);
     });
 
+    it('tells the operator to change the password too when sessions are not in the database', function (): void {
+        config(['session.driver' => 'cookie']);
+        $user = User::factory()->admin()->withTwoFactor()->create();
+
+        $this->artisan('drinksafe:make-admin', ['email' => $user->email, '--reset-two-factor' => true])
+            ->expectsOutput('Existing logins are only ended by --password. Run that too if the device may be compromised.')
+            ->assertSuccessful();
+    });
+
+    it('does not warn about logins when sessions are in the database', function (): void {
+        config(['session.driver' => 'database']);
+        $user = User::factory()->admin()->withTwoFactor()->create();
+
+        $this->artisan('drinksafe:make-admin', ['email' => $user->email, '--reset-two-factor' => true])
+            ->doesntExpectOutput('Existing logins are only ended by --password. Run that too if the device may be compromised.')
+            ->assertSuccessful();
+    });
+
     it('fails to reset two-factor when no user has the email', function (): void {
         $email = fake()->safeEmail();
 

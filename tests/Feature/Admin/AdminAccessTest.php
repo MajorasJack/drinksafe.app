@@ -90,6 +90,14 @@ it('keeps the settings pages reachable for an admin without two-factor', functio
     $response->assertOk();
 });
 
+it('lets an admin without two-factor reach the security settings to set it up', function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+
+    $response = $this->withSession(['auth.password_confirmed_at' => time()])->getJson(route('security.edit'));
+
+    $response->assertOk();
+});
+
 it('sends admins to the admin dashboard after login', function (): void {
     $admin = User::factory()->admin()->create();
 
