@@ -8,13 +8,15 @@ use DrinkSafe\Partners\Models\PartnerLink;
 use DrinkSafe\Reports\Models\Report;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 /**
  * AdminUpdatePartnerLinkRequest
  *
  * Validates the admin's edit of a partner link. The code is printed on the
  * partner's QR code, so it isn't editable. Each field may be sent on its
- * own, so switching a link on or off needs only `active`.
+ * own, so switching a link on or off needs only `active`, but at least one
+ * must be sent.
  */
 final class AdminUpdatePartnerLinkRequest extends FormRequest
 {
@@ -37,6 +39,22 @@ final class AdminUpdatePartnerLinkRequest extends FormRequest
             'label' => ['sometimes', 'required', 'string', 'max:100'],
             'destination' => ['sometimes', 'required', 'string', 'max:255', sprintf('regex:%s', PartnerLink::DESTINATION_PATTERN)],
             'active' => ['sometimes', 'required', 'boolean'],
+        ];
+    }
+
+    /**
+     * Refuse a request that changes nothing.
+     *
+     * @return array<int, callable(Validator): void>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                if (! $this->hasAny(['label', 'destination', 'active'])) {
+                    $validator->errors()->add('label', 'Send at least one of label, destination or active.');
+                }
+            },
         ];
     }
 

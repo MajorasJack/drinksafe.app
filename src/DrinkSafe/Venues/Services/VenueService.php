@@ -122,8 +122,7 @@ final class VenueService
     public function createVenue(array $data): Venue
     {
         $existingVenue = Venue::withoutGlobalScope(PublishedVenueScope::class)
-            ->where('name', $data['name'])
-            ->where('city', $data['city'])
+            ->sameNameAndCity(name: $data['name'], city: $data['city'])
             ->first();
 
         throw_if($existingVenue?->published_at !== null, VenueDuplicateException::class, $data['name'], $data['city']);
@@ -196,7 +195,7 @@ final class VenueService
     }
 
     /**
-     * Get a venue, published or not, with its reports in every status, newest first.
+     * Get a venue, published or not.
      *
      * @param  string  $uuid  The venue UUID
      *
@@ -204,16 +203,22 @@ final class VenueService
      */
     public function getVenueForAdmin(string $uuid): Venue
     {
-        $venue = Venue::withoutGlobalScope(PublishedVenueScope::class)->findOrFail($uuid);
+        return Venue::withoutGlobalScope(PublishedVenueScope::class)->findOrFail($uuid);
+    }
 
-        // each report points at the original, which has no reports loaded, so the resources don't nest forever
-        // shortcut: every report on one page, add pagination if a venue ever has hundreds
-        return (clone $venue)->setRelation('reports', $venue->reports()
-            ->withoutGlobalScope(PublishedScope::class)
-            ->latest()
-            ->latest('uuid')
-            ->get()
-            ->each(fn (Report $report): Report => $report->setRelation('venue', $venue)));
+    /**
+     * Get a page of a venue's reports in every status, newest first.
+     *
+     * @param  Venue  $venue  The venue, published or not
+     * @param  int  $perPage  Reports per page (default: 25)
+     * @return LengthAwarePaginator<int, Report>
+     */
+    public function getVenueReportsForAdmin(Venue $venue, int $perPage = 25): LengthAwarePaginator
+    {
+        return tap(
+            $venue->reports()->withoutGlobalScope(PublishedScope::class)->latest()->latest('uuid')->paginate($perPage),
+            fn (LengthAwarePaginator $reports): Collection => $reports->getCollection()->each(fn (Report $report): Report => $report->setRelation('venue', $venue)),
+        );
     }
 
     /**
@@ -290,6 +295,9 @@ final class VenueService
     /**
      * Set when a venue was published and unpublished, then clear the caches that show it.
      *
+     * A venue already in the requested state is left alone, so a repeated
+     * publish or unpublish keeps its timestamps and the caches.
+     *
      * @param  string  $uuid  The venue UUID
      * @param  DateTimeInterface|null  $publishedAt  When it went on the site, or null to hide it
      * @param  DateTimeInterface|null  $unpublishedAt  When the admin took it off, or null
@@ -301,6 +309,10 @@ final class VenueService
         return DB::transaction(fn (): Venue => tap(
             Venue::withoutGlobalScope(PublishedVenueScope::class)->lockForUpdate()->findOrFail($uuid),
             function (Venue $venue) use ($publishedAt, $unpublishedAt): void {
+                if (($venue->published_at === null) === ($publishedAt === null) && ($venue->unpublished_at === null) === ($unpublishedAt === null)) {
+                    return;
+                }
+
                 $venue->forceFill(['published_at' => $publishedAt, 'unpublished_at' => $unpublishedAt])->save();
                 $this->clearPublicCachesAfterCommit($venue);
             },

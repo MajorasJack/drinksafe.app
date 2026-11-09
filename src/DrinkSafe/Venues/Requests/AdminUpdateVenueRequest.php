@@ -70,8 +70,7 @@ final class AdminUpdateVenueRequest extends FormRequest
                 }
 
                 $clashingVenue = Venue::withoutGlobalScope(PublishedVenueScope::class)
-                    ->where('name', $this->input('name'))
-                    ->where('city', $this->input('city'))
+                    ->sameNameAndCity(name: $this->input('name'), city: $this->input('city'))
                     ->whereKeyNot($this->route('uuid'))
                     ->first();
 

@@ -100,7 +100,7 @@ Route::prefix('admin')
         Route::post('/venues/{uuid}/unpublish', [AdminVenueController::class, 'unpublish'])->name('venues.unpublish');
 
         Route::get('/partners', [AdminPartnerController::class, 'index'])->name('partners.index');
-        Route::patch('/partners/{code}', [AdminPartnerController::class, 'update'])->name('partners.update');
+        Route::patch('/partners/{code}', [AdminPartnerController::class, 'update'])->where('code', '[a-z0-9-]+')->name('partners.update');
 
         Route::get('/coverage', AdminCoverageController::class)->name('coverage');
     });

@@ -112,3 +112,39 @@ test('correct password must be provided to update password', function () {
         ->assertSessionHasErrors('current_password')
         ->assertRedirect(route('security.edit'));
 });
+
+test('an admin without two-factor is told the admin area needs it', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->get(route('security.edit'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('needsTwoFactorForAdmin', true),
+        );
+});
+
+test('an admin with confirmed two-factor is not told the admin area needs it', function () {
+    $admin = User::factory()->admin()->withTwoFactor()->create();
+
+    $this->actingAs($admin)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->get(route('security.edit'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('needsTwoFactorForAdmin', false),
+        );
+});
+
+test('a user who is not an admin is not told the admin area needs two-factor', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->get(route('security.edit'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('needsTwoFactorForAdmin', false),
+        );
+});

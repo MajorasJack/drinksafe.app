@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 use Database\Factories\DrinkSafe\ReportFactory;
 use Database\Factories\DrinkSafe\VenueFactory;
+use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Exceptions\VenueDuplicateException;
 use DrinkSafe\Venues\Exceptions\VenueNotFoundException;
 use DrinkSafe\Venues\Models\Venue;
+use DrinkSafe\Venues\Scopes\PublishedVenueScope;
 use DrinkSafe\Venues\Services\VenueService;
+use Illuminate\Database\Eloquent\Factories\Sequence;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -203,5 +208,96 @@ describe('VenueService createVenue publishing', function (): void {
         ]);
 
         $this->assertDatabaseHas('venues', ['uuid' => $venue->uuid, 'published_at' => null]);
+    });
+});
+
+describe('VenueService createVenue duplicates', function (): void {
+    it('treats a name and city that differ only in case and spaces as a duplicate', function (): void {
+        $city = fake()->city();
+        Venue::factory()->create(['name' => 'The Crown', 'city' => $city]);
+
+        expect(fn (): Venue => app(VenueService::class)->createVenue([
+            'name' => ' the crown ',
+            'city' => mb_strtoupper($city),
+            'latitude' => fake()->latitude(),
+            'longitude' => fake()->longitude(),
+        ]))->toThrow(VenueDuplicateException::class);
+    });
+
+    it('returns the waiting unpublished venue for a name that differs only in case', function (): void {
+        $city = fake()->city();
+        $waitingVenue = Venue::factory()->unpublished()->create(['name' => 'The Crown', 'city' => $city]);
+
+        $venue = app(VenueService::class)->createVenue([
+            'name' => 'the crown',
+            'city' => $city,
+            'latitude' => fake()->latitude(),
+            'longitude' => fake()->longitude(),
+        ]);
+
+        expect($venue->uuid)->toBe($waitingVenue->uuid);
+    });
+});
+
+describe('VenueService publishVenue', function (): void {
+    it('bumps the public cache version', function (): void {
+        $venue = Venue::factory()->unpublishedByAdmin()->create();
+
+        app(VenueService::class)->publishVenue($venue->uuid);
+
+        expect(app(PublicCacheVersion::class)->current())->toBe(2);
+    });
+
+    it('clears the venue\'s cached safety score', function (): void {
+        $venue = Venue::factory()->unpublishedByAdmin()->create();
+        Cache::put(sprintf('venue:safety_score:%s', $venue->uuid), fake()->numberBetween(0, 100));
+
+        app(VenueService::class)->publishVenue($venue->uuid);
+
+        expect(Cache::has(sprintf('venue:safety_score:%s', $venue->uuid)))->toBeFalse();
+    });
+
+    it('leaves an already published venue and the caches alone', function (): void {
+        $publishedAt = now()->subWeek()->startOfSecond();
+        $venue = Venue::factory()->create(['published_at' => $publishedAt]);
+
+        app(VenueService::class)->publishVenue($venue->uuid);
+
+        expect($venue->fresh()->published_at->equalTo($publishedAt))->toBeTrue()
+            ->and(app(PublicCacheVersion::class)->current())->toBe(1);
+    });
+});
+
+describe('VenueService unpublishVenue', function (): void {
+    it('leaves a venue the admin already unpublished and the caches alone', function (): void {
+        $unpublishedAt = now()->subWeek()->startOfSecond();
+        $venue = Venue::factory()->unpublishedByAdmin()->create(['unpublished_at' => $unpublishedAt]);
+
+        app(VenueService::class)->unpublishVenue($venue->uuid);
+
+        expect(Venue::withoutGlobalScope(PublishedVenueScope::class)->find($venue->uuid)->unpublished_at->equalTo($unpublishedAt))->toBeTrue()
+            ->and(app(PublicCacheVersion::class)->current())->toBe(1);
+    });
+
+    it('marks a never published venue as unpublished by the admin', function (): void {
+        $venue = Venue::factory()->unpublished()->create();
+
+        app(VenueService::class)->unpublishVenue($venue->uuid);
+
+        expect(Venue::withoutGlobalScope(PublishedVenueScope::class)->find($venue->uuid)->wasUnpublishedByAdmin())->toBeTrue();
+    });
+});
+
+describe('VenueService getVenueReportsForAdmin', function (): void {
+    it('returns 25 reports in every status per page, newest first', function (): void {
+        $venue = Venue::factory()->create();
+        Report::factory()->count(26)->for($venue, 'venue')->pending()->sequence(fn (Sequence $sequence): array => ['created_at' => now()->subDays($sequence->index + 1)])->create();
+        $newestReport = Report::factory()->for($venue, 'venue')->rejected()->create(['created_at' => now()]);
+
+        $reports = app(VenueService::class)->getVenueReportsForAdmin($venue);
+
+        expect($reports->total())->toBe(27)
+            ->and($reports->items())->toHaveCount(25)
+            ->and($reports->items()[0]->uuid)->toBe($newestReport->uuid);
     });
 });

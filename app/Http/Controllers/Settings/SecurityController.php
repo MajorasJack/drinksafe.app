@@ -28,12 +28,16 @@ class SecurityController extends Controller implements HasMiddleware
 
     /**
      * Show the user's security settings page.
+     *
+     * An admin without confirmed two-factor is told that the admin area needs
+     * it, since the admin routes send them here.
      */
     public function edit(TwoFactorAuthenticationRequest $request): Response
     {
         $props = [
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
+            'needsTwoFactorForAdmin' => $request->user()->is_admin && $request->user()->two_factor_confirmed_at === null,
         ];
 
         if (Features::canManageTwoFactorAuthentication()) {

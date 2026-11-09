@@ -96,6 +96,20 @@ describe('AdminVenueController show', function (): void {
             ->has('reports.0.would_empty_venue'));
     });
 
+    it('shows the second page of a venue\'s reports', function (): void {
+        $venue = Venue::factory()->create();
+        $oldestReport = Report::factory()->for($venue, 'venue')->create(['created_at' => now()->subYear()]);
+        Report::factory()->count(25)->for($venue, 'venue')->create();
+
+        $response = $this->get(route('admin.venues.show', ['uuid' => $venue->uuid, 'page' => 2]));
+
+        $response->assertOk()->assertInertia(fn (AssertableInertia $page): AssertableInertia => $page
+            ->where('total', 26)
+            ->where('pagination', ['current_page' => 2, 'last_page' => 2])
+            ->has('reports', 1)
+            ->where('reports.0.uuid', $oldestReport->uuid));
+    });
+
     it('returns not found for an unknown venue', function (): void {
         $response = $this->getJson(route('admin.venues.show', fake()->uuid()));
 
@@ -137,6 +151,23 @@ describe('AdminVenueController update', function (): void {
 
         $response->assertUnprocessable()->assertJsonValidationErrors([
             'name' => sprintf('%s in %s already exists', $otherVenue->name, $otherVenue->city),
+        ]);
+    });
+
+    it('refuses a name and city that differ from another venue\'s only in case', function (): void {
+        $city = fake()->city();
+        Venue::factory()->create(['name' => 'The Crown', 'city' => $city]);
+        $venue = Venue::factory()->create();
+
+        $response = $this->patchJson(route('admin.venues.update', $venue->uuid), [
+            'name' => 'the crown',
+            'city' => mb_strtolower($city),
+            'latitude' => fake()->latitude(),
+            'longitude' => fake()->longitude(),
+        ]);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors([
+            'name' => sprintf('The Crown in %s already exists', $city),
         ]);
     });
 

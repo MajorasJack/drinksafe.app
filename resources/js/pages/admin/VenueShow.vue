@@ -19,7 +19,14 @@ import type { Venue } from '@/types/venue';
 const props = defineProps<{
     venue: Venue;
     reports: QueuedReport[];
+    total: number;
+    pagination: { current_page: number; last_page: number };
 }>();
+
+const pageLink = (pageNumber: number) =>
+    AdminVenueController.show(props.venue.uuid, {
+        query: { page: pageNumber },
+    });
 
 defineOptions({
     layout: {
@@ -224,7 +231,7 @@ const confirmUnpublish = (): void => {
             <Heading
                 variant="small"
                 title="Reports"
-                :description="`${reports.length} ${reports.length === 1 ? 'report' : 'reports'}, in any status, newest first.`"
+                :description="`${total} ${total === 1 ? 'report' : 'reports'}, in any status, newest first.`"
             />
 
             <p
@@ -241,6 +248,39 @@ const confirmUnpublish = (): void => {
                     :report="report"
                 />
             </ul>
+
+            <nav
+                v-if="pagination.last_page > 1"
+                class="flex items-center justify-between gap-2"
+                aria-label="Report pages"
+            >
+                <Button
+                    v-if="pagination.current_page > 1"
+                    variant="outline"
+                    size="sm"
+                    as-child
+                >
+                    <Link :href="pageLink(pagination.current_page - 1)">
+                        Previous
+                    </Link>
+                </Button>
+                <span v-else />
+                <span class="text-sm text-muted-foreground">
+                    Page {{ pagination.current_page }} of
+                    {{ pagination.last_page }}
+                </span>
+                <Button
+                    v-if="pagination.current_page < pagination.last_page"
+                    variant="outline"
+                    size="sm"
+                    as-child
+                >
+                    <Link :href="pageLink(pagination.current_page + 1)">
+                        Next
+                    </Link>
+                </Button>
+                <span v-else />
+            </nav>
         </section>
 
         <ReviewConfirmationDialog

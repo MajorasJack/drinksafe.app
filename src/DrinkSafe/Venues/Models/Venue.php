@@ -211,6 +211,23 @@ final class Venue extends Model
     }
 
     /**
+     * Scope a query to venues with this name and city, ignoring case and surrounding spaces.
+     *
+     * Lower-casing both sides makes sqlite compare the way MySQL's collation does.
+     *
+     * @param  Builder<Venue>  $query
+     * @param  string  $name  Venue name
+     * @param  string  $city  City name
+     * @return Builder<Venue>
+     */
+    public function scopeSameNameAndCity(Builder $query, string $name, string $city): Builder
+    {
+        return $query
+            ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(trim($name))])
+            ->whereRaw('LOWER(TRIM(city)) = ?', [mb_strtolower(trim($city))]);
+    }
+
+    /**
      * Scope a query to filter venues by city.
      *
      * @param  Builder<Venue>  $query

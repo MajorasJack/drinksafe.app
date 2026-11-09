@@ -45,6 +45,22 @@ describe('AdminCoverageController', function (): void {
             ]));
     });
 
+    it('leaves out a city repeated in a different case', function (): void {
+        $response = $this->get(route('admin.coverage', ['cities' => 'Leeds, LEEDS, leeds, York']));
+
+        $response->assertOk()->assertInertia(fn (AssertableInertia $page): AssertableInertia => $page
+            ->where('cities', 'Leeds, York'));
+    });
+
+    it('counts as many cities as it allows at once', function (): void {
+        $cities = implode(',', array_map(fn (int $number): string => sprintf('City %d', $number), range(1, AdminCoverageRequest::MAX_CITIES)));
+
+        $response = $this->get(route('admin.coverage', ['cities' => $cities]));
+
+        $response->assertOk()->assertInertia(fn (AssertableInertia $page): AssertableInertia => $page
+            ->has('coverage', AdminCoverageRequest::MAX_CITIES));
+    });
+
     it('refuses more cities than it counts at once', function (): void {
         $cities = implode(',', array_map(fn (int $number): string => sprintf('City %d', $number), range(1, AdminCoverageRequest::MAX_CITIES + 1)));
 

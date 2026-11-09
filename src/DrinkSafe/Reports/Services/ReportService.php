@@ -13,6 +13,7 @@ use DrinkSafe\Reports\Exceptions\VenueUnpublishedException;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Notifications\ReportAwaitingReviewNotification;
 use DrinkSafe\Reports\Scopes\PublishedScope;
+use DrinkSafe\Shared\Controllers\SitemapController;
 use DrinkSafe\Venues\Models\Venue;
 use DrinkSafe\Venues\Scopes\PublishedVenueScope;
 use DrinkSafe\Venues\Services\VenueService;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 
@@ -234,6 +236,7 @@ final class ReportService
 
                 if ($venue->published_at === null) {
                     $venue->forceFill(['published_at' => now()])->save();
+                    DB::afterCommit(fn (): bool => Cache::forget(SitemapController::CACHE_KEY));
                 }
             }
 
