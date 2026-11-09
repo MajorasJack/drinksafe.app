@@ -15,14 +15,60 @@ it('sends an admin without two-factor from a full load of the admin area to the 
         ->assertNoJavaScriptErrors();
 });
 
-it('shows a confirmed admin the way back to the admin area from settings', function (): void {
+it('shows a confirmed admin the admin navigation on the settings pages', function (): void {
     $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
 
     $page = visit('/settings/profile');
 
-    $page->click('nav[aria-label="Admin"] >> text=Review queue')
+    $page->click('[data-sidebar="content"] [data-sidebar="menu-button"][href="/admin/reports"]')
         ->wait(1)
         ->assertPathIs('/admin/reports')
+        ->assertNoJavaScriptErrors();
+});
+
+it('lists every admin page in the sidebar', function (): void {
+    $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+
+    $page = visit('/admin');
+
+    $page->assertScript(
+        "Array.from(document.querySelectorAll('[data-sidebar=\"content\"] a[data-sidebar=\"menu-button\"]')).map((link) => link.textContent.trim())",
+        ['Dashboard', 'Review queue', 'Reports', 'Venues', 'Partners', 'Coverage'],
+    )->assertNoJavaScriptErrors();
+});
+
+it('opens the venues page from the sidebar and marks its link as active', function (): void {
+    $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+
+    $page = visit('/admin');
+
+    $page->click('[data-sidebar="content"] [data-sidebar="menu-button"][href="/admin/venues"]')
+        ->wait(1)
+        ->assertPathIs('/admin/venues')
+        ->assertAttribute('[data-sidebar="content"] [data-sidebar="menu-button"][href="/admin/venues"]', 'data-active', 'true')
+        ->assertAttribute('[data-sidebar="content"] [data-sidebar="menu-button"][href="/admin"]', 'data-active', 'false')
+        ->assertNoJavaScriptErrors();
+});
+
+it('opens an admin page from the sidebar on a phone', function (): void {
+    $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+
+    $page = visit('/admin')->on()->mobile()->wait(1);
+
+    $page->click('[data-test="sidebar-trigger"]')
+        ->wait(1)
+        ->click('[data-mobile="true"] [data-sidebar="menu-button"][href="/admin/partners"]')
+        ->wait(1)
+        ->assertPathIs('/admin/partners')
+        ->assertNoJavaScriptErrors();
+});
+
+it('keeps the admin sidebar off the public pages', function (): void {
+    $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+
+    $page = visit('/');
+
+    $page->assertScript('document.querySelectorAll(\'[data-slot="sidebar"]\').length', 0)
         ->assertNoJavaScriptErrors();
 });
 
@@ -37,4 +83,39 @@ it('shows a session flash message once as a toast on a full page load', function
         ->assertSee($message)
         ->assertScript("document.querySelectorAll('[data-sonner-toast]').length", 1)
         ->assertNoJavaScriptErrors();
+});
+
+it('shows a user who is not an admin the settings without admin navigation', function (): void {
+    $this->actingAs(User::factory()->create());
+
+    $page = visit('/settings/profile');
+
+    $page->assertSee('Profile information')
+        ->assertScript('document.querySelectorAll(\'[data-sidebar="content"] [data-sidebar="menu-button"]\').length', 0)
+        ->assertAttribute('[data-sidebar="header"] a', 'href', '/')
+        ->assertNoJavaScriptErrors();
+});
+
+it('opens the settings from the user menu in the sidebar', function (): void {
+    $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+
+    $page = visit('/admin');
+
+    $page->click('[data-test="sidebar-menu-button"]')
+        ->click('Settings')
+        ->wait(1)
+        ->assertPathIs('/settings/profile')
+        ->assertNoJavaScriptErrors();
+});
+
+it('logs out from the user menu in the sidebar', function (): void {
+    $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+
+    $page = visit('/admin');
+
+    $page->click('[data-test="sidebar-menu-button"]')
+        ->click('[data-test="logout-button"]')
+        ->wait(1)
+        ->assertPathIs('/');
+    $this->assertGuest();
 });
