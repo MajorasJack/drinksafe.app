@@ -8,6 +8,7 @@ use DrinkSafe\Reports\Controllers\AdminReportSearchController;
 use DrinkSafe\Reports\Controllers\ReportController;
 use DrinkSafe\Reports\Controllers\ReportModerationController;
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Venues\Controllers\AdminVenueController;
 use DrinkSafe\Venues\Controllers\VenueController;
 use DrinkSafe\Venues\Controllers\VenueSafetyScoreController;
 use DrinkSafe\Venues\Controllers\VenueSearchController;
@@ -87,4 +88,10 @@ Route::prefix('admin')
         Route::get('/reports/all', AdminReportSearchController::class)->name('reports.search');
         Route::post('/reports/bulk', [ReportModerationController::class, 'bulk'])->name('reports.bulk');
         Route::patch('/reports/{uuid}', [ReportModerationController::class, 'update'])->name('reports.update');
+
+        Route::get('/venues', [AdminVenueController::class, 'index'])->name('venues.index');
+        Route::get('/venues/{uuid}', [AdminVenueController::class, 'show'])->name('venues.show');
+        Route::patch('/venues/{uuid}', [AdminVenueController::class, 'update'])->name('venues.update');
+        Route::post('/venues/{uuid}/publish', [AdminVenueController::class, 'publish'])->name('venues.publish');
+        Route::post('/venues/{uuid}/unpublish', [AdminVenueController::class, 'unpublish'])->name('venues.unpublish');
     });

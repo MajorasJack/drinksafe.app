@@ -53,3 +53,14 @@ export interface VenueCollection {
         last_page?: number;
     };
 }
+
+/**
+ * Venue as the admin's venue list shows it, matching AdminVenueController::index
+ */
+export type AdminVenue = Required<
+    Pick<Venue, 'published_at' | 'unpublished_at' | 'is_at_default_coordinates'>
+> &
+    Venue & {
+        published_reports_count: number;
+        pending_reports_count: number;
+    };

@@ -3,6 +3,7 @@ import { Form, Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import AdminReportSearchController from '@/actions/DrinkSafe/Reports/Controllers/AdminReportSearchController';
 import ReportModerationController from '@/actions/DrinkSafe/Reports/Controllers/ReportModerationController';
+import AdminVenueController from '@/actions/DrinkSafe/Venues/Controllers/AdminVenueController';
 import ReportDecisionRow from '@/components/admin/ReportDecisionRow.vue';
 import ReviewConfirmationDialog from '@/components/admin/ReviewConfirmationDialog.vue';
 import VenueMiniMap from '@/components/admin/VenueMiniMap.vue';
@@ -281,6 +282,16 @@ const confirmBulkReject = (): void => {
                                 These are the default coordinates for a
                                 submission with no location, in central London.
                                 Correct the venue's location before you publish.
+                                <Link
+                                    :href="
+                                        AdminVenueController.show(
+                                            report.venue_uuid,
+                                        )
+                                    "
+                                    class="font-medium underline underline-offset-4"
+                                >
+                                    Edit venue
+                                </Link>
                             </AlertDescription>
                         </Alert>
                     </div>

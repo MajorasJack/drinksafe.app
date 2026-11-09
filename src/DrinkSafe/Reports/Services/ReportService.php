@@ -13,10 +13,8 @@ use DrinkSafe\Reports\Exceptions\VenueUnpublishedException;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Notifications\ReportAwaitingReviewNotification;
 use DrinkSafe\Reports\Scopes\PublishedScope;
-use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Models\Venue;
 use DrinkSafe\Venues\Scopes\PublishedVenueScope;
-use DrinkSafe\Venues\Services\SafetyScoreService;
 use DrinkSafe\Venues\Services\VenueService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -52,8 +50,6 @@ final class ReportService
     public function __construct(
         private readonly ReportModerationService $moderationService,
         private readonly VenueService $venueService,
-        private readonly SafetyScoreService $safetyScoreService,
-        private readonly PublicCacheVersion $publicCacheVersion,
     ) {}
 
     /**
@@ -318,8 +314,8 @@ final class ReportService
     /**
      * Unpublish a published venue that has no published reports left.
      *
-     * The report observer only clears the venue's score when a report's
-     * status changes, so the venue clears its own caches once this commits.
+     * Goes through the venue page's own unpublish action, which also clears
+     * the venue's caches once this commits.
      *
      * @param  Venue  $venue  The venue, locked for this transaction
      */
@@ -329,15 +325,7 @@ final class ReportService
             return;
         }
 
-        $venue->forceFill([
-            'published_at' => null,
-            'unpublished_at' => now(),
-        ])->save();
-
-        DB::afterCommit(function () use ($venue): void {
-            $this->safetyScoreService->invalidateScore($venue->uuid);
-            $this->publicCacheVersion->bump();
-        });
+        $this->venueService->unpublishVenue($venue->uuid);
     }
 
     /**

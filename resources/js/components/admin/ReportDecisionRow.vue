@@ -2,11 +2,11 @@
 import { Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import ReportModerationController from '@/actions/DrinkSafe/Reports/Controllers/ReportModerationController';
+import AdminVenueController from '@/actions/DrinkSafe/Venues/Controllers/AdminVenueController';
 import ReviewConfirmationDialog from '@/components/admin/ReviewConfirmationDialog.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDateTime } from '@/lib/utils';
-import { show as venuePage } from '@/routes/venues';
 import { ReportStatus } from '@/types/report';
 import type { QueuedReport, ReviewConfirmation } from '@/types/report';
 
@@ -66,13 +66,11 @@ const confirmTakedown = (): void => {
     <li class="flex flex-wrap items-center justify-between gap-2 p-4">
         <div class="min-w-0 space-y-1">
             <Link
-                v-if="report.venue.published_at"
-                :href="venuePage.url(report.venue.slug)"
+                :href="AdminVenueController.show(report.venue_uuid)"
                 class="font-medium underline-offset-4 hover:underline"
             >
                 {{ venueLabel }}
             </Link>
-            <p v-else class="font-medium">{{ venueLabel }}</p>
             <p class="truncate text-sm text-muted-foreground">
                 {{ report.description }}
             </p>

@@ -4,12 +4,20 @@ declare(strict_types=1);
 
 namespace DrinkSafe\Venues\Services;
 
+use DateTimeInterface;
+use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Reports\Scopes\PublishedScope;
+use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Exceptions\VenueDuplicateException;
 use DrinkSafe\Venues\Exceptions\VenueNotFoundException;
 use DrinkSafe\Venues\Models\Venue;
 use DrinkSafe\Venues\Scopes\PublishedVenueScope;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * VenueService
@@ -23,6 +31,14 @@ final class VenueService
      * Default maximum number of venues to return in bounds queries.
      */
     private const DEFAULT_BOUNDS_LIMIT = 300;
+
+    /**
+     * Create a new VenueService instance.
+     */
+    public function __construct(
+        private readonly SafetyScoreService $safetyScoreService,
+        private readonly PublicCacheVersion $publicCacheVersion,
+    ) {}
 
     /**
      * Retrieve all venues with report counts.
@@ -114,7 +130,11 @@ final class VenueService
     }
 
     /**
-     * Update an existing venue.
+     * Update an existing venue, published or not.
+     *
+     * The slug is left as it is, so existing links keep working. Moving the
+     * venue clears its cached safety score and the heatmap caches once the
+     * change commits.
      *
      * @param  string  $uuid  The venue UUID
      * @param  array<string, mixed>  $data  Updated venue data
@@ -123,7 +143,7 @@ final class VenueService
      */
     public function updateVenue(string $uuid, array $data): Venue
     {
-        $venue = Venue::find($uuid);
+        $venue = Venue::withoutGlobalScope(PublishedVenueScope::class)->find($uuid);
 
         if ($venue === null) {
             throw new VenueNotFoundException($uuid);
@@ -131,7 +151,97 @@ final class VenueService
 
         $venue->update($data);
 
+        if ($venue->wasChanged(['latitude', 'longitude'])) {
+            $this->clearPublicCachesAfterCommit($venue);
+        }
+
         return $venue->fresh();
+    }
+
+    /**
+     * Get a page of venues, published or not, narrowed by the admin's filters, by name.
+     *
+     * Orphaned venues are unpublished ones with no pending report, which a
+     * rejected submission or `POST /api/venues` leaves behind.
+     *
+     * @param  array{q?: string, city?: string, state?: string}  $filters  Name contains, city, and published, unpublished or orphaned
+     * @param  int  $perPage  Venues per page (default: 25)
+     * @return LengthAwarePaginator<int, Venue>
+     */
+    public function searchVenues(array $filters, int $perPage = 25): LengthAwarePaginator
+    {
+        return Venue::withoutGlobalScope(PublishedVenueScope::class)
+            ->withCount([
+                'reports as published_reports_count',
+                'reports as pending_reports_count' => fn (Builder $query): Builder => $query
+                    ->withoutGlobalScope(PublishedScope::class)
+                    ->where('status', ReportStatus::Pending),
+            ])
+            ->when($filters['q'] ?? null, fn (Builder $query, string $name): Builder => $query->whereRaw(
+                'name LIKE ? ESCAPE ?',
+                [sprintf('%%%s%%', addcslashes($name, '\\%_')), '\\'],
+            ))
+            ->when($filters['city'] ?? null, fn (Builder $query, string $city): Builder => $query->where('city', $city))
+            ->when(($filters['state'] ?? null) === 'published', fn (Builder $query): Builder => $query->whereNotNull('published_at'))
+            ->when(in_array($filters['state'] ?? null, ['unpublished', 'orphaned'], true), fn (Builder $query): Builder => $query->whereNull('published_at'))
+            ->when(($filters['state'] ?? null) === 'orphaned', fn (Builder $query): Builder => $query->whereDoesntHave(
+                'reports',
+                fn (Builder $reportQuery): Builder => $reportQuery
+                    ->withoutGlobalScope(PublishedScope::class)
+                    ->where('status', ReportStatus::Pending),
+            ))
+            ->orderBy('name')
+            ->orderBy('uuid')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    /**
+     * Get a venue, published or not, with its reports in every status, newest first.
+     *
+     * @param  string  $uuid  The venue UUID
+     *
+     * @throws ModelNotFoundException If no venue has this UUID
+     */
+    public function getVenueForAdmin(string $uuid): Venue
+    {
+        $venue = Venue::withoutGlobalScope(PublishedVenueScope::class)->findOrFail($uuid);
+
+        // each report points at the original, which has no reports loaded, so the resources don't nest forever
+        // shortcut: every report on one page, add pagination if a venue ever has hundreds
+        return (clone $venue)->setRelation('reports', $venue->reports()
+            ->withoutGlobalScope(PublishedScope::class)
+            ->latest()
+            ->latest('uuid')
+            ->get()
+            ->each(fn (Report $report): Report => $report->setRelation('venue', $venue)));
+    }
+
+    /**
+     * Put a venue back on the site. Its reports keep their status.
+     *
+     * @param  string  $uuid  The venue UUID
+     *
+     * @throws ModelNotFoundException If no venue has this UUID
+     */
+    public function publishVenue(string $uuid): Venue
+    {
+        return $this->setPublishState(uuid: $uuid, publishedAt: now(), unpublishedAt: null);
+    }
+
+    /**
+     * Take a venue off the site, along with all its reports.
+     *
+     * Marking it as unpublished by the admin stops a report about it from
+     * publishing it again until the venue itself is published.
+     *
+     * @param  string  $uuid  The venue UUID
+     *
+     * @throws ModelNotFoundException If no venue has this UUID
+     */
+    public function unpublishVenue(string $uuid): Venue
+    {
+        return $this->setPublishState(uuid: $uuid, publishedAt: null, unpublishedAt: now());
     }
 
     /**
@@ -176,5 +286,38 @@ final class VenueService
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Set when a venue was published and unpublished, then clear the caches that show it.
+     *
+     * @param  string  $uuid  The venue UUID
+     * @param  DateTimeInterface|null  $publishedAt  When it went on the site, or null to hide it
+     * @param  DateTimeInterface|null  $unpublishedAt  When the admin took it off, or null
+     *
+     * @throws ModelNotFoundException If no venue has this UUID
+     */
+    private function setPublishState(string $uuid, ?DateTimeInterface $publishedAt, ?DateTimeInterface $unpublishedAt): Venue
+    {
+        return DB::transaction(fn (): Venue => tap(
+            Venue::withoutGlobalScope(PublishedVenueScope::class)->lockForUpdate()->findOrFail($uuid),
+            function (Venue $venue) use ($publishedAt, $unpublishedAt): void {
+                $venue->forceFill(['published_at' => $publishedAt, 'unpublished_at' => $unpublishedAt])->save();
+                $this->clearPublicCachesAfterCommit($venue);
+            },
+        ));
+    }
+
+    /**
+     * Clear the venue's cached safety score and the heatmap caches once the transaction commits.
+     *
+     * @param  Venue  $venue  The venue that moved, or was published or unpublished
+     */
+    private function clearPublicCachesAfterCommit(Venue $venue): void
+    {
+        DB::afterCommit(function () use ($venue): void {
+            $this->safetyScoreService->invalidateScore($venue->uuid);
+            $this->publicCacheVersion->bump();
+        });
     }
 }
