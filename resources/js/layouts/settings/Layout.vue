@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -26,6 +26,9 @@ const sidebarNavItems: NavItem[] = [
 ];
 
 const { isCurrentOrParentUrl } = useCurrentUrl();
+
+// settings pages have no app navigation, so admins need a way back to the admin area
+const adminNavItems = usePage().props.admin.nav;
 </script>
 
 <template>
@@ -55,6 +58,27 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
                             <component :is="item.icon" class="h-4 w-4" />
                             {{ item.title }}
                         </Link>
+                    </Button>
+                </nav>
+
+                <nav
+                    v-if="adminNavItems.length > 0"
+                    class="mt-6 flex flex-col space-y-1 space-x-0"
+                    aria-label="Admin"
+                >
+                    <p
+                        class="px-3 pb-1 text-xs font-medium text-muted-foreground"
+                    >
+                        Admin
+                    </p>
+                    <Button
+                        v-for="item in adminNavItems"
+                        :key="item.name"
+                        variant="ghost"
+                        class="w-full justify-start"
+                        as-child
+                    >
+                        <Link :href="item.href">{{ item.title }}</Link>
                     </Button>
                 </nav>
             </aside>

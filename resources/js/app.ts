@@ -6,6 +6,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
+import type { FlashMessages } from '@/types/shared';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 const pinia = createPinia();
@@ -34,11 +35,14 @@ createInertiaApp({
             .use(pinia)
             .use(plugin)
             .mount(el);
+
+        // listen for flash toasts from the server, after mounting so the Toaster is there for the first page's messages
+        initializeFlashToast(
+            props.initialPage.props.flash as FlashMessages | undefined,
+        );
     },
 });
 
 // This will set light / dark mode on page load...
 initializeTheme();
 
-// This will listen for flash toast data from the server...
-initializeFlashToast();

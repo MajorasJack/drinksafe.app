@@ -52,7 +52,7 @@ it('sends an admin without confirmed two-factor to set it up', function (string 
     $response = $this->get(route($routeName));
 
     $response->assertRedirect(route('security.edit'))
-        ->assertSessionHas('status', fn (string $status): bool => str_contains($status, 'two-factor'));
+        ->assertInertiaFlash('toast.type', 'warning');
 })->with('admin pages');
 
 it('refuses a JSON request from an admin without confirmed two-factor', function (string $routeName): void {

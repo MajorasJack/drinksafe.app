@@ -21,6 +21,9 @@ final class EnsureTwoFactorConfirmed
 
     /**
      * Send the user to the security settings to set up two-factor, or refuse a JSON request.
+     *
+     * The security page explains why with a notice of its own, because the
+     * password confirmation in between can use up this toast.
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -32,6 +35,6 @@ final class EnsureTwoFactorConfirmed
 
         Inertia::flash('toast', ['type' => 'warning', 'message' => self::MESSAGE]);
 
-        return redirect()->route('security.edit')->with('status', self::MESSAGE);
+        return redirect()->route('security.edit');
     }
 }

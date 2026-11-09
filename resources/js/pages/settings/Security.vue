@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
-import { ShieldCheck } from 'lucide-vue-next';
+import { Form, Head, Link, usePage } from '@inertiajs/vue3';
+import { ShieldAlert, ShieldCheck } from 'lucide-vue-next';
 import { onUnmounted, ref } from 'vue';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import Heading from '@/components/Heading.vue';
@@ -8,9 +8,11 @@ import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import TwoFactorRecoveryCodes from '@/components/TwoFactorRecoveryCodes.vue';
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal.vue';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useTwoFactorAuth } from '@/composables/useTwoFactorAuth';
+import { dashboard } from '@/routes/admin';
 import { edit } from '@/routes/security';
 import { disable, enable } from '@/routes/two-factor';
 
@@ -19,6 +21,7 @@ type Props = {
     requiresConfirmation?: boolean;
     twoFactorEnabled?: boolean;
     passwordRules: string;
+    needsTwoFactorForAdmin: boolean;
 };
 
 const props = withDefaults(defineProps<Props>(), {
@@ -38,6 +41,7 @@ defineOptions({
     },
 });
 
+const page = usePage();
 const { hasSetupData, clearTwoFactorAuthData } = useTwoFactorAuth();
 const showSetupModal = ref<boolean>(false);
 
@@ -120,6 +124,29 @@ onUnmounted(() => clearTwoFactorAuthData());
     </div>
 
     <div v-if="canManageTwoFactor" class="space-y-6">
+        <Alert
+            v-if="needsTwoFactorForAdmin"
+            class="border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-100"
+            data-test="admin-two-factor-notice"
+        >
+            <ShieldAlert />
+            <AlertTitle>The admin area needs two-factor authentication</AlertTitle>
+            <AlertDescription class="text-amber-900 dark:text-amber-100">
+                Set up two-factor authentication to open the admin area. Click
+                Enable 2FA below, then scan the code with an authenticator app.
+            </AlertDescription>
+        </Alert>
+
+        <p v-else-if="page.props.auth.user?.is_admin" class="text-sm">
+            <Link
+                :href="dashboard()"
+                class="font-medium underline underline-offset-4"
+                data-test="admin-area-link"
+            >
+                Go to the admin area
+            </Link>
+        </p>
+
         <Heading
             variant="small"
             title="Two-factor authentication"
