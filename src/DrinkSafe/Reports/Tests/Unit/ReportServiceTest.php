@@ -10,6 +10,7 @@ use DrinkSafe\Reports\Exceptions\VenueUnpublishedException;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Notifications\ReportAwaitingReviewNotification;
 use DrinkSafe\Reports\Services\ReportService;
+use DrinkSafe\Shared\Controllers\SitemapController;
 use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Models\Venue;
 use DrinkSafe\Venues\Services\SafetyScoreService;
@@ -262,6 +263,35 @@ describe('ReportService', function (): void {
             $this->service->reviewReport(uuid: $report->uuid, status: ReportStatus::Published);
 
             expect(app(PublicCacheVersion::class)->current())->toBe(2);
+        });
+
+        it('clears the cached sitemap when the first published report publishes its venue', function (): void {
+            $report = Report::factory()->for(Venue::factory()->unpublished(), 'venue')->pending()->create();
+            Cache::put(SitemapController::CACHE_KEY, fake()->text());
+
+            $this->service->reviewReport(uuid: $report->uuid, status: ReportStatus::Published);
+
+            expect(Cache::has(SitemapController::CACHE_KEY))->toBeFalse();
+        });
+
+        it('keeps the cached sitemap until the review that publishes the venue commits', function (): void {
+            $report = Report::factory()->for(Venue::factory()->unpublished(), 'venue')->pending()->create();
+            Cache::put(SitemapController::CACHE_KEY, fake()->text());
+
+            DB::beginTransaction();
+            $this->service->reviewReport(uuid: $report->uuid, status: ReportStatus::Published);
+            DB::rollBack();
+
+            expect(Cache::has(SitemapController::CACHE_KEY))->toBeTrue();
+        });
+
+        it('keeps the cached sitemap when the venue was already published', function (): void {
+            $report = Report::factory()->pending()->create();
+            Cache::put(SitemapController::CACHE_KEY, fake()->text());
+
+            $this->service->reviewReport(uuid: $report->uuid, status: ReportStatus::Published);
+
+            expect(Cache::has(SitemapController::CACHE_KEY))->toBeTrue();
         });
     });
 

@@ -71,7 +71,7 @@ final class AdminVenueController extends Controller
     }
 
     /**
-     * Show a venue with its details, a map, and its reports in every status.
+     * Show a venue with its details, a map, and a page of its reports in every status.
      *
      * @param  string  $uuid  The venue UUID
      * @return Response Inertia response for the venue page
@@ -79,16 +79,22 @@ final class AdminVenueController extends Controller
     public function show(string $uuid): Response
     {
         $venue = $this->venueService->getVenueForAdmin($uuid);
+        $reports = $this->venueService->getVenueReportsForAdmin($venue);
 
-        $this->reportFlagService->loadVenueCounts($venue->reports);
+        $this->reportFlagService->loadVenueCounts($reports->getCollection());
 
         return Inertia::render('admin/VenueShow', [
             'seo' => Seo::default()->withTitle(sprintf('%s - Drink Safe', $venue->name))->noindex()->toArray(),
-            'venue' => (new VenueResource($venue->withoutRelations()))->resolve(),
-            'reports' => $venue->reports->map(fn (Report $report): array => [
+            'venue' => (new VenueResource($venue))->resolve(),
+            'reports' => $reports->getCollection()->map(fn (Report $report): array => [
                 ...(new ReportResource($report))->resolve(),
                 'would_empty_venue' => $this->reportFlagService->wouldEmptyVenue($report),
             ])->all(),
+            'total' => $reports->total(),
+            'pagination' => [
+                'current_page' => $reports->currentPage(),
+                'last_page' => $reports->lastPage(),
+            ],
         ]);
     }
 
