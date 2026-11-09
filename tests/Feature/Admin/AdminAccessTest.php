@@ -5,13 +5,14 @@ declare(strict_types=1);
 use App\Models\User;
 use Inertia\Testing\AssertableInertia;
 
-dataset('admin pages', ['admin.dashboard', 'admin.reports.index', 'admin.reports.search', 'admin.venues.index']);
+dataset('admin pages', ['admin.dashboard', 'admin.reports.index', 'admin.reports.search', 'admin.venues.index', 'admin.partners.index', 'admin.coverage']);
 
-dataset('venue actions', [
+dataset('admin actions', [
     'venue page' => ['GET', 'admin.venues.show'],
     'venue edit' => ['PATCH', 'admin.venues.update'],
     'venue publish' => ['POST', 'admin.venues.publish'],
     'venue unpublish' => ['POST', 'admin.venues.unpublish'],
+    'partner link edit' => ['PATCH', 'admin.partners.update'],
 ]);
 
 it('redirects guests to login', function (string $routeName): void {
@@ -36,13 +37,13 @@ it('forbids users who are not admins even without two-factor', function (string 
     $response->assertForbidden();
 })->with('admin pages');
 
-it('forbids users who are not admins from the venue pages and actions', function (string $method, string $routeName): void {
+it('forbids users who are not admins from the pages and actions for one record', function (string $method, string $routeName): void {
     $this->actingAs(User::factory()->withTwoFactor()->create());
 
     $response = $this->json($method, route($routeName, fake()->uuid()));
 
     $response->assertForbidden();
-})->with('venue actions');
+})->with('admin actions');
 
 it('sends an admin without confirmed two-factor to set it up', function (string $routeName): void {
     $this->actingAs(User::factory()->admin()->create());
@@ -83,12 +84,14 @@ it('shares only the admin navigation items whose routes exist', function (): voi
     $response = $this->get(route('admin.dashboard'));
 
     $response->assertInertia(fn (AssertableInertia $page): AssertableInertia => $page
-        ->has('admin.nav', 4)
+        ->has('admin.nav', 6)
         ->where('admin.nav.0.name', 'admin.dashboard')
         ->where('admin.nav.0.href', '/admin')
         ->where('admin.nav.1.name', 'admin.reports.index')
         ->where('admin.nav.2.name', 'admin.reports.search')
-        ->where('admin.nav.3.name', 'admin.venues.index'));
+        ->where('admin.nav.3.name', 'admin.venues.index')
+        ->where('admin.nav.4.name', 'admin.partners.index')
+        ->where('admin.nav.5.name', 'admin.coverage'));
 });
 
 it('shares no admin navigation with users who are not admins', function (): void {

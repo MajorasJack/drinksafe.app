@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use DrinkSafe\Analytics\Controllers\TemporalAnalyticsController;
 use DrinkSafe\Heatmap\Controllers\HeatmapController;
+use DrinkSafe\Partners\Controllers\AdminPartnerController;
+use DrinkSafe\Reports\Controllers\AdminCoverageController;
 use DrinkSafe\Reports\Controllers\AdminReportSearchController;
 use DrinkSafe\Reports\Controllers\ReportController;
 use DrinkSafe\Reports\Controllers\ReportModerationController;
@@ -94,4 +96,9 @@ Route::prefix('admin')
         Route::patch('/venues/{uuid}', [AdminVenueController::class, 'update'])->name('venues.update');
         Route::post('/venues/{uuid}/publish', [AdminVenueController::class, 'publish'])->name('venues.publish');
         Route::post('/venues/{uuid}/unpublish', [AdminVenueController::class, 'unpublish'])->name('venues.unpublish');
+
+        Route::get('/partners', [AdminPartnerController::class, 'index'])->name('partners.index');
+        Route::patch('/partners/{code}', [AdminPartnerController::class, 'update'])->name('partners.update');
+
+        Route::get('/coverage', AdminCoverageController::class)->name('coverage');
     });

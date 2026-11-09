@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace DrinkSafe\Partners\Commands;
 
-use DrinkSafe\Partners\Models\PartnerLink;
+use Carbon\CarbonImmutable;
+use DrinkSafe\Partners\Services\PartnerScanReport;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -36,7 +36,7 @@ final class PartnerReportCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): int
+    public function handle(PartnerScanReport $partnerScanReport): int
     {
         $validator = Validator::make(
             ['since' => $this->option('since'), 'until' => $this->option('until')],
@@ -49,23 +49,16 @@ final class PartnerReportCommand extends Command
             return self::FAILURE;
         }
 
-        $partnerLinks = PartnerLink::query()
-            ->withSum(['dailyCounts as total' => fn (Builder $query): Builder => $query
-                ->when($this->option('since'), fn (Builder $query, string $since): Builder => $query->where('date', '>=', $since))
-                ->when($this->option('until'), fn (Builder $query, string $until): Builder => $query->where('date', '<=', $until)),
-            ], 'count')
-            ->orderBy('code')
-            ->get()
-            ->sortByDesc(fn (PartnerLink $partnerLink): int => (int) $partnerLink->total)
-            ->values();
-
         $this->table(
             ['Code', 'Label', 'Active', 'Total'],
-            $partnerLinks->map(fn (PartnerLink $partnerLink): array => [
-                $partnerLink->code,
-                $partnerLink->label,
-                $partnerLink->active ? 'yes' : 'no',
-                (int) $partnerLink->total,
+            $partnerScanReport->totals(
+                from: $this->option('since') ? CarbonImmutable::parse($this->option('since')) : null,
+                to: $this->option('until') ? CarbonImmutable::parse($this->option('until')) : null,
+            )->map(fn (array $partnerTotal): array => [
+                $partnerTotal['code'],
+                $partnerTotal['label'],
+                $partnerTotal['active'] ? 'yes' : 'no',
+                $partnerTotal['total'],
             ])->all(),
         );
 
