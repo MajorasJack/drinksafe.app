@@ -234,6 +234,10 @@ final class Venue extends Model
     /**
      * Scope a query to venues with this name and city, ignoring case and surrounding spaces.
      *
+     * A name and city isn't unique, because a chain can have many branches in
+     * one city. `VenueService::findSameVenue()` adds the distance check that
+     * tells them apart.
+     *
      * The columns are trimmed when they're saved, and MySQL's `utf8mb4_unicode_ci`
      * collation already ignores case (and accents), so MySQL compares the plain
      * columns and can use `idx_venues_city_name`. Other drivers compare case-sensitively,
@@ -255,6 +259,19 @@ final class Venue extends Model
         return $query
             ->whereRaw('LOWER(city) = ?', [strtolower(trim($city))])
             ->whereRaw('LOWER(name) = ?', [strtolower(trim($name))]);
+    }
+
+    /**
+     * Scope a query to venues on the point a submission gets when it has no coordinates.
+     *
+     * @param  Builder<Venue>  $query
+     * @return Builder<Venue>
+     */
+    public function scopeAtDefaultCoordinates(Builder $query): Builder
+    {
+        return $query
+            ->where('latitude', ReportService::DEFAULT_LATITUDE)
+            ->where('longitude', ReportService::DEFAULT_LONGITUDE);
     }
 
     /**

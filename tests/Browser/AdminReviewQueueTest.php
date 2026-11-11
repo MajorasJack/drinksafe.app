@@ -73,3 +73,23 @@ it('shows one toast after a bulk review', function (): void {
         ->assertScript("document.querySelectorAll('[data-sonner-toast]').length", 1)
         ->assertNoJavaScriptErrors();
 });
+
+it('moves a pending report from a chain placeholder to the branch the admin picks', function (): void {
+    $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+    $city = fake()->city();
+    $placeholder = Venue::factory()->unpublished()->atDefaultCoordinates()->create(['name' => 'All Bar One', 'city' => $city]);
+    $report = Report::factory()->for($placeholder, 'venue')->pending()->create();
+    $branch = Venue::factory()->create(['name' => 'All Bar One', 'city' => $city, 'address' => fake()->streetAddress()]);
+    Venue::factory()->create(['name' => 'All Bar One', 'city' => $city, 'address' => fake()->streetAddress()]);
+
+    $page = visit('/admin/reports');
+
+    $page->click('Move to venue')
+        ->wait(1)
+        ->click($branch->address)
+        ->click('Move report')
+        ->wait(1)
+        ->assertSee(sprintf('Report moved to All Bar One, %s.', $city))
+        ->assertNoJavaScriptErrors();
+    expect(Report::withoutGlobalScopes()->find($report->uuid)->venue_uuid)->toBe($branch->uuid);
+});

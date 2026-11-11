@@ -6,9 +6,11 @@ namespace DrinkSafe\Reports\Controllers;
 
 use App\Http\Controllers\Controller;
 use DrinkSafe\Reports\Enums\ReportStatus;
+use DrinkSafe\Reports\Exceptions\ReportNotPendingException;
 use DrinkSafe\Reports\Exceptions\VenueUnpublishedException;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Requests\BulkReviewReportsRequest;
+use DrinkSafe\Reports\Requests\MoveReportRequest;
 use DrinkSafe\Reports\Requests\UpdateReportStatusRequest;
 use DrinkSafe\Reports\Resources\ReportResource;
 use DrinkSafe\Reports\Services\ReportFlagService;
@@ -103,6 +105,28 @@ final class ReportModerationController extends Controller
         return redirect()
             ->to(url()->previous(route('admin.reports.index')))
             ->with('success', $report->status === ReportStatus::Published ? 'Report published.' : 'Report rejected.');
+    }
+
+    /**
+     * Move a pending report onto another venue.
+     *
+     * @param  MoveReportRequest  $request  The validated venue
+     * @param  string  $uuid  The report UUID
+     * @return RedirectResponse Back to the page the admin came from
+     *
+     * @throws ValidationException If the report is no longer pending
+     */
+    public function move(MoveReportRequest $request, string $uuid): RedirectResponse
+    {
+        try {
+            $report = $this->reportService->moveReportToVenue(uuid: $uuid, venueUuid: $request->validated('venue_uuid'));
+        } catch (ReportNotPendingException $exception) {
+            throw ValidationException::withMessages(['venue_uuid' => $exception->getMessage()]);
+        }
+
+        return redirect()
+            ->to(url()->previous(route('admin.reports.index')))
+            ->with('success', sprintf('Report moved to %s, %s.', $report->venue->name, $report->venue->city));
     }
 
     /**

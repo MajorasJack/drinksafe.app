@@ -184,6 +184,36 @@ describe('AdminVenueController update', function (): void {
         $response->assertRedirect(route('admin.venues.show', $venue->uuid));
     });
 
+    it('moves one branch of a chain that shares its name and city with another', function (): void {
+        $venue = Venue::factory()->create(['name' => 'All Bar One', 'city' => 'London']);
+        Venue::factory()->create(['name' => 'All Bar One', 'city' => 'London']);
+        $coordinates = ['latitude' => fake()->latitude(50, 55), 'longitude' => fake()->longitude(-3, 1)];
+
+        $response = $this->patchJson(route('admin.venues.update', $venue->uuid), [
+            'name' => $venue->name,
+            'city' => $venue->city,
+            ...$coordinates,
+        ]);
+
+        $response->assertRedirect(route('admin.venues.show', $venue->uuid));
+        expect((float) $venue->fresh()->latitude)->toEqualWithDelta($coordinates['latitude'], 0.000001);
+    });
+
+    it('lets a branch of a chain change only the capitals of its own name and city', function (): void {
+        $venue = Venue::factory()->create(['name' => 'All Bar One', 'city' => 'London']);
+        Venue::factory()->create(['name' => 'All Bar One', 'city' => 'London']);
+
+        $response = $this->patchJson(route('admin.venues.update', $venue->uuid), [
+            'name' => 'ALL BAR ONE',
+            'city' => 'london',
+            'latitude' => $venue->latitude,
+            'longitude' => $venue->longitude,
+        ]);
+
+        $response->assertRedirect(route('admin.venues.show', $venue->uuid));
+        expect($venue->fresh()->name)->toBe('ALL BAR ONE');
+    });
+
     it('rejects coordinates outside valid latitude and longitude', function (): void {
         $venue = Venue::factory()->create();
 
@@ -414,5 +444,30 @@ describe('AdminVenueController unpublish and the venue\'s reports', function ():
         $this->postJson(route('admin.venues.publish', $venue->uuid));
 
         expect(Cache::has(SitemapController::CACHE_KEY))->toBeFalse();
+    });
+});
+
+describe('AdminVenueController lookup', function (): void {
+    it('finds published and unpublished venues by name and city', function (): void {
+        $city = fake()->unique()->city();
+        $published = Venue::factory()->create(['name' => 'All Bar One Soho', 'city' => $city]);
+        $unpublished = Venue::factory()->unpublished()->create(['name' => 'All Bar One Bank', 'city' => $city]);
+        Venue::factory()->create(['name' => 'All Bar One Leeds', 'city' => fake()->unique()->city()]);
+
+        $response = $this->getJson(route('admin.venues.lookup', ['q' => 'All Bar One', 'city' => $city]));
+
+        $response->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.uuid', $unpublished->uuid)
+            ->assertJsonPath('data.0.published_at', null)
+            ->assertJsonPath('data.1.uuid', $published->uuid);
+    });
+
+    it('returns at most 10 venues', function (): void {
+        Venue::factory()->count(11)->create(['city' => fake()->city()]);
+
+        $response = $this->getJson(route('admin.venues.lookup'));
+
+        $response->assertOk()->assertJsonCount(10, 'data');
     });
 });

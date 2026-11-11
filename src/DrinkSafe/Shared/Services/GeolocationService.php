@@ -50,10 +50,10 @@ final class GeolocationService
      * @param  float  $lng1  Longitude of centre point
      * @param  float  $lat2  Latitude of point to check
      * @param  float  $lng2  Longitude of point to check
-     * @param  int  $radiusKm  Radius in kilometres
+     * @param  float  $radiusKm  Radius in kilometres
      * @return bool True if point 2 is within radius of point 1
      */
-    public function isWithinRadius(float $lat1, float $lng1, float $lat2, float $lng2, int $radiusKm): bool
+    public function isWithinRadius(float $lat1, float $lng1, float $lat2, float $lng2, float $radiusKm): bool
     {
         return $this->distance($lat1, $lng1, $lat2, $lng2) <= $radiusKm;
     }
@@ -67,10 +67,10 @@ final class GeolocationService
      *
      * @param  float  $lat  Centre latitude
      * @param  float  $lng  Centre longitude
-     * @param  int  $radiusKm  Radius in kilometres
+     * @param  float  $radiusKm  Radius in kilometres
      * @return array{minLat: float, maxLat: float, minLng: float, maxLng: float} Bounding box coordinates
      */
-    public function getBoundingBox(float $lat, float $lng, int $radiusKm): array
+    public function getBoundingBox(float $lat, float $lng, float $radiusKm): array
     {
         // Approximation: 1 degree latitude ≈ 111km
         $latDelta = $radiusKm / 111.0;

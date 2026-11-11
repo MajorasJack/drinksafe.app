@@ -49,6 +49,7 @@ This module manages:
 
 ### Exceptions
 - **ReportNotFoundException** - Thrown when report UUID not found
+- **ReportNotPendingException** - Thrown when moving a report that has been published or rejected
 - **ReportValidationException** - Thrown when report data validation fails
 
 ## Data Model
@@ -85,6 +86,7 @@ New reports are saved as `pending` and stay off the site until an admin publishe
 - When a report is created, `ReportService` sends `ReportAwaitingReviewNotification` to `services.reports.alert_email` (`REPORT_ALERT_EMAIL`, default `drinksafe@protonmail.com`). The email has no report text and no venue name. It sends during the request rather than through the queue. If it can't be sent, the report is still saved.
 - Admins work the queue at `/admin/reports`. It needs a logged-in user with `is_admin` set, which only `php artisan drinksafe:make-admin {email}` can do. The site has no public registration, so the same command creates the account if it doesn't exist yet. Publishing or rejecting sets `reviewed_at`. A published report can be taken down by rejecting it.
 - `/admin/reports/all` lists every report, 25 a page, newest first. Its Take down and Publish buttons use the queue's update action, which redirects back to the same filtered list. The description search finds reports containing every word typed, using `LIKE` with `%` and `_` matched as plain characters. It doesn't use the full-text index, which skips words under three letters and common words.
+- "Move to venue" on a pending report in the queue (`PATCH /admin/reports/{uuid}/venue`, `ReportService::moveReportToVenue()`) puts it on another venue, published or not. It's how a report on a chain's placeholder at the default coordinates reaches the right branch; see the Venues README for how reports end up there. The search behind it is `GET /admin/venues/lookup`. Only pending reports can be moved, because a reviewed report already counts towards its venue's public figures. The venue it leaves is kept, and if it has no reports left the admin's orphaned venue filter lists it.
 - A venue named for the first time in a submission is unpublished (`published_at` is null) and hidden by `PublishedVenueScope` until a report about it is published. Venues created through `POST /api/venues` start unpublished too.
 - The migration that added `status` made every existing report pending, on purpose, so they all get reviewed.
 - Heatmap and analytics results are cached (15 minutes and 6 hours). Their cache keys include `PublicCacheVersion`, and `ReportObserver` bumps it whenever a report's status changes or a published report is deleted or restored, so publishing or taking down a report shows there straight away. It runs after the transaction commits, and it never flushes the whole cache, which would also clear rate limiter counters. Venue safety scores are cleared straight away by `ReportObserver` too.

@@ -141,8 +141,8 @@ describe('VenueController', function (): void {
             $data = [
                 'name' => 'The Neon Club',
                 'city' => 'London',
-                'latitude' => fake()->latitude(),
-                'longitude' => fake()->longitude(),
+                'latitude' => $existingVenue->latitude,
+                'longitude' => $existingVenue->longitude,
             ];
 
             $response = $this->postJson(route('api.venues.store'), $data);
@@ -154,17 +154,49 @@ describe('VenueController', function (): void {
         it('returns 422 for a venue whose name and city differ only in case', function (): void {
             $name = fake()->company();
             $city = fake()->city();
-            Venue::factory()->create(['name' => $name, 'city' => $city]);
+            $venue = Venue::factory()->create(['name' => $name, 'city' => $city]);
 
             $response = $this->postJson(route('api.venues.store'), [
                 'name' => strtoupper($name),
                 'city' => strtolower($city),
-                'latitude' => fake()->latitude(),
-                'longitude' => fake()->longitude(),
+                'latitude' => $venue->latitude,
+                'longitude' => $venue->longitude,
             ]);
 
             $response->assertUnprocessable();
             expect(Venue::query()->count())->toBe(1);
+        });
+
+        it('returns 422 for a published venue with the same name and city within 100 metres', function (): void {
+            $latitude = fake()->latitude(50, 55);
+            $longitude = fake()->longitude(-3, 1);
+            $venue = Venue::factory()->create(['latitude' => $latitude, 'longitude' => $longitude]);
+
+            $response = $this->postJson(route('api.venues.store'), [
+                'name' => $venue->name,
+                'city' => $venue->city,
+                'latitude' => $latitude + 0.0005,
+                'longitude' => $longitude,
+            ]);
+
+            $response->assertUnprocessable();
+            expect(Venue::withoutGlobalScope(PublishedVenueScope::class)->count())->toBe(1);
+        });
+
+        it('creates a new branch when the venue with the same name and city is 500 metres away', function (): void {
+            $latitude = fake()->latitude(50, 55);
+            $longitude = fake()->longitude(-3, 1);
+            $otherBranch = Venue::factory()->create(['latitude' => $latitude, 'longitude' => $longitude]);
+
+            $response = $this->postJson(route('api.venues.store'), [
+                'name' => $otherBranch->name,
+                'city' => $otherBranch->city,
+                'latitude' => $latitude + 0.0045,
+                'longitude' => $longitude,
+            ]);
+
+            $response->assertCreated();
+            expect($response->json('data.uuid'))->not->toBe($otherBranch->uuid);
         });
 
         it('returns 422 for missing required fields', function (): void {
@@ -331,8 +363,8 @@ describe('VenueController unpublished venues', function (): void {
         $response = $this->postJson(route('api.venues.store'), [
             'name' => $venue->name,
             'city' => $venue->city,
-            'latitude' => fake()->latitude(),
-            'longitude' => fake()->longitude(),
+            'latitude' => $venue->latitude,
+            'longitude' => $venue->longitude,
         ]);
 
         $response->assertCreated()->assertJsonPath('data.uuid', $venue->uuid);

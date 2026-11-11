@@ -4,6 +4,7 @@ import { computed, ref } from 'vue';
 import AdminReportSearchController from '@/actions/DrinkSafe/Reports/Controllers/AdminReportSearchController';
 import ReportModerationController from '@/actions/DrinkSafe/Reports/Controllers/ReportModerationController';
 import AdminVenueController from '@/actions/DrinkSafe/Venues/Controllers/AdminVenueController';
+import MoveReportDialog from '@/components/admin/MoveReportDialog.vue';
 import ReportDecisionRow from '@/components/admin/ReportDecisionRow.vue';
 import ReviewConfirmationDialog from '@/components/admin/ReviewConfirmationDialog.vue';
 import VenueMiniMap from '@/components/admin/VenueMiniMap.vue';
@@ -63,6 +64,7 @@ const statusError = computed(
 const selectedUuids = ref<string[]>([]);
 const confirmation = ref<ReviewConfirmation | null>(null);
 const isSubmitting = ref(false);
+const movingReport = ref<QueuedReport | null>(null);
 
 const selectedReports = computed(() =>
     props.pending_reports.filter((report) =>
@@ -240,13 +242,14 @@ const confirmBulkReject = (): void => {
                                 v-else-if="report.venue.published_at === null"
                                 class="text-sm font-medium"
                             >
-                                New venue: publishing this report also
-                                publishes this venue's name and address.
+                                New venue: publishing this report also publishes
+                                this venue's name and address.
                             </p>
                             <CardDescription>
                                 Incident on {{ report.incident_date }},
-                                {{ report.incident_time ?? report.time_of_day }}.
-                                Submitted
+                                {{
+                                    report.incident_time ?? report.time_of_day
+                                }}. Submitted
                                 {{ formatDateTime(report.created_at) }}.
                             </CardDescription>
                             <div
@@ -343,6 +346,13 @@ const confirmBulkReject = (): void => {
                                 Reject
                             </Button>
                         </Form>
+
+                        <Button
+                            variant="outline"
+                            @click="movingReport = report"
+                        >
+                            Move to venue
+                        </Button>
                     </div>
                 </CardContent>
             </Card>
@@ -436,5 +446,7 @@ const confirmBulkReject = (): void => {
             :is-submitting="isSubmitting"
             @close="confirmation = null"
         />
+
+        <MoveReportDialog :report="movingReport" @close="movingReport = null" />
     </div>
 </template>

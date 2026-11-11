@@ -94,6 +94,110 @@ describe('ReportService', function (): void {
             expect(Venue::where('name', 'Test Club')->where('city', 'London')->count())->toBe(1);
         });
 
+        it('uses the branch within 100 metres when the submission has coordinates', function (): void {
+            $latitude = fake()->latitude(50, 55);
+            $longitude = fake()->longitude(-3, 1);
+            $venue = Venue::factory()->create(['latitude' => $latitude, 'longitude' => $longitude]);
+
+            $report = $this->service->createReport([
+                'venue_name' => $venue->name,
+                'venue_city' => $venue->city,
+                'latitude' => $latitude + 0.0005,
+                'longitude' => $longitude,
+                'incident_date' => Carbon::yesterday()->toDateString(),
+                'time_of_day' => TimeOfDay::Night,
+                'description' => fake()->sentence(),
+            ]);
+
+            expect($report->venue_uuid)->toBe($venue->uuid);
+        });
+
+        it('creates a new unpublished venue when the only branch is 500 metres away', function (): void {
+            $latitude = fake()->latitude(50, 55);
+            $longitude = fake()->longitude(-3, 1);
+            $otherBranch = Venue::factory()->create(['latitude' => $latitude, 'longitude' => $longitude]);
+
+            $report = $this->service->createReport([
+                'venue_name' => $otherBranch->name,
+                'venue_city' => $otherBranch->city,
+                'latitude' => $latitude + 0.0045,
+                'longitude' => $longitude,
+                'incident_date' => Carbon::yesterday()->toDateString(),
+                'time_of_day' => TimeOfDay::Night,
+                'description' => fake()->sentence(),
+            ]);
+
+            expect($report->venue_uuid)->not->toBe($otherBranch->uuid)
+                ->and($report->venue->published_at)->toBeNull();
+        });
+
+        it('creates a new venue at the default coordinates when a chain is named without coordinates', function (): void {
+            $name = fake()->company();
+            $city = fake()->city();
+            $branches = Venue::factory()->count(2)->create(['name' => $name, 'city' => $city]);
+
+            $report = $this->service->createReport([
+                'venue_name' => $name,
+                'venue_city' => $city,
+                'incident_date' => Carbon::yesterday()->toDateString(),
+                'time_of_day' => TimeOfDay::Night,
+                'description' => fake()->sentence(),
+            ]);
+
+            expect($branches->pluck('uuid'))->not->toContain($report->venue_uuid)
+                ->and($report->venue->fresh()->isAtDefaultCoordinates())->toBeTrue();
+        });
+
+        it('sends a second report about a chain without coordinates to the same placeholder', function (): void {
+            $name = fake()->company();
+            $city = fake()->city();
+            Venue::factory()->count(2)->create(['name' => $name, 'city' => $city]);
+            $submission = [
+                'venue_name' => $name,
+                'venue_city' => $city,
+                'incident_date' => Carbon::yesterday()->toDateString(),
+                'time_of_day' => TimeOfDay::Night,
+                'description' => fake()->sentence(),
+            ];
+            $firstReport = $this->service->createReport($submission);
+
+            $secondReport = $this->service->createReport($submission);
+
+            expect($secondReport->venue_uuid)->toBe($firstReport->venue_uuid);
+        });
+
+        it('treats a submission with only a latitude as having no coordinates', function (): void {
+            $venue = Venue::factory()->create();
+
+            $report = $this->service->createReport([
+                'venue_name' => $venue->name,
+                'venue_city' => $venue->city,
+                'latitude' => fake()->latitude(),
+                'incident_date' => Carbon::yesterday()->toDateString(),
+                'time_of_day' => TimeOfDay::Night,
+                'description' => fake()->sentence(),
+            ]);
+
+            expect($report->venue_uuid)->toBe($venue->uuid);
+        });
+
+        it('puts a chain report with only a longitude on a venue at the default coordinates', function (): void {
+            $name = fake()->company();
+            $city = fake()->city();
+            Venue::factory()->count(2)->create(['name' => $name, 'city' => $city]);
+
+            $report = $this->service->createReport([
+                'venue_name' => $name,
+                'venue_city' => $city,
+                'longitude' => fake()->longitude(),
+                'incident_date' => Carbon::yesterday()->toDateString(),
+                'time_of_day' => TimeOfDay::Night,
+                'description' => fake()->sentence(),
+            ]);
+
+            expect($report->venue->fresh()->isAtDefaultCoordinates())->toBeTrue();
+        });
+
         it('sanitises description with email before storage', function (): void {
             // Arrange
             $venue = Venue::factory()->create();

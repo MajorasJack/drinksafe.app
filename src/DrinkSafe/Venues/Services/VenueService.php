@@ -9,6 +9,7 @@ use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Reports\Scopes\PublishedScope;
 use DrinkSafe\Shared\Controllers\SitemapController;
+use DrinkSafe\Shared\Services\GeolocationService;
 use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Exceptions\VenueDuplicateException;
 use DrinkSafe\Venues\Exceptions\VenueNotFoundException;
@@ -35,11 +36,17 @@ final class VenueService
     private const DEFAULT_BOUNDS_LIMIT = 300;
 
     /**
+     * How close a venue with the same name and city must be to count as the same place, in kilometres (100 metres).
+     */
+    public const float SAME_VENUE_RADIUS_KM = 0.1;
+
+    /**
      * Create a new VenueService instance.
      */
     public function __construct(
         private readonly SafetyScoreService $safetyScoreService,
         private readonly PublicCacheVersion $publicCacheVersion,
+        private readonly GeolocationService $geolocationService,
     ) {}
 
     /**
@@ -108,30 +115,111 @@ final class VenueService
     /**
      * Create a new venue.
      *
-     * Validates that a venue with the same name doesn't already exist in the same city.
+     * Refuses a venue that already exists, which means the same name and city
+     * within SAME_VENUE_RADIUS_KM of the given coordinates. Chains have many
+     * branches in one city, so a match further away is a different branch.
      * The venue is created unpublished, because its details come from the public
      * and nobody has reviewed them yet. Publishing a report about it publishes it.
-     * An unpublished venue with the same name and city is returned as it is,
-     * rather than throwing, so the caller can't tell that a submission is
-     * waiting for review, and no second copy of the venue is created. Data from
-     * before the duplicate check can hold more than one match, so a published
-     * match wins, then the oldest.
+     * An unpublished match is returned as it is, rather than throwing, so the
+     * caller can't tell that a submission is waiting for review, and no second
+     * copy of the venue is created.
      *
-     * @param  array<string, mixed>  $data  Venue data
+     * @param  array{name: string, city: string, address?: string|null, latitude: float|int|string, longitude: float|int|string}  $data  Venue data
      *
      * @throws VenueDuplicateException If a published venue already exists
      */
     public function createVenue(array $data): Venue
     {
-        $existingVenue = Venue::withoutGlobalScope(PublishedVenueScope::class)
-            ->sameNameAndCity(name: $data['name'], city: $data['city'])
-            ->orderByRaw('published_at IS NULL')
-            ->oldest()
-            ->first();
+        $existingVenue = $this->findSameVenue(
+            name: $data['name'],
+            city: $data['city'],
+            latitude: (float) $data['latitude'],
+            longitude: (float) $data['longitude'],
+        );
 
         throw_if($existingVenue?->published_at !== null, VenueDuplicateException::class, $data['name'], $data['city']);
 
-        return $existingVenue ?? tap(new Venue($data), fn (Venue $venue): bool => $venue->forceFill(['published_at' => null])->save());
+        return $existingVenue ?? $this->createUnpublishedVenue($data);
+    }
+
+    /**
+     * Find the venue, published or not, that a submission with this name, city and location means.
+     *
+     * With coordinates, it's a venue with the same name and city (ignoring
+     * case and surrounding spaces) within SAME_VENUE_RADIUS_KM. A published
+     * match wins, then the nearest. A placeholder at the default coordinates
+     * never counts, as its pin isn't a real location. Without coordinates,
+     * see findSameVenueByNameAndCity().
+     *
+     * @param  string  $name  Venue name
+     * @param  string  $city  City name
+     * @param  float|null  $latitude  Latitude of the submission, or null if it has none
+     * @param  float|null  $longitude  Longitude of the submission, or null if it has none
+     */
+    public function findSameVenue(string $name, string $city, ?float $latitude, ?float $longitude): ?Venue
+    {
+        if ($latitude === null || $longitude === null) {
+            return $this->findSameVenueByNameAndCity(name: $name, city: $city);
+        }
+
+        $boundingBox = $this->geolocationService->getBoundingBox($latitude, $longitude, self::SAME_VENUE_RADIUS_KM);
+
+        return Venue::withoutGlobalScope(PublishedVenueScope::class)
+            ->sameNameAndCity(name: $name, city: $city)
+            ->whereBetween('latitude', [$boundingBox['minLat'], $boundingBox['maxLat']])
+            ->whereBetween('longitude', [$boundingBox['minLng'], $boundingBox['maxLng']])
+            ->get()
+            ->reject(fn (Venue $venue): bool => $venue->isAtDefaultCoordinates())
+            ->map(fn (Venue $venue): array => [
+                'venue' => $venue,
+                'distance' => $this->geolocationService->distance($latitude, $longitude, (float) $venue->latitude, (float) $venue->longitude),
+            ])
+            ->filter(fn (array $match): bool => $match['distance'] <= self::SAME_VENUE_RADIUS_KM)
+            ->sortBy([
+                fn (array $first, array $second): int => ($first['venue']->published_at === null) <=> ($second['venue']->published_at === null),
+                fn (array $first, array $second): int => $first['distance'] <=> $second['distance'],
+            ])
+            ->first()['venue'] ?? null;
+    }
+
+    /**
+     * Find the venue a submission with no coordinates means, from its name and city alone.
+     *
+     * Only published venues decide whether the name and city is a chain, so
+     * unpublished copies (from `POST /api/venues`, or placeholders) can't turn
+     * a single venue into one. One published match is the venue. Two or more
+     * is a chain with no telling which branch was meant, so it's the chain's
+     * existing placeholder at the default coordinates, if it has one. With no
+     * published match, the oldest unpublished one, so a second report about
+     * a new venue joins the first.
+     *
+     * @param  string  $name  Venue name
+     * @param  string  $city  City name
+     */
+    private function findSameVenueByNameAndCity(string $name, string $city): ?Venue
+    {
+        $publishedMatches = Venue::sameNameAndCity(name: $name, city: $city)->limit(2)->get();
+        $unpublishedMatches = Venue::withoutGlobalScope(PublishedVenueScope::class)
+            ->sameNameAndCity(name: $name, city: $city)
+            ->whereNull('published_at')
+            ->oldest()
+            ->oldest('uuid');
+
+        return match ($publishedMatches->count()) {
+            0 => $unpublishedMatches->first(),
+            1 => $publishedMatches->first(),
+            default => $unpublishedMatches->atDefaultCoordinates()->first(),
+        };
+    }
+
+    /**
+     * Create an unpublished venue without checking for an existing one.
+     *
+     * @param  array{name: string, city: string, address?: string|null, latitude: float|int|string, longitude: float|int|string}  $data  Venue data
+     */
+    public function createUnpublishedVenue(array $data): Venue
+    {
+        return tap(new Venue($data), fn (Venue $venue): bool => $venue->forceFill(['published_at' => null])->save());
     }
 
     /**

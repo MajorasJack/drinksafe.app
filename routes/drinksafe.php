@@ -92,8 +92,10 @@ Route::prefix('admin')
         Route::get('/reports/all', AdminReportSearchController::class)->name('reports.search');
         Route::post('/reports/bulk', [ReportModerationController::class, 'bulk'])->name('reports.bulk');
         Route::patch('/reports/{uuid}', [ReportModerationController::class, 'update'])->name('reports.update');
+        Route::patch('/reports/{uuid}/venue', [ReportModerationController::class, 'move'])->name('reports.move');
 
         Route::get('/venues', [AdminVenueController::class, 'index'])->name('venues.index');
+        Route::get('/venues/lookup', [AdminVenueController::class, 'lookup'])->name('venues.lookup');
         Route::get('/venues/{uuid}', [AdminVenueController::class, 'show'])->name('venues.show');
         Route::patch('/venues/{uuid}', [AdminVenueController::class, 'update'])->name('venues.update');
         Route::post('/venues/{uuid}/publish', [AdminVenueController::class, 'publish'])->name('venues.publish');

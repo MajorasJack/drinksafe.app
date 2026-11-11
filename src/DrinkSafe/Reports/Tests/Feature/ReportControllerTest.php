@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use DrinkSafe\Reports\Models\Report;
 use DrinkSafe\Venues\Models\Venue;
+use DrinkSafe\Venues\Scopes\PublishedVenueScope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Collection;
@@ -306,6 +307,67 @@ describe('ReportController store', function (): void {
             ->count();
 
         expect($venueCount)->toBe(1);
+    });
+
+    it('uses the branch within 100 metres of the submitted coordinates', function (): void {
+        Turnstile::fake();
+        $latitude = fake()->latitude(50, 55);
+        $longitude = fake()->longitude(-3, 1);
+        $venue = Venue::factory()->create(['latitude' => $latitude, 'longitude' => $longitude]);
+
+        $response = $this->postJson(route('api.reports.store'), [
+            'venue_name' => $venue->name,
+            'venue_city' => $venue->city,
+            'latitude' => $latitude + 0.0005,
+            'longitude' => $longitude,
+            'incident_date' => now()->subDay()->toDateString(),
+            'time_of_day' => 'Night',
+            'description' => fake()->paragraph(4),
+            'cf-turnstile-response' => 'test-token',
+        ]);
+
+        $response->assertCreated()->assertJsonPath('data.venue_uuid', $venue->uuid);
+    });
+
+    it('creates a new venue when the branch with the same name and city is 500 metres away', function (): void {
+        Turnstile::fake();
+        $latitude = fake()->latitude(50, 55);
+        $longitude = fake()->longitude(-3, 1);
+        $otherBranch = Venue::factory()->create(['latitude' => $latitude, 'longitude' => $longitude]);
+
+        $response = $this->postJson(route('api.reports.store'), [
+            'venue_name' => $otherBranch->name,
+            'venue_city' => $otherBranch->city,
+            'latitude' => $latitude + 0.0045,
+            'longitude' => $longitude,
+            'incident_date' => now()->subDay()->toDateString(),
+            'time_of_day' => 'Night',
+            'description' => fake()->paragraph(4),
+            'cf-turnstile-response' => 'test-token',
+        ]);
+
+        $response->assertCreated();
+        expect($response->json('data.venue_uuid'))->not->toBe($otherBranch->uuid);
+    });
+
+    it('creates a new venue at the default coordinates when a chain is named without coordinates', function (): void {
+        Turnstile::fake();
+        $name = fake()->company();
+        $city = fake()->city();
+        $branches = Venue::factory()->count(2)->create(['name' => $name, 'city' => $city]);
+
+        $response = $this->postJson(route('api.reports.store'), [
+            'venue_name' => $name,
+            'venue_city' => $city,
+            'incident_date' => now()->subDay()->toDateString(),
+            'time_of_day' => 'Night',
+            'description' => fake()->paragraph(4),
+            'cf-turnstile-response' => 'test-token',
+        ]);
+
+        $response->assertCreated();
+        expect($branches->pluck('uuid'))->not->toContain($response->json('data.venue_uuid'))
+            ->and(Venue::withoutGlobalScope(PublishedVenueScope::class)->find($response->json('data.venue_uuid'))->isAtDefaultCoordinates())->toBeTrue();
     });
 
     it('validates required fields', function (): void {
