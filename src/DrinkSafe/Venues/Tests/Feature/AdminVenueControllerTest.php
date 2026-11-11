@@ -446,3 +446,28 @@ describe('AdminVenueController unpublish and the venue\'s reports', function ():
         expect(Cache::has(SitemapController::CACHE_KEY))->toBeFalse();
     });
 });
+
+describe('AdminVenueController lookup', function (): void {
+    it('finds published and unpublished venues by name and city', function (): void {
+        $city = fake()->unique()->city();
+        $published = Venue::factory()->create(['name' => 'All Bar One Soho', 'city' => $city]);
+        $unpublished = Venue::factory()->unpublished()->create(['name' => 'All Bar One Bank', 'city' => $city]);
+        Venue::factory()->create(['name' => 'All Bar One Leeds', 'city' => fake()->unique()->city()]);
+
+        $response = $this->getJson(route('admin.venues.lookup', ['q' => 'All Bar One', 'city' => $city]));
+
+        $response->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.uuid', $unpublished->uuid)
+            ->assertJsonPath('data.0.published_at', null)
+            ->assertJsonPath('data.1.uuid', $published->uuid);
+    });
+
+    it('returns at most 10 venues', function (): void {
+        Venue::factory()->count(11)->create(['city' => fake()->city()]);
+
+        $response = $this->getJson(route('admin.venues.lookup'));
+
+        $response->assertOk()->assertJsonCount(10, 'data');
+    });
+});

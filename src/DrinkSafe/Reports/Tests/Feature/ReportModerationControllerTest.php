@@ -495,3 +495,82 @@ describe('ReportModerationController bulk', function (): void {
         $response->assertUnprocessable()->assertJsonValidationErrors(['uuids.0']);
     });
 });
+
+describe('ReportModerationController move', function (): void {
+    test('guests are unauthorised', function (): void {
+        $report = Report::factory()->pending()->create();
+
+        $response = $this->patchJson(route('admin.reports.move', $report->uuid), ['venue_uuid' => Venue::factory()->create()->uuid]);
+
+        $response->assertUnauthorized();
+    });
+
+    test('users who are not admins are forbidden', function (): void {
+        $this->actingAs(User::factory()->withTwoFactor()->create());
+        $report = Report::factory()->pending()->create();
+
+        $response = $this->patchJson(route('admin.reports.move', $report->uuid), ['venue_uuid' => Venue::factory()->create()->uuid]);
+
+        $response->assertForbidden();
+    });
+
+    test('admins without confirmed two-factor are forbidden', function (): void {
+        $this->actingAs(User::factory()->admin()->create());
+        $report = Report::factory()->pending()->create();
+
+        $response = $this->patchJson(route('admin.reports.move', $report->uuid), ['venue_uuid' => Venue::factory()->create()->uuid]);
+
+        $response->assertForbidden();
+    });
+
+    it('moves a pending report onto an unpublished venue and says where', function (): void {
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+        $report = Report::factory()->pending()->create();
+        $venue = Venue::factory()->unpublished()->create();
+
+        $response = $this->patchJson(route('admin.reports.move', $report->uuid), ['venue_uuid' => $venue->uuid]);
+
+        $response->assertRedirect(route('admin.reports.index'))
+            ->assertSessionHas('success', sprintf('Report moved to %s, %s.', $venue->name, $venue->city));
+        expect(Report::withoutGlobalScopes()->find($report->uuid)->venue_uuid)->toBe($venue->uuid);
+    });
+
+    it('keeps the venue the report left, even with no reports', function (): void {
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+        $placeholder = Venue::factory()->unpublished()->create();
+        $report = Report::factory()->pending()->for($placeholder, 'venue')->create();
+
+        $this->patchJson(route('admin.reports.move', $report->uuid), ['venue_uuid' => Venue::factory()->create()->uuid]);
+
+        $this->assertDatabaseHas('venues', ['uuid' => $placeholder->uuid]);
+    });
+
+    it('refuses to move a report that has been published', function (): void {
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+        $report = Report::factory()->create();
+
+        $response = $this->patchJson(route('admin.reports.move', $report->uuid), ['venue_uuid' => Venue::factory()->create()->uuid]);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors([
+            'venue_uuid' => 'Only a report waiting for review can be moved to another venue.',
+        ]);
+        expect(Report::withoutGlobalScopes()->find($report->uuid)->venue_uuid)->toBe($report->venue_uuid);
+    });
+
+    it('refuses an unknown venue', function (): void {
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+        $report = Report::factory()->pending()->create();
+
+        $response = $this->patchJson(route('admin.reports.move', $report->uuid), ['venue_uuid' => fake()->uuid()]);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors(['venue_uuid' => 'That venue doesn\'t exist.']);
+    });
+
+    it('returns not found for an unknown report', function (): void {
+        $this->actingAs(User::factory()->admin()->withTwoFactor()->create());
+
+        $response = $this->patchJson(route('admin.reports.move', fake()->uuid()), ['venue_uuid' => Venue::factory()->create()->uuid]);
+
+        $response->assertNotFound();
+    });
+});

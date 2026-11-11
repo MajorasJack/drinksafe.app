@@ -15,6 +15,7 @@ use DrinkSafe\Venues\Requests\AdminUpdateVenueRequest;
 use DrinkSafe\Venues\Requests\AdminVenueSearchRequest;
 use DrinkSafe\Venues\Resources\VenueResource;
 use DrinkSafe\Venues\Services\VenueService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
@@ -67,6 +68,19 @@ final class AdminVenueController extends Controller
                 'last_page' => $venues->lastPage(),
             ],
             'filters' => $request->filters(),
+        ]);
+    }
+
+    /**
+     * List up to 10 venues, published or not, matching the filters, for the review queue's "Move to venue" search.
+     *
+     * @param  AdminVenueSearchRequest  $request  The validated filters
+     * @return JsonResponse The matching venues, by name
+     */
+    public function lookup(AdminVenueSearchRequest $request): JsonResponse
+    {
+        return response()->json([
+            'data' => VenueResource::collection($this->venueService->searchVenues(filters: $request->filters(), perPage: 10)->getCollection())->resolve(),
         ]);
     }
 

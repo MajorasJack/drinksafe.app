@@ -12,6 +12,7 @@ dataset('admin actions', [
     'venue edit' => ['PATCH', 'admin.venues.update'],
     'venue publish' => ['POST', 'admin.venues.publish'],
     'venue unpublish' => ['POST', 'admin.venues.unpublish'],
+    'report move' => ['PATCH', 'admin.reports.move'],
     'partner link edit' => ['PATCH', 'admin.partners.update'],
     'public cache refresh' => ['POST', 'admin.caches.refresh'],
 ]);

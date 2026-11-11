@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use DrinkSafe\Reports\Enums\ReportStatus;
 use DrinkSafe\Reports\Enums\TimeOfDay;
 use DrinkSafe\Reports\Exceptions\ReportNotFoundException;
+use DrinkSafe\Reports\Exceptions\ReportNotPendingException;
 use DrinkSafe\Reports\Exceptions\ReportValidationException;
 use DrinkSafe\Reports\Exceptions\VenueUnpublishedException;
 use DrinkSafe\Reports\Models\Report;
@@ -250,6 +251,35 @@ final class ReportService
             if ($status === ReportStatus::Rejected && $hideVenueIfEmpty) {
                 $this->hideVenueIfItHasNoPublishedReports($venue);
             }
+
+            return $report;
+        });
+    }
+
+    /**
+     * Move a pending report onto another venue, published or not.
+     *
+     * This is how a report on a chain's placeholder reaches the right branch.
+     * The venue it leaves is kept, even when it has no reports left; the
+     * admin's orphaned venue filter lists it.
+     *
+     * @param  string  $uuid  The report UUID
+     * @param  string  $venueUuid  The UUID of the venue to move it to
+     *
+     * @throws ModelNotFoundException If no report or venue has this UUID
+     * @throws ReportNotPendingException If the report has been published or rejected
+     */
+    public function moveReportToVenue(string $uuid, string $venueUuid): Report
+    {
+        return DB::transaction(function () use ($uuid, $venueUuid): Report {
+            $report = Report::withoutGlobalScope(PublishedScope::class)
+                ->whereKey($uuid)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            throw_if($report->status !== ReportStatus::Pending, ReportNotPendingException::class);
+
+            $report->venue()->associate(Venue::withoutGlobalScope(PublishedVenueScope::class)->findOrFail($venueUuid))->save();
 
             return $report;
         });

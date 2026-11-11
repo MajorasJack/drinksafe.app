@@ -55,12 +55,17 @@ export interface VenueCollection {
 }
 
 /**
- * Venue as the admin's venue list shows it, matching AdminVenueController::index
+ * Venue as the "Move to venue" search shows it, matching AdminVenueController::lookup
  */
-export type AdminVenue = Required<
+export type AdminVenueMatch = Required<
     Pick<Venue, 'published_at' | 'unpublished_at' | 'is_at_default_coordinates'>
 > &
-    Venue & {
-        published_reports_count: number;
-        pending_reports_count: number;
-    };
+    Venue;
+
+/**
+ * Venue as the admin's venue list shows it, matching AdminVenueController::index
+ */
+export type AdminVenue = AdminVenueMatch & {
+    published_reports_count: number;
+    pending_reports_count: number;
+};
