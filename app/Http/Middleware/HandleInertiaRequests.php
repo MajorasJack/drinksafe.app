@@ -7,6 +7,7 @@ namespace App\Http\Middleware;
 use DrinkSafe\Shared\Seo\Seo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -58,11 +59,12 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            'flash' => [
+            // always, so a partial reload replaces the flash the client kept and doesn't toast it again
+            'flash' => Inertia::always([
                 'success' => fn (): ?string => $request->session()->get('success'),
                 'error' => fn (): ?string => $request->session()->get('error'),
                 'warning' => fn (): ?string => $request->session()->get('warning'),
-            ],
+            ]),
             'auth' => [
                 'user' => fn (): ?array => $request->user()
                     ? $request->user()->only(['id', 'name', 'email', 'is_admin'])
