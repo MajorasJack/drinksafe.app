@@ -116,6 +116,31 @@ it('logs out from the user menu in the sidebar', function (): void {
     $page->click('[data-test="sidebar-menu-button"]')
         ->click('[data-test="logout-button"]')
         ->wait(1)
-        ->assertPathIs('/');
+        ->assertPathIs('/')
+        ->assertNoJavaScriptErrors();
     $this->assertGuest();
+});
+
+it('takes a confirmed admin from the security settings to the admin area', function (): void {
+    $this->actingAs(User::factory()->admin()->withTwoFactor()->create())
+        ->withSession(['auth.password_confirmed_at' => time()]);
+
+    $page = visit('/settings/security');
+
+    $page->assertSee('Go to the admin area')
+        ->click('[data-test="admin-area-link"]')
+        ->wait(1)
+        ->assertPathIs('/admin')
+        ->assertNoJavaScriptErrors();
+});
+
+it('shows a user who is not an admin no admin area link in the security settings', function (): void {
+    $this->actingAs(User::factory()->create())
+        ->withSession(['auth.password_confirmed_at' => time()]);
+
+    $page = visit('/settings/security');
+
+    $page->assertSee('Two-factor authentication')
+        ->assertMissing('[data-test="admin-area-link"]')
+        ->assertNoJavaScriptErrors();
 });

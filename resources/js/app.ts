@@ -2,10 +2,10 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { createPinia } from 'pinia';
 import { createApp, h } from 'vue';
 import { initializeTheme } from '@/composables/useAppearance';
-import AdminLayout from '@/layouts/AdminLayout.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
+import SidebarLayout from '@/layouts/SidebarLayout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
 import type { FlashMessages } from '@/types/shared';
 
@@ -19,9 +19,9 @@ createInertiaApp({
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('admin/'):
-                return AdminLayout;
+                return SidebarLayout;
             case name.startsWith('settings/'):
-                return [AdminLayout, SettingsLayout];
+                return [SidebarLayout, SettingsLayout];
             default:
                 return AppLayout;
         }
@@ -48,4 +48,3 @@ createInertiaApp({
 
 // This will set light / dark mode on page load...
 initializeTheme();
-
