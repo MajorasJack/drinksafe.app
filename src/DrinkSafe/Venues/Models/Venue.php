@@ -14,6 +14,7 @@ use DrinkSafe\Shared\Traits\HasUuid;
 use DrinkSafe\Venues\Scopes\PublishedVenueScope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -94,6 +95,26 @@ final class Venue extends Model
             'published_at' => 'datetime',
             'unpublished_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Store the name without surrounding spaces, so `sameNameAndCity()` can compare the plain column.
+     *
+     * @return Attribute<string, string>
+     */
+    protected function name(): Attribute
+    {
+        return Attribute::make(set: fn (string $name): string => trim($name));
+    }
+
+    /**
+     * Store the city without surrounding spaces, so `sameNameAndCity()` can compare the plain column.
+     *
+     * @return Attribute<string, string>
+     */
+    protected function city(): Attribute
+    {
+        return Attribute::make(set: fn (string $city): string => trim($city));
     }
 
     /**
@@ -213,7 +234,12 @@ final class Venue extends Model
     /**
      * Scope a query to venues with this name and city, ignoring case and surrounding spaces.
      *
-     * Lower-casing both sides makes sqlite compare the way MySQL's collation does.
+     * The columns are trimmed when they're saved, and MySQL's `utf8mb4_unicode_ci`
+     * collation already ignores case (and accents), so MySQL compares the plain
+     * columns and can use `idx_venues_city_name`. Other drivers compare case-sensitively,
+     * so they lower-case the column instead. sqlite's `LOWER()` only changes ASCII
+     * letters, so in tests "CAFÉ" and "café" are two venues, and "Cafe" and "Café" are
+     * two venues there while MySQL treats them as one.
      *
      * @param  Builder<Venue>  $query
      * @param  string  $name  Venue name
@@ -222,9 +248,13 @@ final class Venue extends Model
      */
     public function scopeSameNameAndCity(Builder $query, string $name, string $city): Builder
     {
+        if (in_array($query->getConnection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            return $query->where('city', trim($city))->where('name', trim($name));
+        }
+
         return $query
-            ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(trim($name))])
-            ->whereRaw('LOWER(TRIM(city)) = ?', [mb_strtolower(trim($city))]);
+            ->whereRaw('LOWER(city) = ?', [strtolower(trim($city))])
+            ->whereRaw('LOWER(name) = ?', [strtolower(trim($name))]);
     }
 
     /**

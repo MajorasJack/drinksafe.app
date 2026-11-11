@@ -113,7 +113,9 @@ final class VenueService
      * and nobody has reviewed them yet. Publishing a report about it publishes it.
      * An unpublished venue with the same name and city is returned as it is,
      * rather than throwing, so the caller can't tell that a submission is
-     * waiting for review, and no second copy of the venue is created.
+     * waiting for review, and no second copy of the venue is created. Data from
+     * before the duplicate check can hold more than one match, so a published
+     * match wins, then the oldest.
      *
      * @param  array<string, mixed>  $data  Venue data
      *
@@ -123,6 +125,8 @@ final class VenueService
     {
         $existingVenue = Venue::withoutGlobalScope(PublishedVenueScope::class)
             ->sameNameAndCity(name: $data['name'], city: $data['city'])
+            ->orderByRaw('published_at IS NULL')
+            ->oldest()
             ->first();
 
         throw_if($existingVenue?->published_at !== null, VenueDuplicateException::class, $data['name'], $data['city']);

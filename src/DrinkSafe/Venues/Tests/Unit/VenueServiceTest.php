@@ -237,6 +237,36 @@ describe('VenueService createVenue duplicates', function (): void {
 
         expect($venue->uuid)->toBe($waitingVenue->uuid);
     });
+
+    it('refuses the name when an older unpublished copy and a published copy both match', function (): void {
+        $name = fake()->company();
+        $city = fake()->city();
+        Venue::factory()->unpublished()->create(['name' => strtolower($name), 'city' => $city, 'created_at' => now()->subDay()]);
+        Venue::factory()->create(['name' => $name, 'city' => $city]);
+
+        expect(fn (): Venue => app(VenueService::class)->createVenue([
+            'name' => $name,
+            'city' => $city,
+            'latitude' => fake()->latitude(),
+            'longitude' => fake()->longitude(),
+        ]))->toThrow(VenueDuplicateException::class);
+    });
+
+    it('returns the oldest unpublished copy when several match', function (): void {
+        $name = fake()->company();
+        $city = fake()->city();
+        Venue::factory()->unpublished()->create(['name' => strtolower($name), 'city' => $city]);
+        $oldestVenue = Venue::factory()->unpublished()->create(['name' => $name, 'city' => $city, 'created_at' => now()->subDay()]);
+
+        $venue = app(VenueService::class)->createVenue([
+            'name' => $name,
+            'city' => $city,
+            'latitude' => fake()->latitude(),
+            'longitude' => fake()->longitude(),
+        ]);
+
+        expect($venue->uuid)->toBe($oldestVenue->uuid);
+    });
 });
 
 describe('VenueService publishVenue', function (): void {

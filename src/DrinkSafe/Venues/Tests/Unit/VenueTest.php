@@ -8,6 +8,7 @@ use DrinkSafe\Venues\Models\Venue;
 use DrinkSafe\Venues\Scopes\PublishedVenueScope;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -338,5 +339,49 @@ describe('Venue unpublished by admin', function (): void {
         $venue = Venue::factory()->unpublished()->create();
 
         expect($venue->wasUnpublishedByAdmin())->toBeFalse();
+    });
+});
+
+describe('Venue name and city trimming', function (): void {
+    it('saves the name and city without surrounding spaces', function (): void {
+        $name = fake()->company();
+        $city = fake()->city();
+
+        $venue = Venue::factory()->create(['name' => sprintf('  %s ', $name), 'city' => sprintf(' %s  ', $city)]);
+
+        $this->assertDatabaseHas('venues', ['uuid' => $venue->uuid, 'name' => $name, 'city' => $city]);
+    });
+
+    it('trims the names and cities already in the table', function (): void {
+        $name = fake()->company();
+        $city = fake()->city();
+        $venue = Venue::factory()->create();
+        DB::table('venues')->where('uuid', $venue->uuid)->update(['name' => sprintf(' %s ', $name), 'city' => sprintf(' %s ', $city)]);
+
+        (require database_path('migrations/drinksafe/2026_11_11_000000_trim_venue_names_and_cities.php'))->up();
+
+        $this->assertDatabaseHas('venues', ['uuid' => $venue->uuid, 'name' => $name, 'city' => $city]);
+    });
+});
+
+describe('Venue same name and city scope', function (): void {
+    it('matches a name and city that differ only in case and surrounding spaces', function (): void {
+        $venue = Venue::factory()->create();
+
+        $matchingVenue = Venue::query()
+            ->sameNameAndCity(name: sprintf(' %s ', strtoupper($venue->name)), city: strtolower($venue->city))
+            ->first();
+
+        expect($matchingVenue?->uuid)->toBe($venue->uuid);
+    });
+
+    it('does not match a venue with the same name in another city', function (): void {
+        $venue = Venue::factory()->create();
+
+        $matchingVenue = Venue::query()
+            ->sameNameAndCity(name: $venue->name, city: sprintf('%s %s', $venue->city, fake()->word()))
+            ->first();
+
+        expect($matchingVenue)->toBeNull();
     });
 });

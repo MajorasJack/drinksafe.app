@@ -151,6 +151,22 @@ describe('VenueController', function (): void {
                 ->assertJsonStructure(['message']);
         });
 
+        it('returns 422 for a venue whose name and city differ only in case', function (): void {
+            $name = fake()->company();
+            $city = fake()->city();
+            Venue::factory()->create(['name' => $name, 'city' => $city]);
+
+            $response = $this->postJson(route('api.venues.store'), [
+                'name' => strtoupper($name),
+                'city' => strtolower($city),
+                'latitude' => fake()->latitude(),
+                'longitude' => fake()->longitude(),
+            ]);
+
+            $response->assertUnprocessable();
+            expect(Venue::query()->count())->toBe(1);
+        });
+
         it('returns 422 for missing required fields', function (): void {
             $response = $this->postJson(route('api.venues.store'), []);
 
