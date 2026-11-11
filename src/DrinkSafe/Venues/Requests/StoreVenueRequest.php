@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace DrinkSafe\Venues\Requests;
 
-use DrinkSafe\Venues\Models\Venue;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * StoreVenueRequest
  *
- * Validates data for creating a new venue.
- * Ensures all required fields are present and checks for duplicate venues.
+ * Validates data for creating a new venue. `VenueService::createVenue()`
+ * refuses a duplicate, because a name and city alone can't tell a chain's
+ * branches apart.
  */
 final class StoreVenueRequest extends FormRequest
 {
@@ -59,36 +59,5 @@ final class StoreVenueRequest extends FormRequest
             'longitude.numeric' => 'Longitude must be a valid number.',
             'longitude.between' => 'Longitude must be between -180 and 180 degrees.',
         ];
-    }
-
-    /**
-     * Configure the validator instance.
-     *
-     * Adds custom validation to check for duplicate venues (same name + city).
-     */
-    public function withValidator($validator): void
-    {
-        $validator->after(function ($validator): void {
-            if ($this->duplicateExists()) {
-                $validator->errors()->add(
-                    'name',
-                    sprintf(
-                        "A venue named '%s' already exists in %s.",
-                        $this->input('name'),
-                        $this->input('city')
-                    )
-                );
-            }
-        });
-    }
-
-    /**
-     * Check if a venue with the same name and city already exists.
-     */
-    protected function duplicateExists(): bool
-    {
-        return Venue::where('name', $this->input('name'))
-            ->where('city', $this->input('city'))
-            ->exists();
     }
 }

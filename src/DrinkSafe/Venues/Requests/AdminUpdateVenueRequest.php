@@ -57,7 +57,11 @@ final class AdminUpdateVenueRequest extends FormRequest
     }
 
     /**
-     * Refuse a name and city that another venue already has, published or not.
+     * Refuse a new name or city when another venue, published or not, already has that name and city.
+     *
+     * Chain branches share a name and city, so the check only runs when the
+     * name or city changes, ignoring case and surrounding spaces. Otherwise
+     * a branch couldn't be saved at all, even to move its pin.
      *
      * @return array<int, callable(Validator): void>
      */
@@ -65,7 +69,7 @@ final class AdminUpdateVenueRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                if ($validator->errors()->hasAny(['name', 'city'])) {
+                if ($validator->errors()->hasAny(['name', 'city']) || ! $this->changesNameOrCity()) {
                     return;
                 }
 
@@ -83,5 +87,19 @@ final class AdminUpdateVenueRequest extends FormRequest
                 }
             },
         ];
+    }
+
+    /**
+     * Whether the submitted name or city differs from the venue's own, ignoring case and surrounding spaces.
+     *
+     * An unknown venue counts as a change, and the controller returns not found for it.
+     */
+    private function changesNameOrCity(): bool
+    {
+        $venue = Venue::withoutGlobalScope(PublishedVenueScope::class)->find($this->route('uuid'));
+
+        return $venue === null
+            || mb_strtolower(trim($this->input('name'))) !== mb_strtolower($venue->name)
+            || mb_strtolower(trim($this->input('city'))) !== mb_strtolower($venue->city);
     }
 }

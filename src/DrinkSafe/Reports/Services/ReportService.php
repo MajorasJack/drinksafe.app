@@ -58,14 +58,17 @@ final class ReportService
      * Create a new report.
      *
      * Accepts either a venue UUID or venue details (name + city). If venue
-     * details are provided, checks if venue exists or creates a new one.
+     * details are provided, `VenueService::findSameVenue()` looks for the
+     * venue they mean, and a new one is created when there isn't one.
      * Sanitises description and validates for PII before storage.
      *
      * The report is saved as pending and stays hidden until an admin
      * publishes it. The moderators get an email saying one is waiting.
      * A venue created here is unpublished until that happens too. The lookup
      * includes unpublished venues, so a second report naming the same new
-     * venue joins the first rather than creating a copy.
+     * venue joins the first rather than creating a copy. A submission with
+     * no coordinates naming a chain can't say which branch it means, so it
+     * gets a new venue at the default coordinates for the admin to place.
      *
      * @param  array<string, mixed>  $data  Report data
      *
@@ -77,22 +80,20 @@ final class ReportService
         if (isset($data['venue_uuid'])) {
             $venue = $this->venueService->getVenueById($data['venue_uuid']);
         } else {
-            // Check if venue exists by name+city
-            $venue = Venue::withoutGlobalScope(PublishedVenueScope::class)
-                ->where('name', $data['venue_name'])
-                ->where('city', $data['venue_city'])
-                ->first();
+            $hasCoordinates = isset($data['latitude'], $data['longitude']);
 
-            if ($venue === null) {
-                // Create new venue
-                $venue = $this->venueService->createVenue([
-                    'name' => $data['venue_name'],
-                    'city' => $data['venue_city'],
-                    'address' => $data['venue_address'] ?? null,
-                    'latitude' => $data['latitude'] ?? self::DEFAULT_LATITUDE,
-                    'longitude' => $data['longitude'] ?? self::DEFAULT_LONGITUDE,
-                ]);
-            }
+            $venue = $this->venueService->findSameVenue(
+                name: $data['venue_name'],
+                city: $data['venue_city'],
+                latitude: $hasCoordinates ? (float) $data['latitude'] : null,
+                longitude: $hasCoordinates ? (float) $data['longitude'] : null,
+            ) ?? $this->venueService->createUnpublishedVenue([
+                'name' => $data['venue_name'],
+                'city' => $data['venue_city'],
+                'address' => $data['venue_address'] ?? null,
+                'latitude' => $hasCoordinates ? $data['latitude'] : self::DEFAULT_LATITUDE,
+                'longitude' => $hasCoordinates ? $data['longitude'] : self::DEFAULT_LONGITUDE,
+            ]);
         }
 
         // Validate and sanitise description

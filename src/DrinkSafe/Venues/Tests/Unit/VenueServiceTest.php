@@ -105,15 +105,15 @@ describe('VenueService', function (): void {
                 ->and($venue->city)->toBe($data['city']);
         });
 
-        it('throws VenueDuplicateException for duplicate name and city', function (): void {
+        it('throws VenueDuplicateException for duplicate name and city at the same spot', function (): void {
             // Arrange
             $existingVenue = VenueFactory::new()->create();
             $duplicateData = [
                 'name' => $existingVenue->name,
                 'city' => $existingVenue->city,
                 'address' => fake()->address(),
-                'latitude' => fake()->latitude(),
-                'longitude' => fake()->longitude(),
+                'latitude' => $existingVenue->latitude,
+                'longitude' => $existingVenue->longitude,
             ];
 
             // Act & Assert
@@ -214,13 +214,13 @@ describe('VenueService createVenue publishing', function (): void {
 describe('VenueService createVenue duplicates', function (): void {
     it('treats a name and city that differ only in case and spaces as a duplicate', function (): void {
         $city = fake()->city();
-        Venue::factory()->create(['name' => 'The Crown', 'city' => $city]);
+        $venue = Venue::factory()->create(['name' => 'The Crown', 'city' => $city]);
 
         expect(fn (): Venue => app(VenueService::class)->createVenue([
             'name' => ' the crown ',
             'city' => mb_strtoupper($city),
-            'latitude' => fake()->latitude(),
-            'longitude' => fake()->longitude(),
+            'latitude' => $venue->latitude,
+            'longitude' => $venue->longitude,
         ]))->toThrow(VenueDuplicateException::class);
     });
 
@@ -231,41 +231,111 @@ describe('VenueService createVenue duplicates', function (): void {
         $venue = app(VenueService::class)->createVenue([
             'name' => 'the crown',
             'city' => $city,
-            'latitude' => fake()->latitude(),
-            'longitude' => fake()->longitude(),
+            'latitude' => $waitingVenue->latitude,
+            'longitude' => $waitingVenue->longitude,
         ]);
 
         expect($venue->uuid)->toBe($waitingVenue->uuid);
     });
 
-    it('refuses the name when an older unpublished copy and a published copy both match', function (): void {
+    it('refuses the name when an unpublished copy and a published copy both match', function (): void {
         $name = fake()->company();
         $city = fake()->city();
-        Venue::factory()->unpublished()->create(['name' => strtolower($name), 'city' => $city, 'created_at' => now()->subDay()]);
-        Venue::factory()->create(['name' => $name, 'city' => $city]);
+        $latitude = fake()->latitude(50, 55);
+        $longitude = fake()->longitude(-3, 1);
+        Venue::factory()->unpublished()->create(['name' => strtolower($name), 'city' => $city, 'latitude' => $latitude, 'longitude' => $longitude]);
+        Venue::factory()->create(['name' => $name, 'city' => $city, 'latitude' => $latitude + 0.0005, 'longitude' => $longitude]);
 
         expect(fn (): Venue => app(VenueService::class)->createVenue([
             'name' => $name,
             'city' => $city,
-            'latitude' => fake()->latitude(),
-            'longitude' => fake()->longitude(),
+            'latitude' => $latitude,
+            'longitude' => $longitude,
         ]))->toThrow(VenueDuplicateException::class);
     });
 
-    it('returns the oldest unpublished copy when several match', function (): void {
+    it('creates a new branch for a name and city whose only match is 500 metres away', function (): void {
         $name = fake()->company();
         $city = fake()->city();
-        Venue::factory()->unpublished()->create(['name' => strtolower($name), 'city' => $city]);
-        $oldestVenue = Venue::factory()->unpublished()->create(['name' => $name, 'city' => $city, 'created_at' => now()->subDay()]);
+        $latitude = fake()->latitude(50, 55);
+        $longitude = fake()->longitude(-3, 1);
+        $otherBranch = Venue::factory()->create(['name' => $name, 'city' => $city, 'latitude' => $latitude, 'longitude' => $longitude]);
 
         $venue = app(VenueService::class)->createVenue([
             'name' => $name,
             'city' => $city,
-            'latitude' => fake()->latitude(),
-            'longitude' => fake()->longitude(),
+            'latitude' => $latitude + 0.0045,
+            'longitude' => $longitude,
         ]);
 
-        expect($venue->uuid)->toBe($oldestVenue->uuid);
+        expect($venue->uuid)->not->toBe($otherBranch->uuid)
+            ->and($venue->published_at)->toBeNull();
+    });
+});
+
+describe('VenueService findSameVenue', function (): void {
+    it('matches a venue with the same name and city within 100 metres', function (): void {
+        $latitude = fake()->latitude(50, 55);
+        $longitude = fake()->longitude(-3, 1);
+        $venue = Venue::factory()->create(['latitude' => $latitude, 'longitude' => $longitude]);
+
+        $match = app(VenueService::class)->findSameVenue(name: $venue->name, city: $venue->city, latitude: $latitude + 0.0005, longitude: $longitude);
+
+        expect($match?->uuid)->toBe($venue->uuid);
+    });
+
+    it('matches nothing when the only venue with the name and city is 500 metres away', function (): void {
+        $latitude = fake()->latitude(50, 55);
+        $longitude = fake()->longitude(-3, 1);
+        $venue = Venue::factory()->create(['latitude' => $latitude, 'longitude' => $longitude]);
+
+        $match = app(VenueService::class)->findSameVenue(name: $venue->name, city: $venue->city, latitude: $latitude + 0.0045, longitude: $longitude);
+
+        expect($match)->toBeNull();
+    });
+
+    it('prefers a published match to a nearer unpublished one', function (): void {
+        $name = fake()->company();
+        $city = fake()->city();
+        $latitude = fake()->latitude(50, 55);
+        $longitude = fake()->longitude(-3, 1);
+        Venue::factory()->unpublished()->create(['name' => $name, 'city' => $city, 'latitude' => $latitude, 'longitude' => $longitude]);
+        $publishedVenue = Venue::factory()->create(['name' => $name, 'city' => $city, 'latitude' => $latitude + 0.0006, 'longitude' => $longitude]);
+
+        $match = app(VenueService::class)->findSameVenue(name: $name, city: $city, latitude: $latitude, longitude: $longitude);
+
+        expect($match?->uuid)->toBe($publishedVenue->uuid);
+    });
+
+    it('picks the nearest of two published matches', function (): void {
+        $name = fake()->company();
+        $city = fake()->city();
+        $latitude = fake()->latitude(50, 55);
+        $longitude = fake()->longitude(-3, 1);
+        Venue::factory()->create(['name' => $name, 'city' => $city, 'latitude' => $latitude + 0.0008, 'longitude' => $longitude]);
+        $nearestVenue = Venue::factory()->create(['name' => $name, 'city' => $city, 'latitude' => $latitude - 0.0002, 'longitude' => $longitude]);
+
+        $match = app(VenueService::class)->findSameVenue(name: $name, city: $city, latitude: $latitude, longitude: $longitude);
+
+        expect($match?->uuid)->toBe($nearestVenue->uuid);
+    });
+
+    it('matches the only venue with the name and city when there are no coordinates', function (): void {
+        $venue = Venue::factory()->create();
+
+        $match = app(VenueService::class)->findSameVenue(name: $venue->name, city: $venue->city, latitude: null, longitude: null);
+
+        expect($match?->uuid)->toBe($venue->uuid);
+    });
+
+    it('matches nothing without coordinates when two venues share the name and city', function (): void {
+        $name = fake()->company();
+        $city = fake()->city();
+        Venue::factory()->count(2)->create(['name' => $name, 'city' => $city]);
+
+        $match = app(VenueService::class)->findSameVenue(name: $name, city: $city, latitude: null, longitude: null);
+
+        expect($match)->toBeNull();
     });
 });
 

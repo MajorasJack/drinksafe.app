@@ -184,6 +184,36 @@ describe('AdminVenueController update', function (): void {
         $response->assertRedirect(route('admin.venues.show', $venue->uuid));
     });
 
+    it('moves one branch of a chain that shares its name and city with another', function (): void {
+        $venue = Venue::factory()->create(['name' => 'All Bar One', 'city' => 'London']);
+        Venue::factory()->create(['name' => 'All Bar One', 'city' => 'London']);
+        $coordinates = ['latitude' => fake()->latitude(50, 55), 'longitude' => fake()->longitude(-3, 1)];
+
+        $response = $this->patchJson(route('admin.venues.update', $venue->uuid), [
+            'name' => $venue->name,
+            'city' => $venue->city,
+            ...$coordinates,
+        ]);
+
+        $response->assertRedirect(route('admin.venues.show', $venue->uuid));
+        expect((float) $venue->fresh()->latitude)->toEqualWithDelta($coordinates['latitude'], 0.000001);
+    });
+
+    it('lets a branch of a chain change only the capitals of its own name and city', function (): void {
+        $venue = Venue::factory()->create(['name' => 'All Bar One', 'city' => 'London']);
+        Venue::factory()->create(['name' => 'All Bar One', 'city' => 'London']);
+
+        $response = $this->patchJson(route('admin.venues.update', $venue->uuid), [
+            'name' => 'ALL BAR ONE',
+            'city' => 'london',
+            'latitude' => $venue->latitude,
+            'longitude' => $venue->longitude,
+        ]);
+
+        $response->assertRedirect(route('admin.venues.show', $venue->uuid));
+        expect($venue->fresh()->name)->toBe('ALL BAR ONE');
+    });
+
     it('rejects coordinates outside valid latitude and longitude', function (): void {
         $venue = Venue::factory()->create();
 

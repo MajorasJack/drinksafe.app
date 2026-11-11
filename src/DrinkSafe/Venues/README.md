@@ -30,7 +30,7 @@ This module manages:
 
 ### Exceptions
 - **VenueNotFoundException** - Thrown when venue UUID not found
-- **VenueDuplicateException** - Thrown when duplicate name+city detected
+- **VenueDuplicateException** - Thrown when a published venue with the same name and city is within 100 metres
 
 ## Data Model
 
@@ -60,7 +60,10 @@ The `VenueSearchService::nearby()` method finds venues within a specified radius
 Venues can be searched by name or city with partial matching support.
 
 ### Publishing
-`PublishedVenueScope` hides venues with no `published_at`. Seeded and imported venues are published when they're created. Venues created by `VenueService::createVenue()` (a report submission naming a new venue, or `POST /api/venues`) start unpublished, and `ReportService::reviewReport()` publishes one when it publishes a report about it. A venue an admin unpublished has an `unpublished_at` date, and `reviewReport()` refuses to publish reports about it (throwing `VenueUnpublishedException`) until the venue is published again. If an unpublished venue with the same name and city already exists, `createVenue()` returns it instead of creating a copy, and `POST /api/venues` only returns the venue's `uuid`, so neither shows whether a hidden venue existed. Code that needs every venue, such as the review queue, opts out with `withoutGlobalScope(PublishedVenueScope::class)`.
+`PublishedVenueScope` hides venues with no `published_at`. Seeded and imported venues are published when they're created. Venues created by `VenueService::createVenue()` (a report submission naming a new venue, or `POST /api/venues`) start unpublished, and `ReportService::reviewReport()` publishes one when it publishes a report about it. A venue an admin unpublished has an `unpublished_at` date, and `reviewReport()` refuses to publish reports about it (throwing `VenueUnpublishedException`) until the venue is published again. If an unpublished venue with the same name and city already exists within 100 metres, `createVenue()` returns it instead of creating a copy, and `POST /api/venues` only returns the venue's `uuid`, so neither shows whether a hidden venue existed. Code that needs every venue, such as the review queue, opts out with `withoutGlobalScope(PublishedVenueScope::class)`.
+
+### Matching a submission to a venue
+A name and city isn't unique, because chains have many branches in one city. `VenueService::findSameVenue()` decides which venue a submission means. With coordinates, it's a venue with the same name and city (ignoring case and surrounding spaces) within `VenueService::SAME_VENUE_RADIUS_KM` (100 metres), the published one first, then the nearest. Without coordinates, the name and city only match when exactly one venue has them. A report naming a chain with no coordinates gets a new unpublished venue at `ReportService::DEFAULT_LATITUDE` and `DEFAULT_LONGITUDE`, which the review queue flags so an admin can place it. The admin edit form only refuses a name and city another venue has when the name or city actually changes, so a branch can still be moved.
 
 ### Report Counts
 Venues automatically load report counts for display in lists and maps.
