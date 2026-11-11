@@ -68,7 +68,8 @@ final class ReportService
      * includes unpublished venues, so a second report naming the same new
      * venue joins the first rather than creating a copy. A submission with
      * no coordinates naming a chain can't say which branch it means, so it
-     * gets a new venue at the default coordinates for the admin to place.
+     * goes to the chain's placeholder at the default coordinates (created
+     * the first time) for the admin to move to the right branch.
      *
      * @param  array<string, mixed>  $data  Report data
      *

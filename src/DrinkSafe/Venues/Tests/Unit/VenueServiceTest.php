@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Database\Factories\DrinkSafe\ReportFactory;
 use Database\Factories\DrinkSafe\VenueFactory;
 use DrinkSafe\Reports\Models\Report;
+use DrinkSafe\Reports\Services\ReportService;
 use DrinkSafe\Shared\Services\PublicCacheVersion;
 use DrinkSafe\Venues\Exceptions\VenueDuplicateException;
 use DrinkSafe\Venues\Exceptions\VenueNotFoundException;
@@ -334,6 +335,58 @@ describe('VenueService findSameVenue', function (): void {
         Venue::factory()->count(2)->create(['name' => $name, 'city' => $city]);
 
         $match = app(VenueService::class)->findSameVenue(name: $name, city: $city, latitude: null, longitude: null);
+
+        expect($match)->toBeNull();
+    });
+
+    it('matches the one published venue without coordinates when an unpublished copy also exists', function (): void {
+        $publishedVenue = Venue::factory()->create();
+        Venue::factory()->unpublished()->create(['name' => $publishedVenue->name, 'city' => $publishedVenue->city]);
+
+        $match = app(VenueService::class)->findSameVenue(name: $publishedVenue->name, city: $publishedVenue->city, latitude: null, longitude: null);
+
+        expect($match?->uuid)->toBe($publishedVenue->uuid);
+    });
+
+    it('matches a chain\'s existing placeholder without coordinates', function (): void {
+        $name = fake()->company();
+        $city = fake()->city();
+        Venue::factory()->count(2)->create(['name' => $name, 'city' => $city]);
+        $placeholder = Venue::factory()->unpublished()->create([
+            'name' => $name,
+            'city' => $city,
+            'latitude' => ReportService::DEFAULT_LATITUDE,
+            'longitude' => ReportService::DEFAULT_LONGITUDE,
+        ]);
+
+        $match = app(VenueService::class)->findSameVenue(name: $name, city: $city, latitude: null, longitude: null);
+
+        expect($match?->uuid)->toBe($placeholder->uuid);
+    });
+
+    it('matches the oldest unpublished venue without coordinates when none is published', function (): void {
+        $name = fake()->company();
+        $city = fake()->city();
+        Venue::factory()->unpublished()->create(['name' => $name, 'city' => $city]);
+        $oldestVenue = Venue::factory()->unpublished()->create(['name' => $name, 'city' => $city, 'created_at' => now()->subDay()]);
+
+        $match = app(VenueService::class)->findSameVenue(name: $name, city: $city, latitude: null, longitude: null);
+
+        expect($match?->uuid)->toBe($oldestVenue->uuid);
+    });
+
+    it('never matches a placeholder at the default coordinates for a submission with coordinates', function (): void {
+        $placeholder = Venue::factory()->unpublished()->create([
+            'latitude' => ReportService::DEFAULT_LATITUDE,
+            'longitude' => ReportService::DEFAULT_LONGITUDE,
+        ]);
+
+        $match = app(VenueService::class)->findSameVenue(
+            name: $placeholder->name,
+            city: $placeholder->city,
+            latitude: ReportService::DEFAULT_LATITUDE + 0.0002,
+            longitude: ReportService::DEFAULT_LONGITUDE,
+        );
 
         expect($match)->toBeNull();
     });

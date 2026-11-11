@@ -180,6 +180,7 @@ describe('VenueController', function (): void {
             ]);
 
             $response->assertUnprocessable();
+            expect(Venue::withoutGlobalScope(PublishedVenueScope::class)->count())->toBe(1);
         });
 
         it('creates a new branch when the venue with the same name and city is 500 metres away', function (): void {

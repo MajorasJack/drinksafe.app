@@ -147,9 +147,9 @@ final class VenueService
      *
      * With coordinates, it's a venue with the same name and city (ignoring
      * case and surrounding spaces) within SAME_VENUE_RADIUS_KM. A published
-     * match wins, then the nearest. Without coordinates, the name and city
-     * are only enough when exactly one venue has them. Two or more is a chain,
-     * and there's no telling which branch was meant, so nothing matches.
+     * match wins, then the nearest. A placeholder at the default coordinates
+     * never counts, as its pin isn't a real location. Without coordinates,
+     * see findSameVenueByNameAndCity().
      *
      * @param  string  $name  Venue name
      * @param  string  $city  City name
@@ -158,20 +158,18 @@ final class VenueService
      */
     public function findSameVenue(string $name, string $city, ?float $latitude, ?float $longitude): ?Venue
     {
-        $sameNameAndCity = Venue::withoutGlobalScope(PublishedVenueScope::class)->sameNameAndCity(name: $name, city: $city);
-
         if ($latitude === null || $longitude === null) {
-            $candidates = $sameNameAndCity->limit(2)->get();
-
-            return $candidates->containsOneItem() ? $candidates->first() : null;
+            return $this->findSameVenueByNameAndCity(name: $name, city: $city);
         }
 
         $boundingBox = $this->geolocationService->getBoundingBox($latitude, $longitude, self::SAME_VENUE_RADIUS_KM);
 
-        return $sameNameAndCity
+        return Venue::withoutGlobalScope(PublishedVenueScope::class)
+            ->sameNameAndCity(name: $name, city: $city)
             ->whereBetween('latitude', [$boundingBox['minLat'], $boundingBox['maxLat']])
             ->whereBetween('longitude', [$boundingBox['minLng'], $boundingBox['maxLng']])
             ->get()
+            ->reject(fn (Venue $venue): bool => $venue->isAtDefaultCoordinates())
             ->map(fn (Venue $venue): array => [
                 'venue' => $venue,
                 'distance' => $this->geolocationService->distance($latitude, $longitude, (float) $venue->latitude, (float) $venue->longitude),
@@ -182,6 +180,36 @@ final class VenueService
                 fn (array $first, array $second): int => $first['distance'] <=> $second['distance'],
             ])
             ->first()['venue'] ?? null;
+    }
+
+    /**
+     * Find the venue a submission with no coordinates means, from its name and city alone.
+     *
+     * Only published venues decide whether the name and city is a chain, so
+     * unpublished copies (from `POST /api/venues`, or placeholders) can't turn
+     * a single venue into one. One published match is the venue. Two or more
+     * is a chain with no telling which branch was meant, so it's the chain's
+     * existing placeholder at the default coordinates, if it has one. With no
+     * published match, the oldest unpublished one, so a second report about
+     * a new venue joins the first.
+     *
+     * @param  string  $name  Venue name
+     * @param  string  $city  City name
+     */
+    private function findSameVenueByNameAndCity(string $name, string $city): ?Venue
+    {
+        $publishedMatches = Venue::sameNameAndCity(name: $name, city: $city)->limit(2)->get();
+        $unpublishedMatches = Venue::withoutGlobalScope(PublishedVenueScope::class)
+            ->sameNameAndCity(name: $name, city: $city)
+            ->whereNull('published_at')
+            ->oldest()
+            ->oldest('uuid');
+
+        return match ($publishedMatches->count()) {
+            0 => $unpublishedMatches->first(),
+            1 => $publishedMatches->first(),
+            default => $unpublishedMatches->atDefaultCoordinates()->first(),
+        };
     }
 
     /**

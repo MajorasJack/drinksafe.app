@@ -262,6 +262,19 @@ final class Venue extends Model
     }
 
     /**
+     * Scope a query to venues on the point a submission gets when it has no coordinates.
+     *
+     * @param  Builder<Venue>  $query
+     * @return Builder<Venue>
+     */
+    public function scopeAtDefaultCoordinates(Builder $query): Builder
+    {
+        return $query
+            ->where('latitude', ReportService::DEFAULT_LATITUDE)
+            ->where('longitude', ReportService::DEFAULT_LONGITUDE);
+    }
+
+    /**
      * Scope a query to filter venues by city.
      *
      * @param  Builder<Venue>  $query
